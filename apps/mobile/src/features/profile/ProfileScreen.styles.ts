@@ -1,0 +1,334 @@
+import { StyleSheet, Platform } from 'react-native';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F4', // Premium Cream background
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 8 : 16,
+    paddingBottom: 12,
+    backgroundColor: '#FAF8F4',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EDE8',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  topBarLeft: {
+    width: 40,
+    justifyContent: 'center',
+  },
+  topBarRight: {
+    width: 40,
+  },
+  backArrow: {
+    fontSize: 24,
+    color: '#1A1F1E',
+  },
+  topBarTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    color: '#1A1F1E',
+    textAlign: 'center',
+  },
+  scrollContent: {
+    paddingBottom: 80,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#1A6B5A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#1A6B5A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    color: '#1A1F1E',
+    marginBottom: 6,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#6B7370',
+    letterSpacing: 1,
+  },
+  hostBanner: {
+    backgroundColor: '#0F1714',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  hostBannerLeft: {
+    flex: 1,
+    marginRight: 16,
+  },
+  hostBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  hostBannerSubtitle: {
+    fontSize: 12,
+    color: '#84C9BA',
+    lineHeight: 16,
+  },
+  hostButton: {
+    backgroundColor: '#D4704A',
+    borderRadius: 100,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hostButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTabButton: {
+    borderBottomColor: '#1A6B5A',
+  },
+  tabButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7370',
+  },
+  activeTabButtonText: {
+    color: '#1A6B5A',
+  },
+  tabContent: {
+    paddingHorizontal: 16,
+  },
+  // Trip Cards Styling
+  tripCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tripImagePlaceholder: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tripBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tripBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  tripInfo: {
+    padding: 16,
+  },
+  tripTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 4,
+  },
+  tripSubtitle: {
+    fontSize: 12,
+    color: '#6B7370',
+  },
+  // Saved Screen Styling
+  emptySavedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptySavedEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptySavedTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySavedSubtitle: {
+    fontSize: 14,
+    color: '#6B7370',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  exploreButton: {
+    backgroundColor: '#1A6B5A',
+    borderRadius: 100,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    shadowColor: '#1A6B5A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  exploreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // How It Works Styling
+  howTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    color: '#1A1F1E',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  howStepsContainer: {
+    paddingHorizontal: 8,
+  },
+  howStepRow: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    alignItems: 'flex-start',
+  },
+  howStepIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#E6F2EF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  howStepIcon: {
+    fontSize: 20,
+  },
+  howStepTextContainer: {
+    flex: 1,
+  },
+  howStepTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 4,
+  },
+  howStepSubtitle: {
+    fontSize: 12,
+    color: '#6B7370',
+    lineHeight: 16,
+  },
+  // Settings Tab Styling
+  settingsList: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    overflow: 'hidden',
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EDE8',
+  },
+  settingsItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingsItemIcon: {
+    fontSize: 18,
+    marginRight: 12,
+  },
+  settingsItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1F1E',
+  },
+  signOutLabel: {
+    color: '#D4704A',
+  },
+  chevron: {
+    fontSize: 14,
+    color: '#6B7370',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+});
+
+export default styles;

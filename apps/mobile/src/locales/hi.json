@@ -1,0 +1,177 @@
+{
+  "auth": {
+    "splash": {
+      "tagline": "यात्रा करें जैसे आप किसी को जानते हों"
+    },
+    "login": {
+      "title": "JuxTravel",
+      "tagline": "अपनी परफेक्ट ट्रिप प्लान करें",
+      "googleBtn": "Google से जारी रखें",
+      "nameLabel": "पूरा नाम",
+      "namePlaceholder": "अर्जुन शर्मा",
+      "phoneLabel": "फोन नंबर",
+      "phoneSubtitle": "हम 6-अंकीय OTP भेजेंगे",
+      "phonePlaceholder": "98765 43210",
+      "sendOtp": "OTP भेजें",
+      "newHere": "नए हैं?",
+      "infoText": "50k+ यात्रियों से जुड़ें जो AI का उपयोग करके बेहतरीन भारतीय यात्राएं बनाते हैं।",
+      "terms": "साइन इन करके, आप हमारी",
+      "termsLink": "सेवा की शर्तें",
+      "privacyLink": "गोपनीयता नीति"
+    },
+    "otp": {
+      "title": "फोन सत्यापित करें",
+      "subtitle": "6-अंकीय कोड दर्ज करें जो भेजा गया है",
+      "verifyBtn": "OTP सत्यापित करें",
+      "resendText": "कोड नहीं मिला?",
+      "resendBtn": "OTP दोबारा भेजें",
+      "resendTimer": "{{seconds}}s में दोबारा भेजें"
+    }
+  },
+  "home": {
+    "greeting": "अरे {{name}}, तैयार हो?",
+    "ctaBtn": "अगले कदम पर जाएं",
+    "myTrips": "मेरी यात्राएं",
+    "tripMoments": "यात्रा के पल",
+    "viewAll": "सभी देखें",
+    "trending": "इस हफ्ते ट्रेंडिंग"
+  },
+  "plan": {
+    "step1": {
+      "title": "आप कहाँ जाना चाहते हैं?",
+      "destinationLabel": "गंतव्य",
+      "destinationPlaceholder": "गोवा, मनाली, केरल...",
+      "whenLabel": "आप कब जा रहे हैं?",
+      "checkIn": "चेक इन",
+      "checkOut": "चेक आउट",
+      "selectDate": "तारीख चुनें",
+      "continueBtn": "जारी रखें"
+    },
+    "step2": {
+      "title": "कौन आ रहा है?",
+      "guestsLabel": "कुल मेहमान",
+      "groupTypeLabel": "समूह का प्रकार",
+      "continueBtn": "जारी रखें",
+      "solo": "अकेले",
+      "couple": "जोड़ा",
+      "friends": "दोस्त",
+      "family": "परिवार",
+      "corporate": "कॉर्पोरेट",
+      "other": "अन्य"
+    },
+    "step3": {
+      "title": "कैसा अनुभव चाहिए?",
+      "subtitle": "अपनी यात्रा का मूड चुनें।",
+      "selectedCount": "{{count}}/3 चुने गए",
+      "nextBtn": "अगला कदम",
+      "peaceful": "शांतिपूर्ण",
+      "peacefulSub": "धीमी जिंदगी, ध्यान, और शांत प्रकृति।",
+      "adventure": "रोमांच",
+      "adventureSub": "ट्रैकिंग, वन्यजीव, और अनोखे रास्ते।",
+      "cultural": "सांस्कृतिक",
+      "culturalSub": "विरासत स्थल, इतिहास, और स्थानीय कलाएं।",
+      "culinary": "खानपान",
+      "culinarySub": "स्ट्रीट फूड टूर और शानदार किचन।",
+      "luxury": "लग्जरी",
+      "luxurySub": "हाई-एंड स्टे और विशेष एक्सेस।",
+      "social": "सामाजिक",
+      "socialSub": "नाइटलाइफ, त्योहार, और ग्रुप इवेंट्स।",
+      "romantic": "रोमांटिक",
+      "romanticSub": "सूर्यास्त, प्राइवेट डिनर, और एस्केप।",
+      "localLife": "स्थानीय जीवन",
+      "localLifeSub": "होमस्टे और निवासी की तरह रहना।"
+    },
+    "step4": {
+      "title": "बजट और अतिरिक्त",
+      "budgetLabel": "आपका बजट",
+      "totalForAll": "सभी के लिए कुल",
+      "under30k": "30k से कम",
+      "midRange": "मिड-रेंज",
+      "luxury": "लग्जरी",
+      "flexible": "लचीला",
+      "specificLabel": "कुछ खास?",
+      "specificPlaceholder": "जैसे शाकाहारी भोजन, बालकनी वाले कमरे, सालगिरह सरप्राइज...",
+      "getMatches": "मेरे मैच दिखाएं",
+      "aiNote": "AI आपकी प्रोफाइल के अनुसार 3 बेहतरीन विकल्प चुनेगा"
+    }
+  },
+  "profile": {
+    "trips": "यात्राएं",
+    "saved": "सहेजे गए",
+    "how": "कैसे?",
+    "settings": "सेटिंग्स",
+    "becomeHost": "मेजबान बनें",
+    "hostBannerTitle": "अपनी जगह साझा करें,\nJuxTravel के साथ कमाएं",
+    "hostBannerSubtitle": "अपने घरों से कमाई करने वाले 500+ मेजबानों में शामिल हों",
+    "editProfile": "प्रोफ़ाइल संपादित करें",
+    "notifications": "सूचनाएं",
+    "language": "भाषा",
+    "privacy": "गोपनीयता और सुरक्षा",
+    "help": "सहायता और समर्थन",
+    "terms": "सेवा की शर्तें",
+    "signOut": "साइन आउट",
+    "noSaved": "अभी तक कोई सहेजी गई जगह नहीं है",
+    "noSavedSub": "अपनी पसंदीदा होमस्टे खोजें और सहेजें",
+    "explore": "खोजें",
+    "howTitle": "JuxTravel कैसे काम करता है",
+    "step1Title": "हमें अपनी पसंद बताएं",
+    "step1Sub": "एक त्वरित यात्रा विवरण भरें",
+    "step2Title": "AI आपका मैच ढूंढता है",
+    "step2Sub": "हम 3 बेहतरीन मेजबान चुनते हैं",
+    "step3Title": "बुक करें और जाएं",
+    "step3Sub": "तुरंत पुष्टि",
+    "hostOnboardingSoon": "मेजबान ऑनबोर्डिंग जल्द ही आ रही है",
+    "memberBadge": "प्लेटिनम सदस्य • 2026 में शामिल हुए",
+    "upcoming": "आगामी",
+    "completed": "पूरा हुआ",
+    "trip1Title": "आगरा हेरिटेज वीकेंड",
+    "trip1Subtitle": "12 अक्टूबर - 14 अक्टूबर • 2 वयस्क",
+    "trip2Title": "रॉयल राजस्थान टूर",
+    "trip2Subtitle": "05 अगस्त - 12 अगस्त • 4 वयस्क"
+  },
+  "discover": {
+    "reels": "रील्स",
+    "stories": "कहानियाँ",
+    "viewProperty": "प्रॉपर्टी देखें",
+    "save": "सहेजें",
+    "startingFrom": "शुरुआती कीमत",
+    "trustScore": "ट्रस्ट स्कोर",
+    "tripStories": "यात्रा की कहानियां",
+    "viewAll": "सभी देखें",
+    "moments": "पल",
+    "readStory": "कहानी पढ़ें →",
+    "filters": {
+      "all": "सभी",
+      "goa": "गोवा",
+      "rajasthan": "राजस्थान",
+      "kerala": "केरल",
+      "ladakh": "लद्दाख"
+    },
+    "data": {
+      "username": "@arjun_seeker",
+      "reels": {
+        "reel1Title": "द मानसून पवेलियन",
+        "reel1Loc": "वायनाड, केरल",
+        "reel1Tag1": "प्राइवेट इन्फिनिटी पूल",
+        "reel1Tag2": "आयुर्वेदिक स्पा",
+        "reel2Title": "क्लाउड नाइन कॉटेज",
+        "reel2Loc": "कूर्ग, कर्नाटक",
+        "reel2Tag1": "माउंटेन बालकनी",
+        "reel2Tag2": "कॉफी बागान",
+        "reel3Title": "डेजर्ट रोज़ हवेली",
+        "reel3Loc": "जैसलमेर, राजस्थान",
+        "reel3Tag1": "सनसेट ड्यून्स टूर",
+        "reel3Tag2": "रॉयल सुइट",
+        "reelSavedAlert": "प्रॉपर्टी सहेज ली गई है!",
+        "reelSharedAlert": "लिंक क्लिपबोर्ड पर कॉपी हो गया!"
+      },
+      "stories": {
+        "story1Title": "पश्चिमी घाट की फुसफुसाहट",
+        "story1Body": "कैसे मैंने मुन्नार के चाय बागानों में शांति पाई, शहर के शोर से बहुत दूर...",
+        "story2Title": "प्यार के स्मारक पर सुनहरा पल",
+        "story2Body": "सुबह 5 बजे पहुंचना एक संघर्ष था, लेकिन संगमरमर पर पहली किरण पड़ते देखना अद्भुत था...",
+        "storyAlert": "पूरी कहानी लोड हो रही है..."
+      }
+    }
+  }
+}

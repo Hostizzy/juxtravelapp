@@ -1,0 +1,169 @@
+{
+  "auth": {
+    "splash": {
+      "tagline": "Travel like you know someone there"
+    },
+    "login": {
+      "title": "JuxTravel",
+      "tagline": "Plan your perfect trip",
+      "googleBtn": "Continue with Google",
+      "nameLabel": "Full Name",
+      "namePlaceholder": "Arjun Sharma",
+      "phoneLabel": "Phone Number",
+      "phoneSubtitle": "We'll send a 6-digit OTP",
+      "phonePlaceholder": "98765 43210",
+      "sendOtp": "Send OTP",
+      "newHere": "NEW HERE?",
+      "infoText": "Join 50k+ travelers using AI to curate bespoke Indian escapes.",
+      "terms": "By signing in, you agree to our",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
+    },
+    "otp": {
+      "title": "Verify Phone",
+      "subtitle": "Enter the 6-digit code sent to",
+      "verifyBtn": "Verify OTP",
+      "resendText": "Didn't receive the code?",
+      "resendBtn": "Resend OTP",
+      "resendTimer": "Resend in {{seconds}}s"
+    }
+  },
+  "home": {
+    "greeting": "Hey {{name}}, ready?",
+    "ctaBtn": "Go to next step",
+    "myTrips": "My Trips",
+    "tripMoments": "Trip Moments",
+    "viewAll": "View All",
+    "trending": "Trending This Week"
+  },
+  "plan": {
+    "step1": {
+      "title": "Where do you want to go?",
+      "destinationLabel": "DESTINATION",
+      "destinationPlaceholder": "Goa, Manali, Kerala...",
+      "whenLabel": "WHEN ARE YOU GOING?",
+      "checkIn": "CHECK IN",
+      "checkOut": "CHECK OUT",
+      "selectDate": "Select Date",
+      "continueBtn": "Continue"
+    },
+    "step2": {
+      "title": "Who's coming?",
+      "guestsLabel": "TOTAL GUESTS",
+      "groupTypeLabel": "GROUP TYPE",
+      "continueBtn": "Continue",
+      "solo": "Solo",
+      "couple": "Couple",
+      "friends": "Friends",
+      "family": "Family",
+      "corporate": "Corporate",
+      "other": "Other"
+    },
+    "step3": {
+      "title": "What kind of experience?",
+      "subtitle": "Choose the vibe of your trip.",
+      "selectedCount": "{{count}}/3 SELECTED",
+      "nextBtn": "Next Step",
+      "peaceful": "Peaceful",
+      "peacefulSub": "Slow living, meditation, and quiet nature.",
+      "adventure": "Adventure",
+      "adventureSub": "Hiking, wildlife, and off-beat trails.",
+      "cultural": "Cultural",
+      "culturalSub": "Heritage sites, history, and local arts.",
+      "culinary": "Culinary",
+      "culinarySub": "Street food tours and gourmet kitchens.",
+      "luxury": "Luxury",
+      "luxurySub": "High-end stays and exclusive access.",
+      "social": "Social",
+      "socialSub": "Nightlife, festivals, and group events.",
+      "romantic": "Romantic",
+      "romanticSub": "Sunsets, private dinners, and escapes.",
+      "localLife": "Local Life",
+      "localLifeSub": "Homestays and living like a resident."
+    },
+    "step4": {
+      "title": "Budget & Extras",
+      "budgetLabel": "YOUR BUDGET",
+      "totalForAll": "TOTAL FOR ALL",
+      "under30k": "Under 30k",
+      "midRange": "Mid-range",
+      "luxury": "Luxury",
+      "flexible": "Flexible",
+      "specificLabel": "ANYTHING SPECIFIC?",
+      "specificPlaceholder": "e.g. Vegetarian meals only, prefer balcony rooms, anniversary surprise...",
+      "getMatches": "Get My Matches",
+      "aiNote": "AI will curate 3 boutique options based on your profile"
+    }
+  },
+  "profile": {
+    "trips": "TRIPS",
+    "saved": "SAVED",
+    "how": "HOW?",
+    "settings": "Settings",
+    "becomeHost": "Become a Host",
+    "hostBannerTitle": "Share your space,\nearn with JuxTravel",
+    "hostBannerSubtitle": "Join 500+ hosts\nearning from their homes",
+    "editProfile": "Edit Profile",
+    "notifications": "Notifications",
+    "language": "Language",
+    "privacy": "Privacy & Security",
+    "help": "Help & Support",
+    "terms": "Terms of Service",
+    "signOut": "Sign Out",
+    "noSaved": "No saved properties yet",
+    "noSavedSub": "Explore and save\nhomestays you love",
+    "explore": "Explore",
+    "howTitle": "How JuxTravel Works",
+    "step1Title": "Tell us your vibe",
+    "step1Sub": "Fill a quick trip brief",
+    "step2Title": "AI finds your match",
+    "step2Sub": "We shortlist 3 perfect hosts",
+    "step3Title": "Book & Go",
+    "step3Sub": "Instant confirmation",
+    "hostOnboardingSoon": "Host onboarding coming soon",
+    "memberBadge": "PLATINUM MEMBER • JOINED 2026",
+    "upcoming": "UPCOMING",
+    "completed": "COMPLETED",
+    "trip1Title": "Agra Heritage Weekend",
+    "trip1Subtitle": "Oct 12 - Oct 14 • 2 Adults",
+    "trip2Title": "Royal Rajasthan Tour",
+    "trip2Subtitle": "Aug 05 - Aug 12 • 4 Adults"
+  },
+  "discover": {
+    "reels": "Reels",
+    "stories": "Stories",
+    "viewProperty": "View Property",
+    "save": "Save",
+    "startingFrom": "STARTING FROM",
+    "trustScore": "TRUST SCORE",
+    "tripStories": "TRIP STORIES",
+    "viewAll": "VIEW ALL",
+    "moments": "MOMENTS",
+    "readStory": "Read Story →",
+    "filters": {
+      "all": "ALL",
+      "goa": "GOA",
+      "rajasthan": "RAJASTHAN",
+      "kerala": "KERALA",
+      "ladakh": "LADAKH"
+    },
+    "data": {
+      "username": "@arjun_seeker",
+      "reels": {
+        "reel1Title": "The Monsoon Pavilion",
+        "reel1Loc": "Wayanad, Kerala",
+        "reel1Tag1": "PRIVATE INFINITY POOL",
+        "reel1Tag2": "AYURVEDIC SPA",
+        "reelSavedAlert": "Property saved!",
+        "reelSharedAlert": "Link copied to clipboard!"
+      },
+      "stories": {
+        "story1Title": "Whispers of the Western Ghats",
+        "story1Body": "How I found stillness in the tea gardens of Munnar, far away from the city noise...",
+        "story2Title": "The Golden Hour at the Monument of Love",
+        "story2Body": "Arriving at 5 AM was a struggle, but seeing the first ray of light hit the marble made it...",
+        "storyAlert": "Loading full story..."
+      }
+    }
+  }
+}
