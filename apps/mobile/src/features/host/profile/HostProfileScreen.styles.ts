@@ -25,6 +25,7 @@ export default StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
+    backgroundColor: '#0F1714',
   },
   // Profile Header
   profileHeader: {
@@ -70,29 +71,30 @@ export default StyleSheet.create({
     marginLeft: 4,
   },
   // Tabs row
-  tabsContainer: {
+  tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0F1714',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
+    borderBottomColor: '#1E2B25',
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 14,
     alignItems: 'center',
+    paddingVertical: 14,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabButtonActive: {
+  activeTabButton: {
     borderBottomColor: '#D4704A',
   },
   tabButtonText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#6B7370',
+    fontFamily: 'monospace',
     letterSpacing: 0.5,
   },
-  tabButtonTextActive: {
+  activeTabButtonText: {
     color: '#D4704A',
   },
   // Tab Contents
@@ -107,11 +109,12 @@ export default StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
+    color: '#84C9BA',
     fontSize: 9,
-    fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#6B7370',
     letterSpacing: 1.5,
+    fontWeight: '700',
+    marginBottom: 8,
   },
   sectionAction: {
     fontSize: 12,
@@ -119,10 +122,22 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   bioText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    color: '#1A1F1E',
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: 22,
+  },
+  editText: {
+    color: '#D4704A',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sectionCard: {
+    backgroundColor: '#1A2B25',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#2D5A42',
   },
   storyBox: {
     height: 160,
@@ -145,22 +160,27 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
+    backgroundColor: '#1A2B25',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2D5A42',
   },
   payoutLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   payoutLabel: {
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1F1E',
+    fontWeight: '600',
     marginLeft: 12,
+  },
+  payoutSub: {
+    color: '#84C9BA',
+    fontSize: 12,
+    marginTop: 2,
   },
   payoutVal: {
     fontSize: 14,

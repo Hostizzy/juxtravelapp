@@ -100,15 +100,15 @@ export default function HostProfileScreen() {
           </View>
 
           {/* Tab Row */}
-          <View style={styles.tabsContainer}>
+          <View style={styles.tabBar}>
             {tabs.map((tab) => (
               <TouchableOpacity
                 key={tab}
-                style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
+                style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
                 onPress={() => setActiveTab(tab)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
+                <Text style={[styles.tabButtonText, activeTab === tab && styles.activeTabButtonText]}>
                   {i18n.t(`host.profile.tab${tab.charAt(0) + tab.slice(1).toLowerCase()}`)}
                 </Text>
               </TouchableOpacity>
