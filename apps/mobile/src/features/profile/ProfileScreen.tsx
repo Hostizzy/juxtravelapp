@@ -67,10 +67,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('trips');
 
   const handleBecomeHost = () => {
-    Alert.alert(
-      i18n.t('profile.becomeHost'),
-      i18n.t('profile.hostOnboardingSoon')
-    );
+    navigation.navigate('HostOnboarding' as any);
   };
 
   const handleSignOut = async () => {

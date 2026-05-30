@@ -1,0 +1,325 @@
+import { StyleSheet } from 'react-native';
+
+export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  // Top Bar
+  topBar: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#FAF8F4',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+  },
+  topBarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  backBtn: {
+    padding: 4,
+  },
+  stepIndicator: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#6B7370',
+    letterSpacing: 1,
+  },
+  percentText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#D4704A',
+  },
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: '#E8E2D9',
+    borderRadius: 2,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  progressBarFilled: {
+    height: '100%',
+    backgroundColor: '#D4704A',
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 48,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: 'serif',
+    color: '#1A1F1E',
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#6B7370',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  // Toggle row
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+    marginBottom: 20,
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1F1E',
+  },
+  // Custom Month Calendar
+  calendarContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  monthTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1F1E',
+  },
+  weekdaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  weekdayText: {
+    width: '13%',
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7370',
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  dayItem: {
+    width: '13%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+    marginVertical: 2,
+  },
+  dayText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  // Day States
+  dayAvailable: {
+    backgroundColor: '#FFFFFF',
+  },
+  dayAvailableText: {
+    color: '#1A1F1E',
+  },
+  dayBooked: {
+    backgroundColor: '#F0EDE8',
+  },
+  dayBookedText: {
+    color: '#6B7370',
+    textDecorationLine: 'line-through',
+  },
+  daySelected: {
+    backgroundColor: '#D4704A',
+  },
+  daySelectedText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  dayToday: {
+    borderWidth: 1,
+    borderColor: '#D4704A',
+  },
+  dayEmpty: {
+    backgroundColor: 'transparent',
+  },
+  // Counter row
+  counterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+    marginBottom: 20,
+  },
+  counterTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1F1E',
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  counterBtnMinus: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterBtnPlus: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#D4704A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterBtnTextMinus: {
+    color: '#1A1F1E',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  counterBtnTextPlus: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  counterValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginHorizontal: 16,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  // Inputs
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    height: 48,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  inputCurrency: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1,
+    color: '#1A1F1E',
+    fontSize: 15,
+  },
+  // Cancellation policy
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
+  },
+  radioSelected: {
+    borderColor: '#D4704A',
+    backgroundColor: '#FAF8F4',
+  },
+  radioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#6B7370',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  radioCircleSelected: {
+    borderColor: '#D4704A',
+  },
+  radioInnerCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D4704A',
+  },
+  radioTextContainer: {
+    flex: 1,
+  },
+  radioTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 4,
+  },
+  radioDesc: {
+    fontSize: 12,
+    color: '#6B7370',
+    lineHeight: 18,
+  },
+  // Bottom Buttons Row
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+  },
+  outlineBtn: {
+    flex: 0.38,
+    height: 52,
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outlineBtnText: {
+    color: '#1A1F1E',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  submitBtn: {
+    flex: 0.58,
+    height: 52,
+    backgroundColor: '#D4704A',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#D4704A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+});

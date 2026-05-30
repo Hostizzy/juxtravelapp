@@ -1,0 +1,280 @@
+import { StyleSheet } from 'react-native';
+
+export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  // Top Bar
+  topBar: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#FAF8F4',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+  },
+  topBarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  backBtn: {
+    padding: 4,
+  },
+  stepIndicator: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#6B7370',
+    letterSpacing: 1,
+  },
+  percentText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#D4704A',
+  },
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: '#E8E2D9',
+    borderRadius: 2,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  progressBarFilled: {
+    height: '100%',
+    backgroundColor: '#D4704A',
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 48,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: 'serif',
+    color: '#1A1F1E',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7370',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#6B7370',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  // Chips
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -4,
+    marginBottom: 20,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 100,
+    borderWidth: 1,
+    margin: 4,
+  },
+  chipSelected: {
+    backgroundColor: '#D4704A',
+    borderColor: '#D4704A',
+  },
+  chipUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E8E2D9',
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  chipTextUnselected: {
+    color: '#1A1F1E',
+    fontWeight: '600',
+  },
+  // Timeline Scheduler
+  timelineContainer: {
+    marginBottom: 20,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  timeCol: {
+    width: 80,
+  },
+  timeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#D4704A',
+  },
+  timelineLineCol: {
+    alignItems: 'center',
+    marginHorizontal: 8,
+    alignSelf: 'stretch',
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D4704A',
+    marginTop: 4,
+  },
+  timelineVerticalLine: {
+    flex: 1,
+    width: 1,
+    backgroundColor: '#E8E2D9',
+    marginTop: 4,
+  },
+  descCol: {
+    flex: 1,
+  },
+  descText: {
+    fontSize: 14,
+    color: '#1A1F1E',
+    lineHeight: 20,
+  },
+  addTimeSlotBtn: {
+    height: 40,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#E8E2D9',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addTimeSlotText: {
+    fontSize: 13,
+    color: '#6B7370',
+    fontWeight: '600',
+  },
+  // AI Story
+  aiStoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  aiLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#6B7370',
+    letterSpacing: 1.5,
+    marginRight: 6,
+  },
+  storyTextArea: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  storyText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#6B7370',
+    lineHeight: 22,
+  },
+  updateStoryBtn: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#D4704A',
+    borderRadius: 100,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 24,
+  },
+  updateStoryText: {
+    color: '#D4704A',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Voice Storyteller
+  voiceLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 4,
+    marginTop: 16,
+  },
+  voiceSub: {
+    fontSize: 12,
+    color: '#6B7370',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  startWritingBtn: {
+    backgroundColor: '#0F1714',
+    borderRadius: 100,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 20,
+  },
+  startWritingText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  previewPlaceholder: {
+    height: 160,
+    backgroundColor: '#1A2B25',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  // Bottom Buttons Row
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  outlineBtn: {
+    flex: 0.35,
+    height: 52,
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outlineBtnText: {
+    color: '#1A1F1E',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  continueBtn: {
+    flex: 0.6,
+    height: 52,
+    backgroundColor: '#D4704A',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#D4704A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  continueBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
