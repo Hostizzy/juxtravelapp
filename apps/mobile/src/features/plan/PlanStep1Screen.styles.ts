@@ -1,12 +1,17 @@
 import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   scrollContent: {
     flexGrow: 1,
+    backgroundColor: '#FAF8F4',
     paddingBottom: 40,
   },
 
@@ -18,22 +23,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 8 : 16,
     paddingBottom: 12,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepIndicator: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 12,
-    color: '#6B7370',
+    color: '#FFFFFF',
     letterSpacing: 1,
     fontWeight: '600',
   },

@@ -1,17 +1,19 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   // Shared Top Bar Styles
   topBar: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
+    backgroundColor: '#0F1714',
   },
   topBarRow: {
     flexDirection: 'row',
@@ -26,7 +28,7 @@ export default StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#6B7370',
+    color: '#FFFFFF',
     letterSpacing: 1,
   },
   percentText: {
@@ -49,6 +51,7 @@ export default StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
+    backgroundColor: '#FAF8F4',
   },
   title: {
     fontSize: 24,

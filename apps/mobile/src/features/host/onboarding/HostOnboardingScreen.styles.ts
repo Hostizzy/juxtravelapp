@@ -3,6 +3,10 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
 export default StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0F1714',
@@ -100,5 +104,8 @@ export default StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  spacer: {
+    height: 52,
   },
 });

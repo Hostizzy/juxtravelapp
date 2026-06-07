@@ -1,17 +1,21 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   // Top Bar
   topBar: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
+    backgroundColor: '#0F1714',
   },
   topBarRow: {
     flexDirection: 'row',
@@ -26,7 +30,7 @@ export default StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#6B7370',
+    color: '#FFFFFF',
     letterSpacing: 1,
   },
   percentText: {
@@ -49,6 +53,7 @@ export default StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
+    backgroundColor: '#FAF8F4',
   },
   title: {
     fontSize: 24,
@@ -85,39 +90,52 @@ export default StyleSheet.create({
   // Photos Grid
   photoGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 12,
   },
   photoSquare: {
-    width: '31%',
-    aspectRatio: 1.2,
+    width: (screenWidth - 48 - 16) / 3,
+    aspectRatio: 1.0,
     backgroundColor: '#F0EDE8',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  removeBtn: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    zIndex: 10,
   },
   gridTip: {
     fontSize: 12,
     color: '#6B7370',
     marginBottom: 24,
   },
-  // Reels Box
-  uploadReelsBox: {
-    height: 120,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#E8E2D9',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+  // Reels Grid
+  reelsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     marginBottom: 24,
   },
-  uploadReelsText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7370',
-    marginTop: 8,
+  reelSquare: {
+    width: (screenWidth - 48 - 12) / 2,
+    height: 120,
+    backgroundColor: '#F0EDE8',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
   // Instagram Sync Card
   instaCard: {

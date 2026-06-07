@@ -20,15 +20,15 @@ const { width } = Dimensions.get('window');
 
 export default function HostOnboardingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const handleSkip = () => {
-    navigation.navigate('HostVerification' as any);
+    navigation.navigate('HostVerification');
   };
 
   const handleGetStarted = () => {
-    navigation.navigate('HostVerification' as any);
+    navigation.navigate('HostVerification');
   };
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -43,7 +43,8 @@ export default function HostOnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header Skip button */}
       <View style={styles.header}>
         {activeIndex < 2 && (
@@ -113,9 +114,10 @@ export default function HostOnboardingScreen() {
             <Text style={styles.buttonText}>{i18n.t('host.onboarding.getStarted')}</Text>
           </TouchableOpacity>
         ) : (
-          <View style={{ height: 52 }} /> // Spacer to avoid layout jump
+          <View style={styles.spacer} />
         )}
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

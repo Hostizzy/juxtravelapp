@@ -119,6 +119,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
 });
 
 export default styles;

@@ -106,7 +106,7 @@ export default function DiscoverScreen() {
     { id: '2', iconName: 'campfire' },
     { id: '3', iconName: 'rowing' },
     { id: '4', iconName: 'coffee' },
-    { id: '5', iconName: 'mountain' },
+    { id: '5', iconName: 'image-outline' },
   ];
 
   const handleActionPress = (action: 'save' | 'share', propertyName: string) => {
@@ -212,15 +212,20 @@ export default function DiscoverScreen() {
   return (
     <View style={[styles.container, activeTab === 'stories' && styles.lightContainer]}>
       {activeTab === 'reels' ? (
-        <SafeAreaView edges={['top']} style={{flex:1, backgroundColor:'#0F1714'}}>
+        <SafeAreaView edges={['top']} style={styles.safeAreaReels}>
           {/* Top Bar - same as stories */}
           <View style={styles.topBarDark}>
             <TouchableOpacity style={styles.topBarLeft} onPress={() => navigation.goBack()}>
               <Feather name="arrow-left" size={20} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.topBarTitleWhite}>JuxTravel</Text>
-            <View style={styles.topBarRightTextContainer}>
-              <Text style={styles.usernameText}>{i18n.t('discover.data.username')}</Text>
+            <View style={styles.topBarRightIconsContainer}>
+              <TouchableOpacity onPress={handleSearch}>
+                <Feather name="search" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleNotifications}>
+                <Feather name="bell" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
           </View>
           {/* Tabs */}
@@ -234,7 +239,7 @@ export default function DiscoverScreen() {
           </View>
           {/* Reel list */}
           <FlatList
-            style={{flex:1}}
+            style={styles.flatListFlex}
             data={reelsData}
             renderItem={renderReelItem}
             keyExtractor={(item) => item.id}
@@ -244,23 +249,24 @@ export default function DiscoverScreen() {
           />
         </SafeAreaView>
       ) : (
-        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <SafeAreaView style={styles.safeAreaStories} edges={['top']}>
           {/* Top Bar Navigation (Stories) */}
-          <View style={styles.topBarLight}>
-            <TouchableOpacity
+          <View style={styles.topBarDark}>
+            <TouchableOpacity 
               style={styles.topBarLeft}
               onPress={() => navigation.goBack()}
-              activeOpacity={0.7}
             >
-              <Text style={styles.backArrowDark}>←</Text>
+              <Feather name="arrow-left" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={styles.topBarTitleDark}>{i18n.t('auth.login.title')}</Text>
+            <Text style={styles.topBarTitleWhite}>
+              JuxTravel
+            </Text>
             <View style={styles.topBarRightIconsContainer}>
-              <TouchableOpacity onPress={handleSearch} activeOpacity={0.7}>
-                <Feather name="search" size={22} color="#1A1F1E" style={styles.topBarIcon} />
+              <TouchableOpacity onPress={handleSearch}>
+                <Feather name="search" size={22} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleNotifications} activeOpacity={0.7}>
-                <Feather name="bell" size={22} color="#1A1F1E" style={styles.topBarIcon} />
+              <TouchableOpacity onPress={handleNotifications}>
+                <Feather name="bell" size={22} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>

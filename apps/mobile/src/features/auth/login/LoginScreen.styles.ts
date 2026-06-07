@@ -246,6 +246,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginTop: 18,
   },
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
 });
 
 export default styles;

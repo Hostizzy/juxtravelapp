@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { pickImage } from '../../../services/propertyService';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep1Screen.styles';
 
@@ -22,6 +23,7 @@ export default function ListStep1Screen() {
 
   // States
   const [hasPhoto, setHasPhoto] = useState<boolean>(false);
+  const [coverPhoto, setCoverPhoto] = useState<string | undefined>(undefined);
   const [propertyName, setPropertyName] = useState<string>('');
   const [tagline, setTagline] = useState<string>('');
   const [selectedType, setSelectedType] = useState<PropertyType>('Homestay');
@@ -34,9 +36,17 @@ export default function ListStep1Screen() {
     navigation.goBack();
   };
 
-  const handleUploadPhoto = () => {
-    setHasPhoto(true);
-    Alert.alert('Success', 'Cover photo selected!');
+  const handleUploadPhoto = async () => {
+    try {
+      const uri = await pickImage();
+      if (uri) {
+        setCoverPhoto(uri);
+        setHasPhoto(true);
+      }
+    } catch (err) {
+      console.error('Failed to pick cover photo', err);
+      Alert.alert('Error', 'Failed to pick cover photo.');
+    }
   };
 
   const handleContinue = () => {
@@ -44,20 +54,28 @@ export default function ListStep1Screen() {
       Alert.alert('Required Fields', 'Please fill in the Property Name, City, and State.');
       return;
     }
-    navigation.navigate('HostList2' as any);
+    navigation.navigate('HostList2', {
+      name: propertyName,
+      tagline,
+      type: selectedType,
+      city,
+      state,
+      coverPhoto,
+    });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Shared Progress Header */}
-      <View style={styles.topBar}>
-        <View style={styles.topBarRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#1A1F1E" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 1 OF 5</Text>
-          <Text style={styles.percentText}>20% COMPLETE</Text>
-        </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Shared Progress Header */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarRow}>
+            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.stepIndicator}>STEP 1 OF 5</Text>
+            <Text style={styles.percentText}>20% COMPLETE</Text>
+          </View>
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFilled, { width: '20%' }]} />
         </View>
@@ -164,5 +182,6 @@ export default function ListStep1Screen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  );
+  </View>
+);
 }

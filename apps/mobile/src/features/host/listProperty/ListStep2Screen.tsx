@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import i18n from '../../../locales/i18n';
@@ -22,8 +22,12 @@ type AmenityType = {
   iconName: string;
 };
 
+type ListStep2RouteProp = RouteProp<RootStackParamList, 'HostList2'>;
+
 export default function ListStep2Screen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<ListStep2RouteProp>();
+  const step1Data = route.params;
 
   // States
   const [address, setAddress] = useState<string>('');
@@ -55,7 +59,16 @@ export default function ListStep2Screen() {
       Alert.alert('Required Fields', 'Please fill in the Address and Base Price per night.');
       return;
     }
-    navigation.navigate('HostList3' as any);
+    navigation.navigate('HostList3', {
+      ...step1Data,
+      address,
+      rooms,
+      maxGuests,
+      comfortableGuests: comfortGuests,
+      pricePerNight: parseFloat(price) || 0,
+      amenities: selectedAmenities,
+      honestNotes,
+    });
   };
 
   const toggleAmenity = (id: string) => {
@@ -67,23 +80,24 @@ export default function ListStep2Screen() {
   const renderIcon = (amenity: AmenityType, isSelected: boolean) => {
     const color = isSelected ? '#D4704A' : '#1A1F1E';
     if (amenity.iconType === 'feather') {
-      return <Feather name={amenity.iconName as any} size={24} color={color} />;
+      return <Feather name={amenity.iconName as React.ComponentProps<typeof Feather>['name']} size={24} color={color} />;
     } else {
-      return <MaterialCommunityIcons name={amenity.iconName as any} size={24} color={color} />;
+      return <MaterialCommunityIcons name={amenity.iconName as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={24} color={color} />;
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Progress Header */}
-      <View style={styles.topBar}>
-        <View style={styles.topBarRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#1A1F1E" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 2 OF 5</Text>
-          <Text style={styles.percentText}>40% COMPLETE</Text>
-        </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Progress Header */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarRow}>
+            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.stepIndicator}>STEP 2 OF 5</Text>
+            <Text style={styles.percentText}>40% COMPLETE</Text>
+          </View>
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFilled, { width: '40%' }]} />
         </View>
@@ -218,5 +232,6 @@ export default function ListStep2Screen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  );
+  </View>
+);
 }

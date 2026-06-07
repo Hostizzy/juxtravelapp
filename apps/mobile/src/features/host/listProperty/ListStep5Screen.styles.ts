@@ -1,17 +1,19 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   // Top Bar
   topBar: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
+    backgroundColor: '#0F1714',
   },
   topBarRow: {
     flexDirection: 'row',
@@ -26,7 +28,7 @@ export default StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#6B7370',
+    color: '#FFFFFF',
     letterSpacing: 1,
   },
   percentText: {
@@ -49,6 +51,7 @@ export default StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
+    backgroundColor: '#FAF8F4',
   },
   title: {
     fontSize: 24,
@@ -84,11 +87,11 @@ export default StyleSheet.create({
   // Custom Month Calendar
   calendarContainer: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E8E2D9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -96,67 +99,59 @@ export default StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  monthTitle: {
-    fontSize: 15,
+  calendarMonthText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#1A1F1E',
+    fontFamily: 'serif',
   },
-  weekdaysRow: {
+  daysOfWeek: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  weekdayText: {
-    width: '13%',
+  dayOfWeekText: {
+    flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '600',
     color: '#6B7370',
+    fontWeight: '600',
   },
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
   },
-  dayItem: {
-    width: '13%',
+  dayCell: {
+    width: '14.28%',
     aspectRatio: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
+    justifyContent: 'center',
     marginVertical: 2,
   },
+  dayCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dayText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  // Day States
-  dayAvailable: {
-    backgroundColor: '#FFFFFF',
-  },
-  dayAvailableText: {
+    fontSize: 14,
     color: '#1A1F1E',
   },
-  dayBooked: {
-    backgroundColor: '#F0EDE8',
-  },
-  dayBookedText: {
-    color: '#6B7370',
-    textDecorationLine: 'line-through',
-  },
-  daySelected: {
+  dayBlocked: {
     backgroundColor: '#D4704A',
+    borderRadius: 20,
   },
-  daySelectedText: {
+  dayBlockedText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
   },
   dayToday: {
-    borderWidth: 1,
-    borderColor: '#D4704A',
+    borderWidth: 1.5,
+    borderColor: '#1A6B5A',
+    borderRadius: 20,
   },
-  dayEmpty: {
-    backgroundColor: 'transparent',
+  dayOtherMonth: {
+    opacity: 0.3,
   },
   // Counter row
   counterRow: {
@@ -321,5 +316,10 @@ export default StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  requiredNights: {
+    fontSize: 12,
+    color: '#6B7370',
+    marginTop: 2,
   },
 });

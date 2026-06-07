@@ -84,7 +84,7 @@ export default function HostNavigator() {
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            rootNavigation.navigate('HostList1' as any);
+            rootNavigation.navigate('HostList1');
           },
         }}
       />

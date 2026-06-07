@@ -63,76 +63,78 @@ export default function PlanStep2Screen({ navigation, route }: PlanStep2Props) {
   const formattedGuests = guests.toString().padStart(2, '0');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={20} color="#1A1F1E" />
-        </TouchableOpacity>
-        <Text style={styles.stepIndicator}>STEP 2 OF 4</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-        <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-        <View style={styles.progressSegment} />
-        <View style={styles.progressSegment} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Title */}
-          <Text style={styles.title}>{i18n.t('plan.step2.title')}</Text>
-
-          {/* Guest Counter Card */}
-          <View style={styles.guestCounterCard}>
-            <View style={styles.guestCounterLeft}>
-              <Text style={styles.guestLabel}>{i18n.t('plan.step2.guestsLabel')}</Text>
-              <Text style={styles.guestNumber}>{formattedGuests}</Text>
-            </View>
-            <View style={styles.guestCounterButtons}>
-              <TouchableOpacity style={styles.minusButton} onPress={handleMinus} activeOpacity={0.7}>
-                <Feather name="minus" size={20} color="#1A1F1E" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.plusButton} onPress={handlePlus} activeOpacity={0.7}>
-                <Feather name="plus" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Group Type Label */}
-          <Text style={styles.groupTypeLabel}>{i18n.t('plan.step2.groupTypeLabel')}</Text>
-
-          {/* Group Type Grid */}
-          <View style={styles.groupGrid}>
-            {GROUP_OPTIONS.map((option) => {
-              const isSelected = groupType === option.key;
-              return (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[styles.groupCard, isSelected && styles.groupCardSelected]}
-                  onPress={() => setGroupType(option.key)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.groupIconCircle, isSelected && styles.groupIconCircleSelected]}>
-                    <Feather name={option.icon} size={24} color={isSelected ? '#1A6B5A' : '#6B7370'} />
-                  </View>
-                  <Text style={[styles.groupCardLabel, isSelected && styles.groupCardLabelSelected]}>
-                    {i18n.t(option.labelKey)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.stepIndicator}>STEP 2 OF 4</Text>
+          <View style={styles.topBarSpacer} />
         </View>
 
-        {/* Continue Button */}
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.85}>
-          <Text style={styles.continueButtonText}>{i18n.t('plan.step2.continueBtn')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        {/* Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          <View style={styles.progressSegment} />
+          <View style={styles.progressSegment} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            {/* Title */}
+            <Text style={styles.title}>{i18n.t('plan.step2.title')}</Text>
+
+            {/* Guest Counter Card */}
+            <View style={styles.guestCounterCard}>
+              <View style={styles.guestCounterLeft}>
+                <Text style={styles.guestLabel}>{i18n.t('plan.step2.guestsLabel')}</Text>
+                <Text style={styles.guestNumber}>{formattedGuests}</Text>
+              </View>
+              <View style={styles.guestCounterButtons}>
+                <TouchableOpacity style={styles.minusButton} onPress={handleMinus} activeOpacity={0.7}>
+                  <Feather name="minus" size={20} color="#1A1F1E" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.plusButton} onPress={handlePlus} activeOpacity={0.7}>
+                  <Feather name="plus" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Group Type Label */}
+            <Text style={styles.groupTypeLabel}>{i18n.t('plan.step2.groupTypeLabel')}</Text>
+
+            {/* Group Type Grid */}
+            <View style={styles.groupGrid}>
+              {GROUP_OPTIONS.map((option) => {
+                const isSelected = groupType === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.groupCard, isSelected && styles.groupCardSelected]}
+                    onPress={() => setGroupType(option.key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.groupIconCircle, isSelected && styles.groupIconCircleSelected]}>
+                      <Feather name={option.icon} size={24} color={isSelected ? '#1A6B5A' : '#6B7370'} />
+                    </View>
+                    <Text style={[styles.groupCardLabel, isSelected && styles.groupCardLabelSelected]}>
+                      {i18n.t(option.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Continue Button */}
+          <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.85}>
+            <Text style={styles.continueButtonText}>{i18n.t('plan.step2.continueBtn')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }

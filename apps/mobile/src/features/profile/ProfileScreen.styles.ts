@@ -1,9 +1,13 @@
 import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4', // Premium Cream background
+    backgroundColor: '#0F1714',
   },
   topBar: {
     flexDirection: 'row',
@@ -12,20 +16,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 8 : 16,
     paddingBottom: 12,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0EDE8',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 1,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    backgroundColor: '#0F1714',
   },
   topBarLeft: {
     width: 40,
@@ -36,16 +27,17 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 24,
-    color: '#1A1F1E',
+    color: '#FFFFFF',
   },
   topBarTitle: {
     fontSize: 20,
     fontWeight: '800',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    color: '#1A1F1E',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   scrollContent: {
+    backgroundColor: '#FAF8F4',
     paddingBottom: 80,
   },
   profileHeader: {

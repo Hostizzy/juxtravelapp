@@ -1,43 +1,48 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
+  Post,
   Body,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import * as adminAuth from 'firebase-admin/auth';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { BecomeHostDto } from './dto/become-host.dto';
 
 @Controller('users')
-@UseGuards(FirebaseAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(
     private usersService: UsersService
   ) {}
 
   @Get('me')
-  async getMe(@CurrentUser() user: adminAuth.DecodedIdToken) {
-    return this.usersService.findById(user.uid);
+  async getMe(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.usersService.findById(payload.sub);
   }
 
   @Patch('me')
   async updateMe(
-    @CurrentUser() user: adminAuth.DecodedIdToken,
+    @CurrentUser() payload: JwtPayload,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.update(user.uid, dto);
+    return this.usersService.updateUser(
+      payload.sub, dto
+    );
   }
 
   @Post('become-host')
   async becomeHost(
-    @CurrentUser() user: adminAuth.DecodedIdToken,
+    @CurrentUser() payload: JwtPayload,
     @Body() dto: BecomeHostDto,
   ) {
-    return this.usersService.becomeHost(user.uid, dto.bio);
+    return this.usersService.becomeHost(
+      payload.sub, dto
+    );
   }
 }

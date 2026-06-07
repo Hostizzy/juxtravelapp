@@ -1,30 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { auth } from '../../../services/firebase';
+import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../stores/authStore';
+import { apiService } from '../../../services/api';
 import i18n from '../../../locales/i18n';
 import styles from './HostProfileScreen.styles';
 
 type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'SETTINGS';
 
-interface PropertyItem {
+interface Property {
   id: string;
   name: string;
-  location: string;
-  bookings: number;
-  status: 'ACTIVE' | 'DRAFT';
+  coverPhoto?: string;
+  photos?: string[];
+  location: {
+    address: string;
+    city: string;
+    state: string;
+  } | string;
+  status: string;
+  bookings?: number;
 }
 
 interface ReviewItem {
@@ -39,13 +48,69 @@ export default function HostProfileScreen() {
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
+  const [properties, setProperties] = useState<Property[]>([]);
 
   const tabs: TabType[] = ['PROFILE', 'PROPERTIES', 'REVIEWS', 'SETTINGS'];
 
-  const properties: PropertyItem[] = [
-    { id: '1', name: 'Hillside Retreat', location: 'Manali, HP', bookings: 4, status: 'ACTIVE' },
-    { id: '2', name: 'Urban Sanctuary', location: 'Bengaluru, KA', bookings: 8, status: 'ACTIVE' },
-  ];
+  const fetchProperties = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      
+      console.log('Fetching host properties...');
+      const props = await apiService.get<Property[]>(
+        '/properties/my',
+        token
+      );
+      if (props) {
+        setProperties(props);
+      }
+    } catch (err) {
+      console.error('Failed to fetch properties:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'PROPERTIES') {
+      fetchProperties();
+    }
+  }, [activeTab]);
+
+  const formatLocation = (loc: any) => {
+    if (!loc) return '';
+    if (typeof loc === 'string') return loc;
+    const parts = [];
+    if (loc.city) parts.push(loc.city);
+    if (loc.state) parts.push(loc.state);
+    return parts.join(', ');
+  };
+
+  const getStatusStyles = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === 'active') {
+      return {
+        text: 'ACTIVE',
+        bg: '#E6F2EF',
+        color: '#1A6B5A',
+      };
+    }
+    if (s === 'under_review') {
+      return {
+        text: 'UNDER REVIEW',
+        bg: '#F5E6D0',
+        color: '#D4704A',
+      };
+    }
+    return {
+      text: 'DRAFT',
+      bg: '#F0EDE8',
+      color: '#6B7370',
+    };
+  };
 
   const reviews: ReviewItem[] = [
     { id: '1', rating: '5.0 ⭐', date: 'Oct 10, 2026', text: 'Loved the hospitality! The local farm breakfast was incredible, and the host was very kind.' },
@@ -62,15 +127,15 @@ export default function HostProfileScreen() {
 
   const handleSwitchToGuest = () => {
     // Navigate back to the GuestNavigator
-    navigation.navigate('Guest' as any);
+    navigation.navigate('Guest');
   };
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut();
+      await supabase.auth.signOut();
       await AsyncStorage.removeItem('user_full_name');
       await AsyncStorage.removeItem('user_phone_number');
-      useAuthStore.getState().clearUser();
+      useAuthStore.getState().clearAuth();
       navigation.replace('Auth');
     } catch (e) {
       console.error('Error signing out:', e);
@@ -140,7 +205,7 @@ export default function HostProfileScreen() {
                 </View>
                 <View style={styles.storyBox}>
                   <TouchableOpacity style={styles.storyPlayBtn} onPress={() => Alert.alert('Play Video', 'Playing host reels...')} activeOpacity={0.8}>
-                    <Feather name="play" size={24} color="#FFFFFF" style={{ marginLeft: 2 }} />
+                    <Feather name="play" size={24} color="#FFFFFF" style={styles.playIcon} />
                   </TouchableOpacity>
                 </View>
 
@@ -165,9 +230,9 @@ export default function HostProfileScreen() {
                     <Feather name="dollar-sign" size={20} color="#6B7370" />
                     <Text style={styles.payoutLabel}>UPI ID</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.rowCentered}>
                     <Text style={styles.payoutVal}>@lakshaynagda</Text>
-                    <Feather name="chevron-right" size={16} color="#6B7370" style={{ marginLeft: 8 }} />
+                    <Feather name="chevron-right" size={16} color="#6B7370" style={styles.chevronRight} />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -176,23 +241,42 @@ export default function HostProfileScreen() {
             {/* PROPERTIES TAB */}
             {activeTab === 'PROPERTIES' && (
               <View>
-                {properties.map((prop) => (
-                  <View key={prop.id} style={styles.propertyCard}>
-                    <View style={styles.propertyCardImgPlaceholder}>
-                      <Feather name="home" size={24} color="#84C9BA" />
-                    </View>
-                    <View style={styles.propertyDetails}>
-                      <Text style={styles.propertyName}>{prop.name}</Text>
-                      <Text style={styles.propertyMeta}>{prop.location}</Text>
-                    </View>
-                    <View style={styles.propertyRight}>
-                      <Text style={styles.propertyBookingsCount}>{prop.bookings} Booked</Text>
-                      <View style={styles.propertyStatusChip}>
-                        <Text style={styles.propertyStatusText}>{prop.status}</Text>
+                {properties.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                    <Feather name="home" size={48} color="#6B7370" style={{ marginBottom: 12 }} />
+                    <Text style={{ color: '#6B7370', fontSize: 14 }}>No properties listed yet.</Text>
+                  </View>
+                ) : (
+                  properties.map((prop) => (
+                    <View key={prop.id} style={styles.propertyCard}>
+                      {prop.coverPhoto || (prop.photos && prop.photos.length > 0) ? (
+                        <Image 
+                          source={{ uri: prop.coverPhoto || prop.photos?.[0] }} 
+                          style={{ width: 60, height: 60, borderRadius: 8, marginRight: 16 }} 
+                        />
+                      ) : (
+                        <View style={styles.propertyCardImgPlaceholder}>
+                          <Feather name="home" size={24} color="#84C9BA" />
+                        </View>
+                      )}
+                      <View style={styles.propertyDetails}>
+                        <Text style={styles.propertyName}>{prop.name}</Text>
+                        <Text style={styles.propertyMeta}>{formatLocation(prop.location)}</Text>
+                      </View>
+                      <View style={styles.propertyRight}>
+                        <Text style={styles.propertyBookingsCount}>{prop.bookings ?? 0} Booked</Text>
+                        {(() => {
+                          const badge = getStatusStyles(prop.status);
+                          return (
+                            <View style={[styles.propertyStatusChip, { backgroundColor: badge.bg }]}>
+                              <Text style={[styles.propertyStatusText, { color: badge.color }]}>{badge.text}</Text>
+                            </View>
+                          );
+                        })()}
                       </View>
                     </View>
-                  </View>
-                ))}
+                  ))
+                )}
               </View>
             )}
 
@@ -232,6 +316,11 @@ export default function HostProfileScreen() {
 
                   <TouchableOpacity style={styles.settingsRow} onPress={() => Alert.alert('Help & Support', 'Help modules coming soon!')} activeOpacity={0.7}>
                     <Text style={styles.settingsLabel}>Help & Support</Text>
+                    <Text style={styles.chevron}>&gt;</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.settingsRow} onPress={handleSwitchToGuest} activeOpacity={0.7}>
+                    <Text style={styles.settingsLabel}>{i18n.t('host.profile.switchGuest')}</Text>
                     <Text style={styles.chevron}>&gt;</Text>
                   </TouchableOpacity>
 

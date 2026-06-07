@@ -7,15 +7,17 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { GuestTabParamList } from '../../navigation/GuestNavigator';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { auth } from '../../services/firebase';
+import * as SecureStore from 'expo-secure-store';
+import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../stores/authStore';
+import { apiService } from '../../services/api';
 import i18n from '../../locales/i18n';
 import styles from './ProfileScreen.styles';
 
@@ -62,24 +64,23 @@ const getInitials = (name: string): string => {
 
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const { user } = useAuthStore();
+  const { user, session } = useAuthStore();
   const userName = user?.name ?? 'Traveller';
   const [activeTab, setActiveTab] = useState<TabType>('trips');
 
   const handleBecomeHost = () => {
-    navigation.navigate('HostOnboarding' as any);
+    navigation.navigate('HostOnboarding');
   };
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut();
-      await AsyncStorage.removeItem('user_full_name');
-      await AsyncStorage.removeItem('user_phone_number');
-      useAuthStore.getState().clearUser();
-      (navigation as unknown as NativeStackNavigationProp<RootStackParamList>).replace('Auth');
-    } catch (e) {
-      console.error('Error signing out:', e);
+      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('user_id');
+    } catch (err) {
+      console.log('Error deleting token on sign out:', err);
     }
+    useAuthStore.getState().clearAuth();
+    navigation.replace('Auth');
   };
 
   const handleExplore = () => {
@@ -141,207 +142,231 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Bar Header */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.topBarLeft}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{i18n.t('auth.login.title')}</Text>
-        <View style={styles.topBarRight} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{getInitials(userName)}</Text>
-          </View>
-          <Text style={styles.profileName}>{userName}</Text>
-          <View style={styles.badgeRow}>
-            <Text style={styles.badgeText}>{i18n.t('profile.memberBadge')}</Text>
-          </View>
-        </View>
-
-        {/* Become a Host Banner */}
-        <View style={styles.hostBanner}>
-          <View style={styles.hostBannerLeft}>
-            <Text style={styles.hostBannerTitle}>
-              {i18n.t('profile.hostBannerTitle')}
-            </Text>
-            <Text style={styles.hostBannerSubtitle}>
-              {i18n.t('profile.hostBannerSubtitle')}
-            </Text>
-          </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Bar Header */}
+        <View style={styles.topBar}>
           <TouchableOpacity
-            style={styles.hostButton}
-            onPress={handleBecomeHost}
-            activeOpacity={0.8}
+            style={styles.topBarLeft}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
           >
-            <Text style={styles.hostButtonText}>
-              {i18n.t('profile.becomeHost')}
-            </Text>
+            <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
+          <Text style={styles.topBarTitle}>{i18n.t('auth.login.title')}</Text>
+          <View style={styles.topBarRight} />
         </View>
 
-        {/* Tab Selector Bar */}
-        <View style={styles.tabsContainer}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.tabButton,
-                activeTab === tab.key && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.7}
-            >
-              {tab.key === 'settings' ? (
-                <Feather 
-                  name="settings" 
-                  size={16} 
-                  color={activeTab === 'settings' ? '#1A6B5A' : '#6B7370'} 
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.tabButtonText,
-                    activeTab === tab.key && styles.activeTabButtonText,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Tab Content Area */}
-        <View style={styles.tabContent}>
-          {/* TAB 1: TRIPS */}
-          {activeTab === 'trips' && (
-            <View>
-              {tripsData.map((trip) => (
-                <View key={trip.id} style={styles.tripCard}>
-                  <View
-                    style={[
-                      styles.tripImagePlaceholder,
-                      { backgroundColor: trip.imageBg },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.tripBadge,
-                        { backgroundColor: trip.badgeBg },
-                      ]}
-                    >
-                      <Text style={styles.tripBadgeText}>{trip.badgeText}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.tripInfo}>
-                    <Text style={styles.tripTitle}>{trip.title}</Text>
-                    <Text style={styles.tripSubtitle}>{trip.subtitle}</Text>
-                  </View>
-                </View>
-              ))}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Header */}
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{getInitials(userName)}</Text>
             </View>
-          )}
+            <Text style={styles.profileName}>{userName}</Text>
+            <View style={styles.badgeRow}>
+              <Text style={styles.badgeText}>{i18n.t('profile.memberBadge')}</Text>
+            </View>
+          </View>
 
-          {/* TAB 2: SAVED */}
-          {activeTab === 'saved' && (
-            <View style={styles.emptySavedContainer}>
-              <Feather name="bookmark" size={32} color="#6B7370" />
-              <Text style={styles.emptySavedTitle}>
-                {i18n.t('profile.noSaved')}
-              </Text>
-              <Text style={styles.emptySavedSubtitle}>
-                {i18n.t('profile.noSavedSub')}
-              </Text>
+          {/* Become a Host Banner */}
+          {(!user || user.role === 'guest') ? (
+            <View style={styles.hostBanner}>
+              <View style={styles.hostBannerLeft}>
+                <Text style={styles.hostBannerTitle}>
+                  {i18n.t('profile.hostBannerTitle')}
+                </Text>
+                <Text style={styles.hostBannerSubtitle}>
+                  {i18n.t('profile.hostBannerSubtitle')}
+                </Text>
+              </View>
               <TouchableOpacity
-                style={styles.exploreButton}
-                onPress={handleExplore}
+                style={styles.hostButton}
+                onPress={() => navigation.navigate('HostOnboarding')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.exploreButtonText}>
-                  {i18n.t('profile.explore')}
+                <Text style={styles.hostButtonText}>
+                  {i18n.t('profile.becomeHost')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.hostBanner}>
+              <View style={styles.hostBannerLeft}>
+                <Text style={styles.hostBannerTitle}>
+                  Switch to Host Mode
+                </Text>
+                <Text style={styles.hostBannerSubtitle}>
+                  Manage your listed properties and bookings.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.hostButton, { backgroundColor: '#D4704A' }]}
+                onPress={() => navigation.navigate('HostApp')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.hostButtonText}>
+                  Switch to Host
                 </Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* TAB 3: HOW */}
-          {activeTab === 'how' && (
-            <View>
-              <Text style={styles.howTitle}>
-                {i18n.t('profile.howTitle')}
-              </Text>
-              <View style={styles.howStepsContainer}>
-                {howSteps.map((step) => (
-                  <View key={step.id} style={styles.howStepRow}>
-                    <View style={styles.howStepIconContainer}>
-                      {step.id === '1' && <Feather name="target" size={24} color="#1A6B5A" />}
-                      {step.id === '2' && <MaterialCommunityIcons name="robot" size={24} color="#1A6B5A" />}
-                      {step.id === '3' && <Feather name="check-circle" size={24} color="#1A6B5A" />}
+          {/* Tab Selector Bar */}
+          <View style={styles.tabsContainer}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tabButton,
+                  activeTab === tab.key && styles.activeTabButton,
+                ]}
+                onPress={() => setActiveTab(tab.key)}
+                activeOpacity={0.7}
+              >
+                {tab.key === 'settings' ? (
+                  <Feather 
+                    name="settings" 
+                    size={16} 
+                    color={activeTab === 'settings' ? '#1A6B5A' : '#6B7370'} 
+                  />
+                ) : (
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      activeTab === tab.key && styles.activeTabButtonText,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Tab Content Area */}
+          <View style={styles.tabContent}>
+            {/* TAB 1: TRIPS */}
+            {activeTab === 'trips' && (
+              <View>
+                {tripsData.map((trip) => (
+                  <View key={trip.id} style={styles.tripCard}>
+                    <View
+                      style={[
+                        styles.tripImagePlaceholder,
+                        { backgroundColor: trip.imageBg },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.tripBadge,
+                          { backgroundColor: trip.badgeBg },
+                        ]}
+                      >
+                        <Text style={styles.tripBadgeText}>{trip.badgeText}</Text>
+                      </View>
                     </View>
-                    <View style={styles.howStepTextContainer}>
-                      <Text style={styles.howStepTitle}>{step.title}</Text>
-                      <Text style={styles.howStepSubtitle}>
-                        {step.subtitle}
-                      </Text>
+                    <View style={styles.tripInfo}>
+                      <Text style={styles.tripTitle}>{trip.title}</Text>
+                      <Text style={styles.tripSubtitle}>{trip.subtitle}</Text>
                     </View>
                   </View>
                 ))}
               </View>
-            </View>
-          )}
+            )}
 
-          {/* TAB 4: SETTINGS */}
-          {activeTab === 'settings' && (
-            <View style={styles.settingsList}>
-              {settingsItems.map((item) => (
+            {/* TAB 2: SAVED */}
+            {activeTab === 'saved' && (
+              <View style={styles.emptySavedContainer}>
+                <Feather name="bookmark" size={32} color="#6B7370" />
+                <Text style={styles.emptySavedTitle}>
+                  {i18n.t('profile.noSaved')}
+                </Text>
+                <Text style={styles.emptySavedSubtitle}>
+                  {i18n.t('profile.noSavedSub')}
+                </Text>
                 <TouchableOpacity
-                  key={item.id}
-                  style={styles.settingsItem}
-                  onPress={() => {
-                    if (item.id === 'signout') {
-                      handleSignOut();
-                    } else {
-                      Alert.alert(item.label, `${item.label} coming soon!`);
-                    }
-                  }}
-                  activeOpacity={0.7}
+                  style={styles.exploreButton}
+                  onPress={handleExplore}
+                  activeOpacity={0.8}
                 >
-                  <View style={styles.settingsItemLeft}>
-                    {item.id === 'edit' && <Feather name="user" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'notifications' && <Feather name="bell" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'language' && <Feather name="globe" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'privacy' && <Feather name="lock" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'help' && <Feather name="help-circle" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'terms' && <Feather name="file-text" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                    {item.id === 'signout' && <Feather name="log-out" size={20} color="#D4704A" style={styles.settingsItemIcon} />}
-                    <Text
-                      style={[
-                        styles.settingsItemLabel,
-                        item.id === 'signout' && styles.signOutLabel,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </View>
-                  <Text style={styles.chevron}>&gt;</Text>
+                  <Text style={styles.exploreButtonText}>
+                    {i18n.t('profile.explore')}
+                  </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+              </View>
+            )}
+
+            {/* TAB 3: HOW */}
+            {activeTab === 'how' && (
+              <View>
+                <Text style={styles.howTitle}>
+                  {i18n.t('profile.howTitle')}
+                </Text>
+                <View style={styles.howStepsContainer}>
+                  {howSteps.map((step) => (
+                    <View key={step.id} style={styles.howStepRow}>
+                      <View style={styles.howStepIconContainer}>
+                        {step.id === '1' && <Feather name="target" size={24} color="#1A6B5A" />}
+                        {step.id === '2' && <MaterialCommunityIcons name="robot" size={24} color="#1A6B5A" />}
+                        {step.id === '3' && <Feather name="check-circle" size={24} color="#1A6B5A" />}
+                      </View>
+                      <View style={styles.howStepTextContainer}>
+                        <Text style={styles.howStepTitle}>{step.title}</Text>
+                        <Text style={styles.howStepSubtitle}>
+                          {step.subtitle}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* TAB 4: SETTINGS */}
+            {activeTab === 'settings' && (
+              <View style={styles.settingsList}>
+                {settingsItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.settingsItem}
+                    onPress={
+                      item.id === 'signout'
+                        ? handleSignOut
+                        : () => {
+                            Alert.alert(item.label, `${item.label} coming soon!`);
+                          }
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.settingsItemLeft}>
+                      {item.id === 'edit' && <Feather name="user" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'notifications' && <Feather name="bell" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'language' && <Feather name="globe" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'privacy' && <Feather name="lock" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'help' && <Feather name="help-circle" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'terms' && <Feather name="file-text" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'signout' && <Feather name="log-out" size={20} color="#D4704A" style={styles.settingsItemIcon} />}
+                      <Text
+                        style={[
+                          styles.settingsItemLabel,
+                          item.id === 'signout' && styles.signOutLabel,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </View>
+                    <Text style={styles.chevron}>&gt;</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }

@@ -37,14 +37,6 @@ export default function GuestNavigator() {
         headerShown: false,
         tabBarActiveTintColor: '#1A6B5A',
         tabBarInactiveTintColor: '#6B7370',
-          tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            borderTopColor: '#E8E2D9',
-            borderTopWidth: 1,
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 8,
-          },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
@@ -58,9 +50,11 @@ export default function GuestNavigator() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Feather name="home" size={size} color={color} />
           ),
+          tabBarActiveTintColor: '#84C9BA',
+          tabBarInactiveTintColor: '#6B7370',
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            borderTopColor: '#E8E2D9',
+            backgroundColor: '#0F1714',
+            borderTopColor: '#1E2522',
             borderTopWidth: 1,
             height: 60,
             paddingBottom: 8,
@@ -75,6 +69,16 @@ export default function GuestNavigator() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Feather name="compass" size={size} color={color} />
           ),
+          tabBarActiveTintColor: '#84C9BA',
+          tabBarInactiveTintColor: '#6B7370',
+          tabBarStyle: {
+            backgroundColor: '#0F1714',
+            borderTopColor: '#1E2522',
+            borderTopWidth: 1,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
         }}
       />
       <Tab.Screen
@@ -102,6 +106,16 @@ export default function GuestNavigator() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Feather name="user" size={size} color={color} />
           ),
+          tabBarActiveTintColor: '#1A6B5A',
+          tabBarInactiveTintColor: '#6B7370',
+          tabBarStyle: {
+            backgroundColor: '#FAF8F4',
+            borderTopColor: '#E8E2D9',
+            borderTopWidth: 1,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
         }}
       />
     </Tab.Navigator>
@@ -123,11 +137,11 @@ const localStyles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1A6B5A',
+    backgroundColor: '#D4704A',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    shadowColor: '#1A6B5A',
+    shadowColor: '#D4704A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

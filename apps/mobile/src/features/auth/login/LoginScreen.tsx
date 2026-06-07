@@ -3,10 +3,8 @@ import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { useGoogleAuth } from '../../../services/googleAuth';
-import { sendOTP } from '../../../services/phoneAuth';
+import { apiService } from '../../../services/api';
 import i18n from '../../../locales/i18n';
 import styles from './LoginScreen.styles';
 
@@ -18,67 +16,52 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
-  const [, setError] = useState<string | null>(null);
-  
-  const { signInWithGoogle } = useGoogleAuth();
 
   const handleSendOtp = async () => {
     if (!fullName || fullName.trim().length < 2) {
-      Alert.alert('Invalid Name', 'Please enter your full name.');
+      Alert.alert('Error', 'Please enter your name');
       return;
     }
     if (!phoneNumber || phoneNumber.trim().length < 10) {
-      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit phone number.');
+      Alert.alert('Error', 'Enter valid phone number');
       return;
     }
     
     setLoading(true);
-    setError(null);
     try {
-      const cleanPhone = phoneNumber.trim();
+      const cleanPhone = '+91' + phoneNumber.trim();
       const cleanName = fullName.trim();
-      const result = await sendOTP(cleanPhone);
       
-      if (result.success && result.sessionInfo) {
-        navigation.navigate('Otp', {
-          sessionInfo: result.sessionInfo,
-          phoneNumber: cleanPhone,
-          fullName: cleanName
-        });
-      } else {
-        const errMsg = result.error || 'Failed to send verification code.';
-        setError(errMsg);
-        Alert.alert('Verification Failed', errMsg);
-      }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      setError(errMsg);
-      Alert.alert('Error', errMsg);
+      await apiService.post(
+        '/auth/send-otp',
+        { phone: cleanPhone }
+      );
+      
+      navigation.navigate('Otp', {
+        phone: cleanPhone,
+        name: cleanName,
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    const result = await signInWithGoogle();
-    if (result.success && result.user) {
-      if (result.user.displayName) {
-        await AsyncStorage.setItem('user_full_name', result.user.displayName);
-      } else {
-        await AsyncStorage.setItem('user_full_name', 'Traveler');
-      }
-      navigation.replace('Guest');
-    } else {
-      console.error('Google Sign-In Error:', result.error);
-    }
+    Alert.alert(
+      'Google Sign-In',
+      'Google Login is not supported in this version. Please use Phone/OTP login.'
+    );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           
           {/* Top Dark Header Section */}
@@ -104,16 +87,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             {/* Phone Number Input Card */}
             <View style={styles.phoneCard}>
               
-              {/* Full Name Section */}
-              {/* <View style={styles.phoneHeaderRow}>
-                <View style={styles.phoneIconBox}>
-                  <Text style={styles.phoneIcon}>👤</Text>
-                </View>
-                <View style={styles.phoneHeaderTextContainer}>
-                  <Text style={styles.phoneCardTitle}>{i18n.t('auth.login.nameLabel')}</Text>
-                </View>
-              </View> */}
-
               {/* Styled Full Name Input Field */}
               <View style={styles.phoneInputContainer}>
                 <TextInput
@@ -125,17 +98,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                   maxLength={40}
                 />
               </View>
-
-              {/* Phone Header Row */}
-              {/* <View style={styles.phoneHeaderRow}>
-                <View style={styles.phoneIconBox}>
-                  <Text style={styles.phoneIcon}>📱</Text>
-                </View>
-                <View style={styles.phoneHeaderTextContainer}>
-                  <Text style={styles.phoneCardTitle}>{i18n.t('auth.login.phoneLabel')}</Text>
-                  <Text style={styles.phoneCardSubtitle}>{i18n.t('auth.login.phoneSubtitle')}</Text>
-                </View>
-              </View> */}
 
               {/* Styled Phone Input Field */}
               <View style={styles.phoneInputContainer}>
@@ -208,5 +170,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </View>
   );
 }

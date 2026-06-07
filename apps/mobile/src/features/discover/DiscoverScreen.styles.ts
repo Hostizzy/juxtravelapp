@@ -387,6 +387,17 @@ const styles = StyleSheet.create({
   storyBgOrange: {
     backgroundColor: '#D4704A',
   },
+  safeAreaReels: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
+  safeAreaStories: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
+  flatListFlex: {
+    flex: 1,
+  },
 });
 
 export default styles;

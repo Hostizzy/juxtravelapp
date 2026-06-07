@@ -67,71 +67,73 @@ export default function PlanStep3Screen({ navigation, route }: PlanStep3Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={20} color="#1A1F1E" />
-        </TouchableOpacity>
-        <Text style={styles.stepIndicator}>STEP 3 OF 4</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.stepIndicator}>STEP 3 OF 4</Text>
+          <View style={styles.topBarSpacer} />
+        </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-        <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-        <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-        <View style={styles.progressSegment} />
-      </View>
+        {/* Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          <View style={styles.progressSegment} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Title & Subtitle */}
-          <Text style={styles.title}>{i18n.t('plan.step3.title')}</Text>
-          <Text style={styles.subtitle}>{i18n.t('plan.step3.subtitle')}</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            {/* Title & Subtitle */}
+            <Text style={styles.title}>{i18n.t('plan.step3.title')}</Text>
+            <Text style={styles.subtitle}>{i18n.t('plan.step3.subtitle')}</Text>
 
-          {/* Counter Chip */}
-          <View style={styles.counterChipRow}>
-            <View style={styles.counterChip}>
-              <Text style={styles.counterChipText}>
-                {i18n.t('plan.step3.selectedCount', { count: selectedMoods.length })}
-              </Text>
+            {/* Counter Chip */}
+            <View style={styles.counterChipRow}>
+              <View style={styles.counterChip}>
+                <Text style={styles.counterChipText}>
+                  {i18n.t('plan.step3.selectedCount', { count: selectedMoods.length })}
+                </Text>
+              </View>
+            </View>
+
+            {/* Mood Cards Grid */}
+            <View style={styles.moodGrid}>
+              {MOOD_OPTIONS.map((mood) => {
+                const isSelected = selectedMoods.includes(mood.key);
+                return (
+                  <TouchableOpacity
+                    key={mood.key}
+                    style={[styles.moodCard, isSelected && styles.moodCardSelected]}
+                    onPress={() => handleMoodToggle(mood.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather 
+                      name={mood.icon} 
+                      size={28} 
+                      color={isSelected ? '#1A6B5A' : '#6B7370'} 
+                      style={styles.moodEmoji} 
+                    />
+                    <Text style={[styles.moodTitle, isSelected && styles.moodTitleSelected]}>
+                      {i18n.t(mood.titleKey)}
+                    </Text>
+                    <Text style={styles.moodSubtitle}>{i18n.t(mood.subtitleKey)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
-          {/* Mood Cards Grid */}
-          <View style={styles.moodGrid}>
-            {MOOD_OPTIONS.map((mood) => {
-              const isSelected = selectedMoods.includes(mood.key);
-              return (
-                <TouchableOpacity
-                  key={mood.key}
-                  style={[styles.moodCard, isSelected && styles.moodCardSelected]}
-                  onPress={() => handleMoodToggle(mood.key)}
-                  activeOpacity={0.7}
-                >
-                  <Feather 
-                    name={mood.icon} 
-                    size={28} 
-                    color={isSelected ? '#1A6B5A' : '#6B7370'} 
-                    style={styles.moodEmoji} 
-                  />
-                  <Text style={[styles.moodTitle, isSelected && styles.moodTitleSelected]}>
-                    {i18n.t(mood.titleKey)}
-                  </Text>
-                  <Text style={styles.moodSubtitle}>{i18n.t(mood.subtitleKey)}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Next Step Button */}
-        <TouchableOpacity style={styles.nextButton} onPress={handleNextStep} activeOpacity={0.85}>
-          <Text style={styles.nextButtonText}>{i18n.t('plan.step3.nextBtn')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Next Step Button */}
+          <TouchableOpacity style={styles.nextButton} onPress={handleNextStep} activeOpacity={0.85}>
+            <Text style={styles.nextButtonText}>{i18n.t('plan.step3.nextBtn')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }

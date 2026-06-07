@@ -1,12 +1,21 @@
-import { 
+import {
   createParamDecorator,
-  ExecutionContext 
+  ExecutionContext,
 } from '@nestjs/common';
-import * as adminAuth from 'firebase-admin/auth';
+
+export class JwtPayload {
+  sub: string;
+  phone: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
 
 export const CurrentUser = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): adminAuth.DecodedIdToken => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user as adminAuth.DecodedIdToken;
+  (_data: unknown, ctx: ExecutionContext): JwtPayload => {
+    const request = ctx
+      .switchToHttp()
+      .getRequest();
+    return request.user as JwtPayload;
   },
 );

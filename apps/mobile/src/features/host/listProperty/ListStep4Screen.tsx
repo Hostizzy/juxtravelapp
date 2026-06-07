@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import i18n from '../../../locales/i18n';
@@ -16,8 +16,12 @@ import styles from './ListStep4Screen.styles';
 
 type ActivityType = 'Cooking Class' | 'Surfing' | 'Farm Visit' | 'Yoga Retreat';
 
+type ListStep4RouteProp = RouteProp<RootStackParamList, 'HostList4'>;
+
 export default function ListStep4Screen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<ListStep4RouteProp>();
+  const step3Data = route.params;
 
   // States
   const [selectedActivities, setSelectedActivities] = useState<ActivityType[]>(['Cooking Class', 'Farm Visit']);
@@ -32,7 +36,11 @@ export default function ListStep4Screen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate('HostList5' as any);
+    navigation.navigate('HostList5', {
+      ...step3Data,
+      activities: selectedActivities,
+      hostStory: generatedStory,
+    });
   };
 
   const toggleActivity = (act: ActivityType) => {
@@ -57,16 +65,17 @@ export default function ListStep4Screen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Progress Header */}
-      <View style={styles.topBar}>
-        <View style={styles.topBarRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#1A1F1E" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 4 OF 5</Text>
-          <Text style={styles.percentText}>80% COMPLETE</Text>
-        </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Progress Header */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarRow}>
+            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.stepIndicator}>STEP 4 OF 5</Text>
+            <Text style={styles.percentText}>80% COMPLETE</Text>
+          </View>
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFilled, { width: '80%' }]} />
         </View>
@@ -177,5 +186,6 @@ export default function ListStep4Screen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
+  </View>
+);
 }

@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { FirebaseModule } from './firebase/firebase.module';
+import { JwtModule } from '@nestjs/jwt';
+import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
+import { PropertiesModule } from './modules/properties/properties.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -17,9 +20,16 @@ import configuration from './config/configuration';
       ttl: 60000,
       limit: 100,
     }]),
-    FirebaseModule,
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '30d' },
+    }),
+    SupabaseModule,
     AuthModule,
     UsersModule,
+    WhatsappModule,
+    PropertiesModule,
   ],
 })
 export class AppModule {}

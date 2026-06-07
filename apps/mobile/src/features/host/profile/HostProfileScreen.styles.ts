@@ -320,4 +320,14 @@ export default StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  playIcon: {
+    marginLeft: 2,
+  },
+  chevronRight: {
+    marginLeft: 8,
+  },
+  rowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 });

@@ -1,17 +1,19 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   topBar: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
+    backgroundColor: '#0F1714',
     paddingHorizontal: 16,
   },
   backButton: {
@@ -23,12 +25,13 @@ export default StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     fontFamily: 'serif',
-    color: '#1A1F1E',
+    color: '#FFFFFF',
     marginRight: 40, // offset back button to center title
   },
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
+    backgroundColor: '#FAF8F4',
   },
   section: {
     marginBottom: 32,

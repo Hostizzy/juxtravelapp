@@ -1,7 +1,8 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional }
+  from 'class-validator';
 
 export class BecomeHostDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  bio: string;
+  bio?: string;
 }

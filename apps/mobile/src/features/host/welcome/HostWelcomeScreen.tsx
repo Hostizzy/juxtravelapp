@@ -1,27 +1,72 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { useAuthStore, UserData } from '../../../stores/authStore';
+import { apiService } from '../../../services/api';
 import i18n from '../../../locales/i18n';
 import styles from './HostWelcomeScreen.styles';
 
 export default function HostWelcomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [loading, setLoading] = useState(false);
 
-  const handleGoToDashboard = () => {
-    // Navigate and replace with the Host Navigator stack
-    navigation.replace('HostApp' as any);
+  const handleBecomeHost = async () => {
+    setLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      
+      console.log('Token:', token ? 'Found' : 'Not found');
+      
+      if (!token) {
+        Alert.alert(
+          'Error', 
+          'Session expired. Please login again.'
+        );
+        return;
+      }
+
+      console.log('Calling become-host API...');
+      
+      const result = await apiService.post<UserData>(
+        '/users/become-host',
+        { bio: '' },
+        token
+      );
+
+      console.log('Become host result:', result);
+
+      useAuthStore.getState().setUser(result);
+
+      navigation.replace('HostApp');
+
+    } catch (error) {
+      console.log('Become host error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to become host. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoToGuest = () => {
+    navigation.replace('Guest');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         {/* Top Brand Tagline */}
         <View style={styles.topBrand}>
@@ -62,18 +107,26 @@ export default function HostWelcomeScreen() {
         </View>
 
         {/* Dashboard Button */}
-        <TouchableOpacity style={styles.button} onPress={handleGoToDashboard} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>{i18n.t('host.welcome.cta')}</Text>
+        <TouchableOpacity 
+          style={[styles.button, loading && { opacity: 0.7 }]} 
+          onPress={handleBecomeHost} 
+          activeOpacity={0.8}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Setting up...' : 'Go to Host Dashboard →'}
+          </Text>
         </TouchableOpacity>
 
         {/* "I'll do this later" */}
-        <TouchableOpacity onPress={handleGoToDashboard}>
+        <TouchableOpacity onPress={handleGoToGuest} disabled={loading}>
           <Text style={styles.laterText}>{i18n.t('host.welcome.later')}</Text>
         </TouchableOpacity>
 
         {/* Footer info note */}
         <Text style={styles.footerNote}>{i18n.t('host.welcome.footerNote')}</Text>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

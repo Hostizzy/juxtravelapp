@@ -322,6 +322,10 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: 48,
   },
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
 });
 
 export default styles;

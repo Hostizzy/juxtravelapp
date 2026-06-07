@@ -17,7 +17,7 @@ export default function ReviewPendingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleGoDashboard = () => {
-    navigation.replace('HostApp' as any);
+    navigation.replace('HostApp');
   };
 
   const handleEditProperty = () => {
@@ -26,7 +26,8 @@ export default function ReviewPendingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         {/* Top Header Label */}
         <Text style={styles.topBrand}>JuxTravel Host</Text>
@@ -99,6 +100,7 @@ export default function ReviewPendingScreen() {
           <Text style={styles.editBtnText}>{i18n.t('host.reviewPending.editProperty')}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

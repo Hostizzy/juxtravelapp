@@ -120,7 +120,7 @@ export default function HostBookingsScreen() {
   };
 
   const handleAddNew = () => {
-    navigation.navigate('HostList1' as any);
+    navigation.navigate('HostList1');
   };
 
   return (
@@ -185,7 +185,7 @@ export default function HostBookingsScreen() {
                 </View>
 
                 {/* Row 4: Special Request */}
-                {booking.specialRequest && (
+                {!!booking.specialRequest && (
                   <View style={styles.specialRequestBox}>
                     <Text style={styles.specialRequestText}>
                       "{booking.specialRequest}"

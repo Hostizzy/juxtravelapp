@@ -1,11 +1,20 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+import { GuestTabParamList } from '../../navigation/GuestNavigator';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import i18n from '../../locales/i18n';
 import styles from './HomeScreen.styles';
+
+type HomeScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<GuestTabParamList, 'Home'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 interface TripItem {
   id: string;
@@ -35,7 +44,7 @@ interface TrendingItem {
 }
 
 export default function HomeScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Traveller';
 
@@ -52,8 +61,8 @@ export default function HomeScreen() {
 
   // Curated premium high-fidelity datasets using MaterialCommunityIcons
   const myTripsData: TripItem[] = [
-    { id: '1', title: 'Summer Escape', location: 'Manali, Himachal Pradesh', date: 'May 12 - 18, 2026', status: 'Completed', iconName: 'mountain' },
-    { id: '2', title: 'Beachside Retreat', location: 'Palolem, Goa', date: 'April 02 - 08, 2026', status: 'Completed', iconName: 'palm-tree' },
+    { id: '1', title: 'Summer Escape', location: 'Manali, Himachal Pradesh', date: 'May 12 - 18, 2026', status: 'Completed', iconName: 'image-outline' },
+    { id: '2', title: 'Beachside Retreat', location: 'Palolem, Goa', date: 'April 02 - 08, 2026', status: 'Completed', iconName: 'tree' },
     { id: '3', title: 'Royal Heritage', location: 'Jaipur, Rajasthan', date: 'Feb 14 - 19, 2026', status: 'Completed', iconName: 'castle' },
     { id: '4', title: 'Lake Paradise', location: 'Nainital, Uttarakhand', date: 'Jan 05 - 10, 2026', status: 'Completed', iconName: 'rowing' },
     { id: '5', title: 'Wilderness Safaris', location: 'Wayanad, Kerala', date: 'Nov 12 - 17, 2025', status: 'Completed', iconName: 'elephant' },
@@ -64,7 +73,7 @@ export default function HomeScreen() {
     { id: '2', author: 'Ananya Roy', location: 'Munroe Island, KL', likes: '920', caption: 'Backwater serenity at sunrise.', iconName: 'rowing' },
     { id: '3', author: 'Rahul Mehta', location: 'Palolem, GA', likes: '1.8k', caption: 'Golden hours, warm sands.', iconName: 'weather-sunset' },
     { id: '4', author: 'Meera Sen', location: 'Amer Fort, RJ', likes: '750', caption: 'Echoes of standard heritage.', iconName: 'camera' },
-    { id: '5', author: 'Siddharth', location: 'Pangong Lake, LA', likes: '2.5k', caption: 'Nature mirroring standard blue sky.', iconName: 'mountain' },
+    { id: '5', author: 'Siddharth', location: 'Pangong Lake, LA', likes: '2.5k', caption: 'Nature mirroring standard blue sky.', iconName: 'image-outline' },
   ];
 
   const trendingData: TrendingItem[] = [
@@ -76,8 +85,9 @@ export default function HomeScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Header Hero Section */}
         <View style={styles.header}>
@@ -205,7 +215,8 @@ export default function HomeScreen() {
 
         </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }

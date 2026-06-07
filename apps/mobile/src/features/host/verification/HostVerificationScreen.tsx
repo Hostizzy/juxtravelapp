@@ -45,7 +45,7 @@ export default function HostVerificationScreen() {
       Alert.alert('Required Field', 'Please enter your property city/location.');
       return;
     }
-    navigation.navigate('HostWelcome' as any);
+    navigation.navigate('HostWelcome');
   };
 
   const adjustMax = (change: number) => {
@@ -57,14 +57,15 @@ export default function HostVerificationScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Navigation Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={24} color="#1A1F1E" />
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{i18n.t('host.verification.title')}</Text>
-      </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Top Navigation Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.topBarTitle}>{i18n.t('host.verification.title')}</Text>
+        </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* SECTION 1: OWNERSHIP */}
@@ -245,5 +246,6 @@ export default function HostVerificationScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  );
+  </View>
+);
 }

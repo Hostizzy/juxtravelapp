@@ -23,14 +23,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "googleServicesFile": "./google-services.json"
-          }
-        }
-      ]
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

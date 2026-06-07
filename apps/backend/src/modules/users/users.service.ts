@@ -1,139 +1,164 @@
-import { 
+import {
   Injectable,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { FirebaseService } from '../../firebase/firebase.service';
-import { CreateUserDto, UserRole } from './dto/create-user.dto';
+import { SupabaseService } from '../../supabase/supabase.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { FieldValue } from 'firebase-admin/firestore';
+import { BecomeHostDto } from './dto/become-host.dto';
 
-export interface GuestProfile {
-  savedProperties: string[];
-  tripBriefs: string[];
-}
-
-export interface HostProfile {
-  verified: boolean;
-  verificationStatus: 'pending' | 'approved' | 'rejected';
-  bio: string;
-  hostStory: string;
-  payoutDetails: Record<string, unknown>;
-}
-
-export interface UserDocument {
-  uid: string;
+export interface CreateUserData {
+  id: string;
   name: string;
-  phoneNumber: string;
+  phone?: string;
   email?: string;
-  role: UserRole;
-  createdAt: FirebaseFirestore.Timestamp;
-  updatedAt: FirebaseFirestore.Timestamp;
-  guestProfile: GuestProfile;
-  hostProfile?: HostProfile;
+}
+
+export interface UserData {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  role: string;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+  guest_profile?: unknown;
+  host_profile?: unknown;
 }
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  private readonly COLLECTION = 'users';
 
   constructor(
-    private firebaseService: FirebaseService
+    private supabaseService: SupabaseService
   ) {}
 
-  async createOrUpdate(
-    uid: string,
-    dto: CreateUserDto
-  ): Promise<UserDocument> {
-    const ref = this.firebaseService.firestore.collection(this.COLLECTION).doc(uid);
-    const snap = await ref.get();
+  async createUser(
+    data: CreateUserData
+  ): Promise<UserData> {
+    // Create user
+    const { data: user, error } = await this.supabaseService.admin
+        .from('users')
+        .insert({
+          id: data.id,
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          role: 'guest',
+        })
+        .select()
+        .single();
 
-    if (!snap.exists) {
-      const newUser = {
-        uid,
-        name: dto.name,
-        phoneNumber: dto.phoneNumber,
-        email: dto.email ?? null,
-        role: UserRole.GUEST,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        guestProfile: {
-          savedProperties: [],
-          tripBriefs: [],
-        },
-      };
-      await ref.set(newUser);
-      this.logger.log(`New user created: ${uid}`);
-    } else {
-      await ref.update({
-        name: dto.name,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      this.logger.log(`User updated: ${uid}`);
+    if (error) {
+      this.logger.error('Create user failed', error);
+      throw new Error('Failed to create user');
     }
 
-    const updated = await ref.get();
-    return updated.data() as UserDocument;
+    // Create guest profile
+    await this.supabaseService.admin
+      .from('guest_profiles')
+      .insert({ user_id: data.id });
+
+    this.logger.log(`User created: ${data.id}`);
+
+    return user as UserData;
   }
 
-  async findById(uid: string): Promise<UserDocument> {
-    const ref = this.firebaseService.firestore.collection(this.COLLECTION).doc(uid);
-    const snap = await ref.get();
+  async findById(
+    id: string
+  ): Promise<UserData | null> {
+    const { data, error } = await this.supabaseService.admin
+        .from('users')
+        .select(`
+          *,
+          guest_profile:guest_profiles(*),
+          host_profile:host_profiles(*)
+        `)
+        .eq('id', id)
+        .single();
 
-    if (!snap.exists) {
-      throw new NotFoundException(`User ${uid} not found`);
-    }
-
-    return snap.data() as UserDocument;
+    if (error) return null;
+    return data as UserData;
   }
 
-  async update(
-    uid: string,
-    dto: UpdateUserDto
-  ): Promise<UserDocument> {
-    const ref = this.firebaseService.firestore.collection(this.COLLECTION).doc(uid);
-    const snap = await ref.get();
-    
-    if (!snap.exists) {
-      throw new NotFoundException(`User ${uid} not found`);
+  async findByPhone(
+    phone: string
+  ): Promise<UserData | null> {
+    const { data, error } = await this.supabaseService.admin
+        .from('users')
+        .select(`
+          *,
+          guest_profile:guest_profiles(*),
+          host_profile:host_profiles(*)
+        `)
+        .eq('phone', phone)
+        .single();
+
+    if (error) return null;
+    return data as UserData;
+  }
+
+  async updateUser(
+    id: string,
+    dto: UpdateUserDto | { name: string }
+  ): Promise<UserData> {
+    const { data, error } = await this.supabaseService.admin
+        .from('users')
+        .update({
+          ...dto,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) {
+      throw new NotFoundException('User not found');
     }
 
-    await ref.update({
-      ...dto,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    const updated = await ref.get();
-    return updated.data() as UserDocument;
+    return data as UserData;
   }
 
   async becomeHost(
-    uid: string,
-    bio: string
-  ): Promise<UserDocument> {
-    const ref = this.firebaseService.firestore.collection(this.COLLECTION).doc(uid);
-    const snap = await ref.get();
-    
-    if (!snap.exists) {
-      throw new NotFoundException(`User ${uid} not found`);
+    id: string,
+    dto: BecomeHostDto
+  ): Promise<UserData> {
+    // Update role to 'both'
+    await this.supabaseService.admin
+      .from('users')
+      .update({
+        role: 'both',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    // Check if host profile exists using maybeSingle to avoid 406 error
+    const { data: existingHost } = await this.supabaseService.admin
+        .from('host_profiles')
+        .select('id')
+        .eq('user_id', id)
+        .maybeSingle();
+
+    if (!existingHost) {
+      // Create host profile
+      await this.supabaseService.admin
+        .from('host_profiles')
+        .insert({
+          user_id: id,
+          bio: dto.bio ?? '',
+          verified: false,
+          verification_status: 'pending',
+        });
     }
 
-    await ref.update({
-      role: UserRole.BOTH,
-      hostProfile: {
-        verified: false,
-        verificationStatus: 'pending',
-        bio,
-        hostStory: '',
-        payoutDetails: {},
-      },
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    this.logger.log(`User ${id} became a host`);
 
-    this.logger.log(`User ${uid} became a host`);
-
-    const updated = await ref.get();
-    return updated.data() as UserDocument;
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }

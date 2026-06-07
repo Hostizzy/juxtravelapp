@@ -1,6 +1,6 @@
 const BASE_URL = 
-  process.env.BACKEND_URL ?? 
-  'http://localhost:3000/api/v1';
+  process.env.EXPO_PUBLIC_BACKEND_URL ?? 
+  'http://10.0.2.2:3000/api/v1';
 
 interface ApiSuccessResponse<T> {
   success: true;
@@ -24,7 +24,8 @@ async function request<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
+    ...(options.headers as 
+      Record<string, string>),
   };
 
   if (token) {
@@ -52,37 +53,34 @@ export const apiService = {
     endpoint: string,
     body: unknown,
     token?: string,
-  ) =>
-    request<T>(
-      endpoint,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-      },
-      token,
-    ),
+  ) => request<T>(
+    endpoint,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+    token,
+  ),
 
   get: <T>(
     endpoint: string,
     token: string,
-  ) =>
-    request<T>(
-      endpoint,
-      { method: 'GET' },
-      token,
-    ),
+  ) => request<T>(
+    endpoint,
+    { method: 'GET' },
+    token,
+  ),
 
   patch: <T>(
     endpoint: string,
     body: unknown,
     token: string,
-  ) =>
-    request<T>(
-      endpoint,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      },
-      token,
-    ),
+  ) => request<T>(
+    endpoint,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+    token,
+  ),
 };
