@@ -316,5 +316,20 @@
       "payoutDetails": "PAYOUT DETAILS",
       "switchGuest": "Switch to Guest Mode"
     }
+  },
+  "matches": {
+    "title": "Your Matches",
+    "found": "We found {{count}} perfect matches",
+    "basedOn": "Based on your preferences for",
+    "matchScore": "MATCH",
+    "viewProperty": "View Property →",
+    "saveForLater": "Save for Later",
+    "loading": "Finding your perfect matches...",
+    "noMatches": "No matches found",
+    "noMatchesSub": "Try different preferences",
+    "backToPlan": "Back to Plan",
+    "vibeMatch": "Vibe Match",
+    "groupFit": "Group Fit",
+    "budgetFit": "Budget Fit"
   }
 }

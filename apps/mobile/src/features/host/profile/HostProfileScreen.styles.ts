@@ -188,57 +188,98 @@ export default StyleSheet.create({
   },
   // Properties Tab list
   propertyCard: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E8E2D9',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    alignItems: 'center',
+    overflow: 'hidden',
+    paddingBottom: 12,
+    marginBottom: 16,
   },
-  propertyCardImgPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+  propertyCardImage: {
+    width: '100%',
+    height: 120,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  propertyCardImagePlaceholder: {
+    width: '100%',
+    height: 120,
     backgroundColor: '#1A2B25',
-    justifyContent: 'center',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     alignItems: 'center',
-    marginRight: 16,
+    justifyContent: 'center',
   },
-  propertyDetails: {
-    flex: 1,
-  },
-  propertyName: {
-    fontSize: 15,
+  propertyCardName: {
+    fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'serif',
     color: '#1A1F1E',
+    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 2,
+  },
+  propertyCardLocation: {
+    fontSize: 11,
+    color: '#6B7370',
+    paddingHorizontal: 12,
     marginBottom: 4,
   },
-  propertyMeta: {
-    fontSize: 12,
+  propertyCardPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A6B5A',
+    paddingTop: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  statusActive: {
+    backgroundColor: '#E6F2EF',
+  },
+  statusReview: {
+    backgroundColor: '#F5E6D0',
+  },
+  statusDraft: {
+    backgroundColor: '#F0EDE8',
+  },
+  statusBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+    letterSpacing: 0.5,
+  },
+  statusActiveText: {
+    color: '#1A6B5A',
+  },
+  statusReviewText: {
+    color: '#D4704A',
+  },
+  statusDraftText: {
     color: '#6B7370',
   },
-  propertyRight: {
-    alignItems: 'flex-end',
+  emptyProperties: {
+    alignItems: 'center',
+    padding: 32,
   },
-  propertyBookingsCount: {
-    fontSize: 12,
+  emptyText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#D4704A',
-    marginBottom: 6,
-  },
-  propertyStatusChip: {
-    backgroundColor: '#1A6B5A',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  propertyStatusText: {
     color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: 'bold',
+    marginTop: 12,
+  },
+  emptySubText: {
+    fontSize: 12,
+    color: '#6B7370',
+    marginTop: 4,
+    textAlign: 'center',
   },
   // Reviews Tab list
   reviewCard: {

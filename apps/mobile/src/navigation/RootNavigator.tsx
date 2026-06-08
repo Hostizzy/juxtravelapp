@@ -8,6 +8,7 @@ import PlanStep1Screen from '../features/plan/PlanStep1Screen';
 import PlanStep2Screen from '../features/plan/PlanStep2Screen';
 import PlanStep3Screen from '../features/plan/PlanStep3Screen';
 import PlanStep4Screen from '../features/plan/PlanStep4Screen';
+import MatchResultsScreen from '../features/matches/MatchResultsScreen';
 
 // Host screens
 import HostOnboardingScreen from '../features/host/onboarding/HostOnboardingScreen';
@@ -20,9 +21,13 @@ import ListStep3Screen from '../features/host/listProperty/ListStep3Screen';
 import ListStep4Screen from '../features/host/listProperty/ListStep4Screen';
 import ListStep5Screen from '../features/host/listProperty/ListStep5Screen';
 import ReviewPendingScreen from '../features/host/reviewPending/ReviewPendingScreen';
+import HostPropertyDetailScreen from '../features/host/property/HostPropertyDetailScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
+  HostPropertyDetail: {
+    propertyId: string;
+  };
   Auth: undefined;
   Otp: { 
     phone: string; 
@@ -115,6 +120,16 @@ export type RootStackParamList = {
   };
   HostReviewPending: undefined;
   HostApp: undefined;
+  MatchResults: {
+    destination: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    groupType: string;
+    moods: string[];
+    budget: number;
+    freeText?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -142,6 +157,8 @@ export default function RootNavigator() {
       <Stack.Screen name="HostList4" component={ListStep4Screen} />
       <Stack.Screen name="HostList5" component={ListStep5Screen} />
       <Stack.Screen name="HostReviewPending" component={ReviewPendingScreen} />
+      <Stack.Screen name="HostPropertyDetail" component={HostPropertyDetailScreen} />
+      <Stack.Screen name="MatchResults" component={MatchResultsScreen} />
     </Stack.Navigator>
   );
 }

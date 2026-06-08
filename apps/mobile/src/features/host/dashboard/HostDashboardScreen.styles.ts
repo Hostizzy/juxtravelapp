@@ -240,4 +240,89 @@ export default StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
+  propertyCardImage: {
+    width: '100%',
+    height: 120,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  propertyCardImagePlaceholder: {
+    width: '100%',
+    height: 120,
+    backgroundColor: '#1A2B25',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  propertyCardName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 2,
+  },
+  propertyCardLocation: {
+    fontSize: 11,
+    color: '#6B7370',
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  propertyCardPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A6B5A',
+    paddingTop: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  statusActive: {
+    backgroundColor: '#E6F2EF',
+  },
+  statusReview: {
+    backgroundColor: '#F5E6D0',
+  },
+  statusDraft: {
+    backgroundColor: '#F0EDE8',
+  },
+  statusBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+    letterSpacing: 0.5,
+  },
+  statusActiveText: {
+    color: '#1A6B5A',
+  },
+  statusReviewText: {
+    color: '#D4704A',
+  },
+  statusDraftText: {
+    color: '#6B7370',
+  },
+  emptyProperties: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 12,
+  },
+  emptySubText: {
+    fontSize: 12,
+    color: '#6B7370',
+    marginTop: 4,
+    textAlign: 'center',
+  },
 });

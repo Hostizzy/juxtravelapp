@@ -324,5 +324,20 @@
       "payoutDetails": "भुगतान विवरण",
       "switchGuest": "गेस्ट मोड पर स्विच करें"
     }
+  },
+  "matches": {
+    "title": "आपके मैच",
+    "found": "हमें {{count}} बेहतरीन मैच मिले",
+    "basedOn": "आपकी पसंद के आधार पर",
+    "matchScore": "मैच",
+    "viewProperty": "प्रॉपर्टी देखें →",
+    "saveForLater": "बाद के लिए सहेजें",
+    "loading": "आपके लिए सही मैच ढूंढ रहे हैं...",
+    "noMatches": "कोई मैच नहीं मिला",
+    "noMatchesSub": "अलग पसंद आज़माएं",
+    "backToPlan": "वापस ट्रिप प्लान पर जाएं",
+    "vibeMatch": "वाइब मैच",
+    "groupFit": "ग्रुप फिट",
+    "budgetFit": "बजट फिट"
   }
 }

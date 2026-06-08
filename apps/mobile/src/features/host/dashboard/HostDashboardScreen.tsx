@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { apiService } from '../../../services/api';
 import i18n from '../../../locales/i18n';
 import styles from './HostDashboardScreen.styles';
 
@@ -16,11 +23,14 @@ interface StatItem {
   label: string;
 }
 
-interface PropertyItem {
+interface Property {
   id: string;
   name: string;
-  bookedCount: number;
-  status: 'ACTIVE' | 'DRAFT';
+  status: string;
+  photos: string[];
+  price_per_night: number;
+  location: { city: string; state: string };
+  capacity: { maxGuests: number };
 }
 
 interface BookingItem {
@@ -33,6 +43,8 @@ interface BookingItem {
 }
 
 export default function HostDashboardScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const stats: StatItem[] = [
     { value: '12', label: i18n.t('host.dashboard.allTime') },
     { value: '3', label: i18n.t('host.dashboard.checkins') },
@@ -40,10 +52,28 @@ export default function HostDashboardScreen() {
     { value: '4.8 ⭐', label: i18n.t('host.dashboard.avgRating') },
   ];
 
-  const properties: PropertyItem[] = [
-    { id: '1', name: 'Hillside Retreat', bookedCount: 4, status: 'ACTIVE' },
-    { id: '2', name: 'Urban Sanctuary', bookedCount: 8, status: 'ACTIVE' },
-  ];
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loadingProps, setLoadingProps] = useState(true);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) return;
+        
+        const data = await apiService.get<Property[]>(
+          '/properties/my',
+          token
+        );
+        setProperties(data);
+      } catch (error) {
+        console.error('Fetch properties:', error);
+      } finally {
+        setLoadingProps(false);
+      }
+    };
+    fetchProperties();
+  }, []);
 
   const bookings: BookingItem[] = [
     { id: '1', name: 'Aarav S.', property: 'Hillside Retreat', dates: 'Oct 12-15', amount: '₹12,400', status: 'CONFIRMED' },
@@ -108,29 +138,95 @@ export default function HostDashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.propertiesScroll}
-          >
-            {properties.map((prop) => (
-              <View key={prop.id} style={styles.propertyCard}>
-                <View style={styles.propertyImagePlaceholder}>
-                  <Feather name="home" size={32} color="#84C9BA" />
-                  <View
-                    style={[
-                      styles.statusChip,
-                      { backgroundColor: prop.status === 'ACTIVE' ? '#1A6B5A' : '#6B7370' },
-                    ]}
-                  >
-                    <Text style={styles.statusChipText}>{prop.status}</Text>
+          {loadingProps ? (
+            <ActivityIndicator 
+              color="#84C9BA" 
+              size="small"
+            />
+          ) : properties.length === 0 ? (
+            <View style={styles.emptyProperties}>
+              <Feather name="home" 
+                size={32} color="#6B7370" />
+              <Text style={styles.emptyText}>
+                No properties yet
+              </Text>
+              <Text style={styles.emptySubText}>
+                Tap + to list your first property
+              </Text>
+            </View>
+          ) : (
+            <ScrollView horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={
+                styles.propertiesScroll
+              }>
+              {properties.map((property) => (
+                <TouchableOpacity
+                  key={property.id}
+                  style={styles.propertyCard}
+                  onPress={() => navigation.navigate(
+                    'HostPropertyDetail',
+                    { propertyId: property.id }
+                  )}
+                  activeOpacity={0.8}
+                >
+                  {/* Cover Photo */}
+                  {property.photos && 
+                   property.photos.length > 0 ? (
+                    <Image
+                      source={{ uri: property.photos[0] }}
+                      style={styles.propertyCardImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.propertyCardImagePlaceholder}>
+                      <Feather name="home" 
+                        size={32} color="#84C9BA" />
+                    </View>
+                  )}
+                  
+                  {/* Status Badge */}
+                  <View style={[
+                    styles.statusBadge,
+                    property.status === 'active' 
+                      ? styles.statusActive
+                      : property.status === 'under_review'
+                      ? styles.statusReview
+                      : styles.statusDraft
+                  ]}>
+                    <Text style={[
+                      styles.statusBadgeText,
+                      property.status === 'active'
+                      ? styles.statusActiveText
+                      : property.status === 'under_review'
+                      ? styles.statusReviewText
+                      : styles.statusDraftText
+                    ]}>
+                      {property.status === 'active' 
+                        ? 'ACTIVE'
+                        : property.status === 'under_review'
+                        ? 'IN REVIEW'
+                        : 'DRAFT'}
+                    </Text>
                   </View>
-                </View>
-                <Text style={styles.propertyTitle}>{prop.name}</Text>
-                <Text style={styles.propertyBooked}>{prop.bookedCount} Booked</Text>
-              </View>
-            ))}
-          </ScrollView>
+
+                  {/* Property Info */}
+                  <Text style={styles.propertyCardName}
+                    numberOfLines={1}>
+                    {property.name}
+                  </Text>
+                  <Text style={styles.propertyCardLocation}
+                    numberOfLines={1}>
+                    {property.location?.city}, {property.location?.state}
+                  </Text>
+                  <Text style={styles.propertyCardPrice}>
+                    ₹{property.price_per_night
+                      .toLocaleString('en-IN')}/night
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
 
           {/* RECENT BOOKINGS */}
           <View style={styles.sectionHeader}>

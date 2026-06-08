@@ -63,16 +63,16 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
   };
 
   const handleGetMatches = () => {
-    Alert.alert(
-      'Plan Summary',
-      `Destination: ${destination}\n` +
-      `Dates: ${checkIn} — ${checkOut}\n` +
-      `Guests: ${guests} (${groupType})\n` +
-      `Moods: ${moods.join(', ')}\n` +
-      `Budget: ${formatCurrency(budget)}\n` +
-      `Notes: ${specificNotes || 'None'}\n\n` +
-      'AI matching engine will process your preferences. Coming in next release!',
-    );
+    navigation.navigate('MatchResults', {
+      destination,
+      checkIn,
+      checkOut,
+      guests,
+      groupType,
+      moods,
+      budget,
+      freeText: specificNotes,
+    });
   };
 
   return (

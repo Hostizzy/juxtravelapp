@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,15 +26,11 @@ type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'SETTINGS';
 interface Property {
   id: string;
   name: string;
-  coverPhoto?: string;
-  photos?: string[];
-  location: {
-    address: string;
-    city: string;
-    state: string;
-  } | string;
   status: string;
-  bookings?: number;
+  photos: string[];
+  price_per_night: number;
+  location: { city: string; state: string };
+  capacity: { maxGuests: number };
 }
 
 interface ReviewItem {
@@ -49,11 +46,13 @@ export default function HostProfileScreen() {
   const userName = user?.name ?? 'Host';
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
   const [properties, setProperties] = useState<Property[]>([]);
+  const [loadingProps, setLoadingProps] = useState(true);
 
   const tabs: TabType[] = ['PROFILE', 'PROPERTIES', 'REVIEWS', 'SETTINGS'];
 
   const fetchProperties = async () => {
     try {
+      setLoadingProps(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
       
@@ -67,6 +66,8 @@ export default function HostProfileScreen() {
       }
     } catch (err) {
       console.error('Failed to fetch properties:', err);
+    } finally {
+      setLoadingProps(false);
     }
   };
 
@@ -241,40 +242,87 @@ export default function HostProfileScreen() {
             {/* PROPERTIES TAB */}
             {activeTab === 'PROPERTIES' && (
               <View>
-                {properties.length === 0 ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                    <Feather name="home" size={48} color="#6B7370" style={{ marginBottom: 12 }} />
-                    <Text style={{ color: '#6B7370', fontSize: 14 }}>No properties listed yet.</Text>
+                {loadingProps ? (
+                  <ActivityIndicator 
+                    color="#84C9BA" 
+                    size="small"
+                  />
+                ) : properties.length === 0 ? (
+                  <View style={styles.emptyProperties}>
+                    <Feather name="home" 
+                      size={32} color="#6B7370" />
+                    <Text style={styles.emptyText}>
+                      No properties yet
+                    </Text>
+                    <Text style={styles.emptySubText}>
+                      Tap + to list your first property
+                    </Text>
                   </View>
                 ) : (
-                  properties.map((prop) => (
-                    <View key={prop.id} style={styles.propertyCard}>
-                      {prop.coverPhoto || (prop.photos && prop.photos.length > 0) ? (
-                        <Image 
-                          source={{ uri: prop.coverPhoto || prop.photos?.[0] }} 
-                          style={{ width: 60, height: 60, borderRadius: 8, marginRight: 16 }} 
+                  properties.map((property) => (
+                    <TouchableOpacity
+                      key={property.id}
+                      style={styles.propertyCard}
+                      onPress={() => navigation.navigate(
+                        'HostPropertyDetail',
+                        { propertyId: property.id }
+                      )}
+                      activeOpacity={0.8}
+                    >
+                      {/* Cover Photo */}
+                      {property.photos && 
+                       property.photos.length > 0 ? (
+                        <Image
+                          source={{ uri: property.photos[0] }}
+                          style={styles.propertyCardImage}
+                          resizeMode="cover"
                         />
                       ) : (
-                        <View style={styles.propertyCardImgPlaceholder}>
-                          <Feather name="home" size={24} color="#84C9BA" />
+                        <View style={styles.propertyCardImagePlaceholder}>
+                          <Feather name="home" 
+                            size={32} color="#84C9BA" />
                         </View>
                       )}
-                      <View style={styles.propertyDetails}>
-                        <Text style={styles.propertyName}>{prop.name}</Text>
-                        <Text style={styles.propertyMeta}>{formatLocation(prop.location)}</Text>
+                      
+                      {/* Status Badge */}
+                      <View style={[
+                        styles.statusBadge,
+                        property.status === 'active' 
+                          ? styles.statusActive
+                          : property.status === 'under_review'
+                          ? styles.statusReview
+                          : styles.statusDraft
+                      ]}>
+                        <Text style={[
+                          styles.statusBadgeText,
+                          property.status === 'active'
+                          ? styles.statusActiveText
+                          : property.status === 'under_review'
+                          ? styles.statusReviewText
+                          : styles.statusDraftText
+                        ]}>
+                          {property.status === 'active' 
+                            ? 'ACTIVE'
+                            : property.status === 'under_review'
+                            ? 'IN REVIEW'
+                            : 'DRAFT'}
+                        </Text>
                       </View>
-                      <View style={styles.propertyRight}>
-                        <Text style={styles.propertyBookingsCount}>{prop.bookings ?? 0} Booked</Text>
-                        {(() => {
-                          const badge = getStatusStyles(prop.status);
-                          return (
-                            <View style={[styles.propertyStatusChip, { backgroundColor: badge.bg }]}>
-                              <Text style={[styles.propertyStatusText, { color: badge.color }]}>{badge.text}</Text>
-                            </View>
-                          );
-                        })()}
-                      </View>
-                    </View>
+
+                      {/* Property Info */}
+                      <Text style={styles.propertyCardName}
+                        numberOfLines={1}>
+                        {property.name}
+                      </Text>
+                      <Text style={styles.propertyCardLocation}
+                        numberOfLines={1}>
+                        {property.location?.city}, {property.location?.state}
+                      </Text>
+                      <Text style={styles.propertyCardPrice}>
+                        ₹{property.price_per_night
+                          .toLocaleString('en-IN')}/night
+                      </Text>
+                    </TouchableOpacity>
                   ))
                 )}
               </View>

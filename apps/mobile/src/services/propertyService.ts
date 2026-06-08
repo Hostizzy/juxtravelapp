@@ -147,3 +147,64 @@ export const submitProperty = async (
     };
   }
 };
+
+export const updateProperty = async (
+  id: string,
+  updates: Partial<PropertyFormData>
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const token = await SecureStore.getItemAsync('access_token');
+    
+    if (!token) {
+      return { 
+        success: false, 
+        error: 'Not authenticated' 
+      };
+    }
+
+    const payload: any = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.tagline !== undefined) payload.tagline = updates.tagline;
+    if (updates.type !== undefined) payload.type = updates.type;
+    
+    if (updates.address !== undefined || updates.city !== undefined || updates.state !== undefined) {
+      payload.location = {
+        address: updates.address,
+        city: updates.city,
+        state: updates.state,
+      };
+    }
+    
+    if (updates.rooms !== undefined || updates.maxGuests !== undefined || updates.comfortableGuests !== undefined) {
+      payload.capacity = {
+        rooms: updates.rooms,
+        maxGuests: updates.maxGuests,
+        comfortableGuests: updates.comfortableGuests,
+      };
+    }
+
+    if (updates.pricePerNight !== undefined) payload.pricePerNight = updates.pricePerNight;
+    if (updates.weekendPrice !== undefined) payload.weekendPrice = updates.weekendPrice;
+    if (updates.amenities !== undefined) payload.amenities = updates.amenities;
+    if (updates.activities !== undefined) payload.activities = updates.activities;
+    if (updates.honestNotes !== undefined) payload.honestNotes = updates.honestNotes;
+    if (updates.hostStory !== undefined) payload.hostStory = updates.hostStory;
+    if (updates.photos !== undefined) payload.photos = updates.photos;
+    if (updates.minimumStay !== undefined) payload.minimumStay = updates.minimumStay;
+    if (updates.cancellationPolicy !== undefined) payload.cancellationPolicy = updates.cancellationPolicy;
+
+    await apiService.patch(
+      `/properties/${id}`,
+      payload,
+      token
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Update property error:', error);
+    return { 
+      success: false, 
+      error: 'Update failed' 
+    };
+  }
+};
