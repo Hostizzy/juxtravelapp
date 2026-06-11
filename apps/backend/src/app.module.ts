@@ -7,6 +7,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { PropertiesModule } from './modules/properties/properties.module';
+import { VerificationModule } from './modules/verification/verification.module';
+import { InstagramModule } from './modules/instagram/instagram.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -30,6 +32,8 @@ import configuration from './config/configuration';
     UsersModule,
     WhatsappModule,
     PropertiesModule,
+    VerificationModule,
+    InstagramModule,
   ],
 })
 export class AppModule {}

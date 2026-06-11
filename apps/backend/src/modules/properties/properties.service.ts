@@ -49,6 +49,17 @@ export class PropertiesService {
     return { url: urlData.publicUrl };
   }
 
+  private generateSlug(name: string, id: string): string {
+    const base = name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+    const shortId = id.substring(0, 6);
+    return `${base}-${shortId}`;
+  }
+
   async create(
     hostId: string,
     dto: CreatePropertyDto
@@ -83,10 +94,31 @@ export class PropertiesService {
       throw new Error('Failed to create property');
     }
 
+    // Update slug
+    const slug = this.generateSlug(data.name, data.id);
+    await this.supabaseService.admin
+      .from('properties')
+      .update({ slug })
+      .eq('id', data.id);
+
     this.logger.log(`Property created: ${data.id} by host: ${hostId}`);
 
+    return { ...data, slug };
+  }
+
+  async findBySlug(slug: string) {
+    const { data, error } = await this.supabaseService.admin
+        .from('properties')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+    if (error) {
+      throw new NotFoundException('Property not found');
+    }
     return data;
   }
+
 
   async findByHostId(hostId: string) {
     const { data, error } = await this.supabaseService.admin

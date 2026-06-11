@@ -20,7 +20,6 @@ export class AuthService {
   // Test numbers for development
   private readonly TEST_NUMBERS: Record<string, string> = {
     '+919999999999': '123456',
-    '+918112256981': '123456',
   };
 
   constructor(

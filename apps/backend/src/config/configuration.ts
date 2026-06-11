@@ -20,4 +20,12 @@ export default () => ({
   jwt: {
     secret: process.env.JWT_SECRET ?? '',
   },
+  surepass: {
+    apiKey: process.env.SUREPASS_API_KEY ?? '',
+  },
+  instagram: {
+    appId: process.env.INSTAGRAM_APP_ID ?? '',
+    appSecret: process.env.INSTAGRAM_APP_SECRET ?? '',
+    redirectUri: process.env.INSTAGRAM_REDIRECT_URI ?? '',
+  },
 });

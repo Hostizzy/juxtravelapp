@@ -49,7 +49,6 @@ export class WhatsappService {
             type: 'body',
             parameters: [
               { type: 'text', text: otp },
-              { type: 'text', text: '10' },
             ],
           },
           {

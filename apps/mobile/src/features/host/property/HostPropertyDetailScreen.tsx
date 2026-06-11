@@ -17,6 +17,7 @@ import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { apiService } from '../../../services/api';
 import { updateProperty } from '../../../services/propertyService';
+import { useAuthStore } from '../../../stores/authStore';
 import i18n from '../../../locales/i18n';
 import styles from './HostPropertyDetailScreen.styles';
 
@@ -61,13 +62,43 @@ type PolicyType = 'flexible' | 'moderate' | 'strict';
 export default function HostPropertyDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<DetailScreenRouteProp>();
-  const { propertyId } = route.params;
+  const { propertyId, checkIn, checkOut, guests } = route.params;
+  const { user } = useAuthStore();
 
   // Loading & Screen states
   const [loading, setLoading] = useState<boolean>(true);
   const [saveLoading, setSaveLoading] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [property, setProperty] = useState<PropertyData | null>(null);
+
+  const isHost = property?.host_id === user?.id;
+
+  const calculateNights = (inStr?: string, outStr?: string) => {
+    if (!inStr || !outStr) return 1;
+    const d1 = new Date(inStr);
+    const d2 = new Date(outStr);
+    const diff = d2.getTime() - d1.getTime();
+    const nights = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 1;
+  };
+
+  const handleBookNow = () => {
+    if (!property) return;
+    const inDate = checkIn || new Date().toISOString().split('T')[0];
+    const outDate = checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const guestCount = guests || 1;
+    const nights = calculateNights(inDate, outDate);
+    const totalAmount = property.price_per_night * nights;
+
+    navigation.navigate('GuestVerification', {
+      propertyId: property.id,
+      propertyName: property.name,
+      checkIn: inDate,
+      checkOut: outDate,
+      guests: guestCount,
+      totalAmount,
+    });
+  };
 
   // Editable Form fields
   const [name, setName] = useState<string>('');
@@ -286,25 +317,29 @@ export default function HostPropertyDetailScreen() {
             <Feather name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>Property Details</Text>
-          <TouchableOpacity 
-            onPress={() => {
-              if (isEditing) {
-                handleBack();
-              } else {
-                setIsEditing(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.editButton}>
-              {isEditing ? 'Cancel' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
+          {isHost ? (
+            <TouchableOpacity 
+              onPress={() => {
+                if (isEditing) {
+                  handleBack();
+                } else {
+                  setIsEditing(true);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.editButton}>
+                {isEditing ? 'Cancel' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 36 }} />
+          )}
         </View>
 
         {renderStatusBanner()}
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, !isHost && { paddingBottom: 110 }]} showsVerticalScrollIndicator={false}>
           {/* Cover Photo */}
           {property.photos && property.photos.length > 0 ? (
             <Image source={{ uri: property.photos[0] }} style={styles.coverImage} />
@@ -601,6 +636,33 @@ export default function HostPropertyDetailScreen() {
                 </View>
               </View>
 
+              {/* Instagram Reels Connection Button */}
+              <TouchableOpacity
+                style={styles.instagramReelsBtn}
+                onPress={() => navigation.navigate(
+                  'InstagramConnect',
+                  { 
+                    propertyId: property.id,
+                    propertyName: property.name 
+                  }
+                )}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons 
+                  name="instagram" 
+                  size={20} 
+                  color="#833AB4" 
+                />
+                <Text style={styles.instagramReelsBtnText}>
+                  Manage Reels
+                </Text>
+                <Feather 
+                  name="chevron-right" 
+                  size={16} 
+                  color="#6B7370" 
+                />
+              </TouchableOpacity>
+
               {/* HONEST NOTES */}
               <View style={styles.detailsCard}>
                 <Text style={styles.sectionLabel}>HONEST NOTES</Text>
@@ -651,6 +713,21 @@ export default function HostPropertyDetailScreen() {
             </View>
           )}
         </ScrollView>
+        {!isHost && property && (
+          <View style={styles.bookingBar}>
+            <View style={styles.priceContainer}>
+              <Text style={styles.priceValue}>₹{(property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
+              <Text style={styles.priceLabel}>/ night</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.bookButton}
+              onPress={handleBookNow}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.bookButtonText}>Book Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
     </View>
   );

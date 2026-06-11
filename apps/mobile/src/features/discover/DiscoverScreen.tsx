@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,19 @@ import {
   ListRenderItem,
   Dimensions,
   Platform,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import { Video, ResizeMode } from 'expo-av';
 import { GuestTabParamList } from '../../navigation/GuestNavigator';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { apiService } from '../../services/api';
 import i18n from '../../locales/i18n';
 import styles from './DiscoverScreen.styles';
 
@@ -59,10 +64,59 @@ interface MomentItem {
   iconName: string;
 }
 
+export interface Property {
+  id: string;
+  host_id: string;
+  name: string;
+  tagline: string;
+  type: string;
+  location: {
+    address?: string;
+    city: string;
+    state: string;
+  };
+  price_per_night: number;
+  amenities: string[];
+  photos: string[];
+  reel_urls?: string[];
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export default function DiscoverScreen() {
   const navigation = useNavigation<DiscoverScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<TabType>('reels');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [reelProperties, setReelProperties] = useState<Property[]>([]);
+  const [loadingReels, setLoadingReels] = useState(true);
+
+  useEffect(() => {
+    const fetchReels = async () => {
+      try {
+        setLoadingReels(true);
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) return;
+        
+        const properties = await apiService.get<Property[]>(
+          '/properties/active',
+          token
+        );
+        
+        // Filter properties with reels
+        const withReels = properties.filter(
+          p => p.reel_urls && p.reel_urls.length > 0
+        );
+        
+        setReelProperties(withReels);
+      } catch (error) {
+        console.error('Fetch reels:', error);
+      } finally {
+        setLoadingReels(false);
+      }
+    };
+    fetchReels();
+  }, []);
 
   const reelsData: ReelItem[] = [
     {
@@ -133,81 +187,96 @@ export default function DiscoverScreen() {
     Alert.alert('Notifications', 'No new notifications.');
   };
 
-  const renderReelItem: ListRenderItem<ReelItem> = ({ item }) => (
-    <View style={styles.reelCard}>
-      {/* Property Image Placeholder - House icon center mein */}
-      <View style={styles.propertyImageArea}>
-        <MaterialCommunityIcons name="home" size={80} color="#84C9BA" />
-      </View>
+  const renderReelItem: ListRenderItem<Property> = ({ item }) => {
+    const videoUrl = item.reel_urls?.[0];
 
-      {/* Right Side Vertical Action Panel */}
-      <View style={styles.rightActionsContainer}>
-        {/* bookmark icon + count */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleActionPress('save', item.title)}
-          activeOpacity={0.7}
-        >
-          <Feather name="bookmark" size={24} color="#FFFFFF" style={styles.actionIcon} />
-          <Text style={styles.actionCount}>{item.saves}</Text>
-        </TouchableOpacity>
-
-        {/* share icon + count */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleActionPress('share', item.title)}
-          activeOpacity={0.7}
-        >
-          <Feather name="share-2" size={24} color="#FFFFFF" style={styles.actionIcon} />
-          <Text style={styles.actionCount}>{item.shares}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Bottom details section */}
-      <View style={styles.bottomOverlay}>
-        {/* ROW 1: Property name + Trust Score */}
-        <View style={styles.overlayHeaderRow}>
-          <Text style={[styles.propertyName, { flex: 1, marginRight: 12 }]}>{item.title}</Text>
-          {/* Trust Score Badge */}
-          <View style={styles.trustBadge}>
-            <Text style={styles.trustScoreValue}>{item.score}</Text>
-            <Text style={styles.trustScoreLabel}>{i18n.t('discover.trustScore')}</Text>
-          </View>
+    return (
+      <View style={styles.reelCard}>
+        {/* Property Video Player */}
+        <View style={styles.propertyImageArea}>
+          {videoUrl ? (
+            <Video
+              source={{ uri: videoUrl }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={activeTab === 'reels'}
+              isLooping
+              useNativeControls={false}
+            />
+          ) : (
+            <MaterialCommunityIcons name="home" size={80} color="#84C9BA" />
+          )}
         </View>
 
-        {/* ROW 2: Location */}
-        <Text style={styles.locationRow}>
-          <Feather name="map-pin" size={12} color="#84C9BA" /> {item.location}
-        </Text>
+        {/* Right Side Vertical Action Panel */}
+        <View style={styles.rightActionsContainer}>
+          {/* bookmark icon */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleActionPress('save', item.name)}
+            activeOpacity={0.7}
+          >
+            <Feather name="bookmark" size={24} color="#FFFFFF" style={styles.actionIcon} />
+            <Text style={styles.actionCount}>124</Text>
+          </TouchableOpacity>
 
-        {/* ROW 3: Amenity chips */}
-        <View style={styles.chipsRow}>
-          {item.tags.map((tag, idx) => (
-            <View key={idx} style={styles.amenityChip}>
-              <Text style={styles.amenityChipText}>{tag}</Text>
+          {/* share icon */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleActionPress('share', item.name)}
+            activeOpacity={0.7}
+          >
+            <Feather name="share-2" size={24} color="#FFFFFF" style={styles.actionIcon} />
+            <Text style={styles.actionCount}>48</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom details section */}
+        <View style={styles.bottomOverlay}>
+          {/* ROW 1: Property name + Trust Score */}
+          <View style={styles.overlayHeaderRow}>
+            <Text style={[styles.propertyName, { flex: 1, marginRight: 12 }]} numberOfLines={1}>{item.name}</Text>
+            {/* Trust Score Badge */}
+            <View style={styles.trustBadge}>
+              <Text style={styles.trustScoreValue}>9.2</Text>
+              <Text style={styles.trustScoreLabel}>{i18n.t('discover.trustScore')}</Text>
             </View>
-          ))}
-        </View>
+          </View>
 
-        {/* ROW 4: Price */}
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>{i18n.t('discover.startingFrom')}</Text>
-          <Text style={styles.priceValue}>{item.price}/night</Text>
-        </View>
-
-        {/* ROW 5: View Property button right after price */}
-        <TouchableOpacity
-          style={styles.viewPropertyButton}
-          onPress={() => handleViewProperty(item.title)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.viewPropertyButtonText}>
-            View Property →
+          {/* ROW 2: Location */}
+          <Text style={styles.locationRow}>
+            <Feather name="map-pin" size={12} color="#84C9BA" /> {item.location?.city}, {item.location?.state}
           </Text>
-        </TouchableOpacity>
+
+          {/* ROW 3: Amenity chips */}
+          <View style={styles.chipsRow}>
+            {item.amenities.slice(0, 3).map((tag, idx) => (
+              <View key={idx} style={styles.amenityChip}>
+                <Text style={styles.amenityChipText}>{tag.replace('_', ' ').toUpperCase()}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* ROW 4: Price */}
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>{i18n.t('discover.startingFrom')}</Text>
+            <Text style={styles.priceValue}>₹{item.price_per_night.toLocaleString('en-IN')}/night</Text>
+          </View>
+
+          {/* ROW 5: View Property button */}
+          <TouchableOpacity
+            style={styles.viewPropertyButton}
+            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: item.id })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewPropertyButtonText}>
+              View Property →
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, activeTab === 'stories' && styles.lightContainer]}>
@@ -238,15 +307,31 @@ export default function DiscoverScreen() {
             </TouchableOpacity>
           </View>
           {/* Reel list */}
-          <FlatList
-            style={styles.flatListFlex}
-            data={reelsData}
-            renderItem={renderReelItem}
-            keyExtractor={(item) => item.id}
-            pagingEnabled
-            showsVerticalScrollIndicator={false}
-            decelerationRate="fast"
-          />
+          {loadingReels ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F1714' }}>
+              <ActivityIndicator size="large" color="#84C9BA" />
+            </View>
+          ) : reelProperties.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F1714', padding: 24 }}>
+              <Feather name="video" size={48} color="#6B7370" style={{ marginBottom: 16 }} />
+              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
+                No Reels Available
+              </Text>
+              <Text style={{ color: '#6B7370', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+                Properties with uploaded or connected Instagram reels will appear here.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              style={styles.flatListFlex}
+              data={reelProperties}
+              renderItem={renderReelItem}
+              keyExtractor={(item) => item.id}
+              pagingEnabled
+              showsVerticalScrollIndicator={false}
+              decelerationRate="fast"
+            />
+          )}
         </SafeAreaView>
       ) : (
         <SafeAreaView style={styles.safeAreaStories} edges={['top']}>

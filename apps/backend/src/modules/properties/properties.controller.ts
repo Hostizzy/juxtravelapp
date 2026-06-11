@@ -56,6 +56,13 @@ export class PropertiesController {
     return this.propertiesService.findByHostId(payload.sub);
   }
 
+  @Get('slug/:slug')
+  async getBySlug(
+    @Param('slug') slug: string,
+  ) {
+    return this.propertiesService.findBySlug(slug);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getProperty(

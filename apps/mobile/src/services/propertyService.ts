@@ -208,3 +208,43 @@ export const updateProperty = async (
     };
   }
 };
+
+export const uploadVerificationDoc = async (
+  uri: string,
+  docType: string
+): Promise<string | null> => {
+  try {
+    const token = await SecureStore.getItemAsync('access_token');
+    if (!token) return null;
+
+    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://10.0.2.2:3000/api/v1';
+
+    const formData = new FormData();
+    formData.append('doc', {
+      uri,
+      type: 'image/jpeg',
+      name: `${docType}_${Date.now()}.jpg`,
+    } as unknown as Blob);
+    formData.append('docType', docType);
+
+    const response = await fetch(
+      `${backendUrl}/verification/upload-doc`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) return null;
+    return data.data.url;
+
+  } catch (error) {
+    console.error('Doc upload failed:', error);
+    return null;
+  }
+};

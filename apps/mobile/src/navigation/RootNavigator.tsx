@@ -22,11 +22,38 @@ import ListStep4Screen from '../features/host/listProperty/ListStep4Screen';
 import ListStep5Screen from '../features/host/listProperty/ListStep5Screen';
 import ReviewPendingScreen from '../features/host/reviewPending/ReviewPendingScreen';
 import HostPropertyDetailScreen from '../features/host/property/HostPropertyDetailScreen';
+import GuestVerificationScreen from '../features/verification/GuestVerificationScreen';
+import PaymentScreen from '../features/payment/PaymentScreen';
+import InstagramConnectScreen from '../features/host/instagram/InstagramConnectScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
   HostPropertyDetail: {
     propertyId: string;
+    checkIn?: string;
+    checkOut?: string;
+    guests?: number;
+  };
+  GuestVerification: {
+    propertyId: string;
+    propertyName: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    totalAmount: number;
+  };
+  Payment: {
+    propertyId: string;
+    propertyName: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    totalAmount: number;
+    verificationId?: string;
+  };
+  InstagramConnect: {
+    propertyId: string;
+    propertyName: string;
   };
   Auth: undefined;
   Otp: { 
@@ -159,6 +186,9 @@ export default function RootNavigator() {
       <Stack.Screen name="HostReviewPending" component={ReviewPendingScreen} />
       <Stack.Screen name="HostPropertyDetail" component={HostPropertyDetailScreen} />
       <Stack.Screen name="MatchResults" component={MatchResultsScreen} />
+      <Stack.Screen name="GuestVerification" component={GuestVerificationScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="InstagramConnect" component={InstagramConnectScreen} />
     </Stack.Navigator>
   );
 }

@@ -331,5 +331,16 @@
     "vibeMatch": "Vibe Match",
     "groupFit": "Group Fit",
     "budgetFit": "Budget Fit"
+  },
+  "instagram": {
+    "connect": "Connect Instagram",
+    "connected": "Connected",
+    "disconnect": "Disconnect",
+    "fetchReels": "Fetch Latest Reels",
+    "saveReels": "Save Reels to Property",
+    "manualUpload": "Upload Manually",
+    "selectReels": "Select up to 4 reels",
+    "noReels": "No reels found",
+    "connectFirst": "Connect Instagram first"
   }
 }

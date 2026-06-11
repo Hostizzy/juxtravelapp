@@ -69,7 +69,12 @@ export default function MatchResultsScreen() {
   };
 
   const handleViewProperty = (propertyId: string) => {
-    navigation.navigate('HostPropertyDetail', { propertyId });
+    navigation.navigate('HostPropertyDetail', {
+      propertyId,
+      checkIn,
+      checkOut,
+      guests,
+    });
   };
 
   if (loading) {
