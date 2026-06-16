@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +20,7 @@ import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../stores/authStore';
 import { apiService } from '../../services/api';
+import { MatchedProperty } from '../../services/matchService';
 import i18n from '../../locales/i18n';
 import styles from './ProfileScreen.styles';
 
@@ -66,7 +69,34 @@ export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, session } = useAuthStore();
   const userName = user?.name ?? 'Traveller';
+  const isAlreadyHost = user?.role === 'host' || user?.role === 'both';
   const [activeTab, setActiveTab] = useState<TabType>('trips');
+  const [savedProperties, setSavedProperties] = useState<MatchedProperty[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState<boolean>(false);
+
+  const fetchSaved = async () => {
+    try {
+      setLoadingSaved(true);
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      
+      const data = await apiService.get<MatchedProperty[]>(
+        '/users/saved-properties', 
+        token
+      );
+      setSavedProperties(data || []);
+    } catch (err) {
+      console.error('Failed to fetch saved properties:', err);
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'saved') {
+      fetchSaved();
+    }
+  }, [activeTab]);
 
   const handleBecomeHost = () => {
     navigation.navigate('HostOnboarding');
@@ -151,7 +181,7 @@ export default function ProfileScreen() {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <Text style={styles.backArrow}>←</Text>
+            <Feather name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>{i18n.t('auth.login.title')}</Text>
           <View style={styles.topBarRight} />
@@ -173,27 +203,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Become a Host Banner */}
-          {(!user || user.role === 'guest') ? (
-            <View style={styles.hostBanner}>
-              <View style={styles.hostBannerLeft}>
-                <Text style={styles.hostBannerTitle}>
-                  {i18n.t('profile.hostBannerTitle')}
-                </Text>
-                <Text style={styles.hostBannerSubtitle}>
-                  {i18n.t('profile.hostBannerSubtitle')}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.hostButton}
-                onPress={() => navigation.navigate('HostOnboarding')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.hostButtonText}>
-                  {i18n.t('profile.becomeHost')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {isAlreadyHost ? (
             <View style={styles.hostBanner}>
               <View style={styles.hostBannerLeft}>
                 <Text style={styles.hostBannerTitle}>
@@ -204,12 +214,32 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                style={[styles.hostButton, { backgroundColor: '#D4704A' }]}
+                style={styles.switchHostBtn}
                 onPress={() => navigation.navigate('HostApp')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.hostButtonText}>
-                  Switch to Host
+                <Text style={styles.switchHostText}>
+                  Switch to Host Mode
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.hostBanner}>
+              <View style={styles.hostBannerLeft}>
+                <Text style={styles.hostBannerTitle}>
+                  Become a Host
+                </Text>
+                <Text style={styles.hostBannerSubtitle}>
+                  Earn extra income by listing your property.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.becomeHostBtn}
+                onPress={() => navigation.navigate('HostOnboarding')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.becomeHostText}>
+                  Become a Host
                 </Text>
               </TouchableOpacity>
             </View>
@@ -280,23 +310,162 @@ export default function ProfileScreen() {
 
             {/* TAB 2: SAVED */}
             {activeTab === 'saved' && (
-              <View style={styles.emptySavedContainer}>
-                <Feather name="bookmark" size={32} color="#6B7370" />
-                <Text style={styles.emptySavedTitle}>
-                  {i18n.t('profile.noSaved')}
-                </Text>
-                <Text style={styles.emptySavedSubtitle}>
-                  {i18n.t('profile.noSavedSub')}
-                </Text>
-                <TouchableOpacity
-                  style={styles.exploreButton}
-                  onPress={handleExplore}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.exploreButtonText}>
-                    {i18n.t('profile.explore')}
-                  </Text>
-                </TouchableOpacity>
+              <View>
+                {loadingSaved ? (
+                  <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
+                ) : savedProperties.length === 0 ? (
+                  <View style={styles.emptySavedContainer}>
+                    <Feather name="bookmark" size={32} color="#6B7370" />
+                    <Text style={styles.emptySavedTitle}>
+                      No saved properties yet
+                    </Text>
+                    <Text style={styles.emptySavedSubtitle}>
+                      Properties you save will appear here.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.exploreButton}
+                      onPress={handleExplore}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.exploreButtonText}>
+                        {i18n.t('profile.explore')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  savedProperties.map((property) => {
+                    const score = property.matchScore ?? 8.5;
+                    const vibePct = Math.min(100, Math.round(score * 10));
+                    const groupPct = Math.min(100, Math.round((score - 0.2) * 10));
+                    const budgetPct = Math.min(100, Math.round((score + 0.1) * 10));
+
+                    return (
+                      <View key={property.id} style={styles.card}>
+                        {/* Photo Area */}
+                        <View style={styles.photoArea}>
+                          {property.photos && property.photos.length > 0 ? (
+                            <Image
+                              source={{ uri: property.photos[0] }}
+                              style={styles.cardImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.placeholderContainer}>
+                              <Feather name="home" size={48} color="#84C9BA" />
+                            </View>
+                          )}
+
+                          {/* Match Score Badge */}
+                          <View style={styles.scoreBadge}>
+                            <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
+                            <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
+                          </View>
+                        </View>
+
+                        {/* Content Area */}
+                        <View style={styles.contentArea}>
+                          {/* Row 1: Name + Price */}
+                          <View style={styles.row1}>
+                            <Text style={styles.propertyName} numberOfLines={1}>
+                              {property.name}
+                            </Text>
+                            <Text style={styles.propertyPrice}>
+                              ₹{property.price_per_night.toLocaleString('en-IN')}/night
+                            </Text>
+                          </View>
+
+                          {/* Row 2: Location */}
+                          <View style={styles.row2}>
+                            <Feather name="map-pin" size={14} color="#6B7370" />
+                            <Text style={styles.locationText} numberOfLines={1}>
+                              {property.location?.city}, {property.location?.state}
+                            </Text>
+                          </View>
+
+                          {/* Row 3: Amenities (max 3) */}
+                          {property.amenities && property.amenities.length > 0 && (
+                            <View style={styles.row3}>
+                              {property.amenities.slice(0, 3).map((amenity) => (
+                                <View key={amenity} style={styles.amenityChip}>
+                                  <Text style={styles.amenityChipText}>
+                                    {amenity.replace('_', ' ').toUpperCase()}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+
+                          {/* Row 4: Match Breakdown */}
+                          <View style={styles.row4}>
+                            {/* Vibe Match */}
+                            <View style={styles.breakdownItem}>
+                              <Text style={styles.breakdownLabel}>{i18n.t('matches.vibeMatch')}</Text>
+                              <View style={styles.breakdownBarContainer}>
+                                <View
+                                  style={[styles.breakdownBar, { width: `${vibePct}%` }]}
+                                />
+                              </View>
+                            </View>
+
+                            {/* Group Fit */}
+                            <View style={styles.breakdownItem}>
+                              <Text style={styles.breakdownLabel}>{i18n.t('matches.groupFit')}</Text>
+                              <View style={styles.breakdownBarContainer}>
+                                <View
+                                  style={[styles.breakdownBar, { width: `${groupPct}%` }]}
+                                />
+                              </View>
+                            </View>
+
+                            {/* Budget Fit */}
+                            <View style={styles.breakdownItem}>
+                              <Text style={styles.breakdownLabel}>{i18n.t('matches.budgetFit')}</Text>
+                              <View style={styles.breakdownBarContainer}>
+                                <View
+                                  style={[styles.breakdownBar, { width: `${budgetPct}%` }]}
+                                />
+                              </View>
+                            </View>
+                          </View>
+
+                          {/* Row 5: Action Buttons */}
+                          <View style={styles.row5}>
+                            <TouchableOpacity
+                              style={styles.viewButton}
+                              onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={styles.viewButtonText}>
+                                {i18n.t('matches.viewProperty')}
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={styles.saveButton}
+                              onPress={async () => {
+                                try {
+                                  const token = await SecureStore.getItemAsync('access_token');
+                                  if (!token) return;
+                                  await apiService.post('/users/save-property', { propertyId: property.id }, token);
+                                  Alert.alert('Removed! ✓', 'Property removed from saved');
+                                  fetchSaved();
+                                } catch (error) {
+                                  Alert.alert('Error', 'Could not remove');
+                                }
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                <Feather name="bookmark" size={16} color="#1A6B5A" fill="#1A6B5A" />
+                                <Text style={styles.saveButtonText}>Saved</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
               </View>
             )}
 

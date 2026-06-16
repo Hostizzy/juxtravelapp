@@ -43,7 +43,16 @@ export default function SplashScreen({ navigation }: Props) {
         );
 
         // Save to store
-        useAuthStore.getState().setUser(userData);
+        useAuthStore.getState().setUser({
+          id: userData.id,
+          name: userData.name,
+          phone: userData.phone,
+          email: userData.email,
+          role: userData.role,
+          avatar_url: userData.avatar_url,
+          guest_profile: userData.guest_profile,
+          host_profile: userData.host_profile,
+        });
 
         // Navigate based on role
         navigation.replace('Guest');

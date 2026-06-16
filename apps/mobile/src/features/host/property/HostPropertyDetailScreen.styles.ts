@@ -326,4 +326,13 @@ export default StyleSheet.create({
     fontWeight: '600',
     color: '#1A1F1E',
   },
+  saveIconBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#1E2522',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

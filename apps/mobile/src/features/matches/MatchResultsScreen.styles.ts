@@ -229,54 +229,59 @@ export default StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  loadingContainer: {
+  conciergeLoadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
     backgroundColor: '#0F1714',
   },
-  loadingText: {
-    color: '#84C9BA',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 16,
+  loaderSpinner: {
+    marginBottom: 24,
+  },
+  loadingTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
     fontFamily: 'serif',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  skeletonCard: {
+  loadingSubtitle: {
+    fontSize: 14,
+    color: '#84C9BA',
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  checklistWrapper: {
+    width: '100%',
     backgroundColor: '#1E2B25',
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    height: 380,
-    padding: 16,
-    justifyContent: 'space-between',
-    opacity: 0.6,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(132, 201, 186, 0.1)',
   },
-  skeletonPhoto: {
-    height: 180,
-    backgroundColor: '#2D3D35',
-    borderRadius: 12,
+  checklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  skeletonText: {
-    height: 20,
-    backgroundColor: '#2D3D35',
-    borderRadius: 4,
-    width: '70%',
-    marginTop: 12,
+  checkIcon: {
+    width: 24,
+    marginRight: 12,
   },
-  skeletonTextShort: {
-    height: 15,
-    backgroundColor: '#2D3D35',
-    borderRadius: 4,
-    width: '40%',
-    marginTop: 8,
+  checklistText: {
+    fontSize: 14,
+    color: '#6B7370',
+    fontWeight: '500',
   },
-  skeletonButton: {
-    height: 44,
-    backgroundColor: '#2D3D35',
-    borderRadius: 100,
-    marginTop: 16,
+  checklistTextCompleted: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  checklistTextActive: {
+    color: '#D4704A',
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,

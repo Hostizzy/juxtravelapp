@@ -27,6 +27,10 @@ export interface UserData {
   host_profile?: unknown;
 }
 
+export interface GuestProfileData {
+  saved_properties?: string[];
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -160,5 +164,54 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  async saveProperty(
+    userId: string,
+    propertyId: string
+  ): Promise<{ success: boolean }> {
+    const { data: profile } = await this.supabaseService.admin
+      .from('guest_profiles')
+      .select('saved_properties')
+      .eq('user_id', userId)
+      .single();
+
+    const savedProfile = profile as GuestProfileData | null;
+    const current = savedProfile?.saved_properties ?? [];
+    
+    if (!current.includes(propertyId)) {
+      await this.supabaseService.admin
+        .from('guest_profiles')
+        .update({
+          saved_properties: [
+            ...current, propertyId
+          ]
+        })
+        .eq('user_id', userId);
+    }
+
+    return { success: true };
+  }
+
+  async getSavedProperties(
+    userId: string
+  ): Promise<unknown[]> {
+    const { data: profile } = await this.supabaseService.admin
+      .from('guest_profiles')
+      .select('saved_properties')
+      .eq('user_id', userId)
+      .single();
+
+    const savedProfile = profile as GuestProfileData | null;
+    const savedIds = savedProfile?.saved_properties ?? [];
+
+    if (savedIds.length === 0) return [];
+
+    const { data: properties } = await this.supabaseService.admin
+      .from('properties')
+      .select('*')
+      .in('id', savedIds);
+
+    return (properties as unknown[]) ?? [];
   }
 }

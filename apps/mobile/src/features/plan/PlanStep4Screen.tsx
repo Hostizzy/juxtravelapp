@@ -5,15 +5,16 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
+  Image,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import i18n from '../../locales/i18n';
 import styles from './PlanStep4Screen.styles';
 
 type PlanStep4Props = {
@@ -23,15 +24,15 @@ type PlanStep4Props = {
 
 interface BudgetPreset {
   key: string;
-  labelKey: string;
+  label: string;
   value: number;
 }
 
 const BUDGET_PRESETS: BudgetPreset[] = [
-  { key: 'under30k', labelKey: 'plan.step4.under30k', value: 25000 },
-  { key: 'midRange', labelKey: 'plan.step4.midRange', value: 75000 },
-  { key: 'luxury', labelKey: 'plan.step4.luxury', value: 150000 },
-  { key: 'flexible', labelKey: 'plan.step4.flexible', value: 125000 },
+  { key: 'under30k', label: '💼 Under 30k', value: 25000 },
+  { key: 'midRange', label: '📊 Mid-range', value: 75000 },
+  { key: 'luxury', label: '👑 Luxury', value: 150000 },
+  { key: 'flexible', label: '⚡ Flexible', value: 120000 },
 ];
 
 const formatCurrency = (amount: number): string => {
@@ -43,10 +44,53 @@ const formatCurrency = (amount: number): string => {
 };
 
 export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
-  const { destination, checkIn, checkOut, guests, groupType, moods } = route.params;
+  const { destination, checkIn, checkOut, guests, groupType, moods, bedrooms } = route.params;
   const [budget, setBudget] = useState(45000);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [specificNotes, setSpecificNotes] = useState('');
+
+  const getDestinationImage = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800';
+    }
+    if (d.includes('manali')) {
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
+    }
+    if (d.includes('kerala')) {
+      return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+    }
+    if (d.includes('rajasthan') || d.includes('jaipur')) {
+      return 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800';
+    }
+    return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+  };
+
+  const getFocalStyle = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return { top: -20 };
+    }
+    if (d.includes('manali')) {
+      return { top: 0 };
+    }
+    if (d.includes('kerala')) {
+      return { top: -40 };
+    }
+    return { top: 0 };
+  };
+
+  const getAIInsightText = () => {
+    const dest = destination;
+    const amount = budget;
+    if (amount < 35000) {
+      return `A budget of ${formatCurrency(amount)} in ${dest} is ideal for cozy private rooms and homestays offering home-cooked meals.`;
+    }
+    if (amount < 90000) {
+      return `A mid-range budget of ${formatCurrency(amount)} in ${dest} opens premium apartments, cottages, and properties with private balconies.`;
+    }
+    return `A luxury budget of ${formatCurrency(amount)} in ${dest} allows booking signature estate properties, private villas with infinity pools, and personal chef services.`;
+  };
 
   const handlePresetPress = (preset: BudgetPreset) => {
     if (selectedPreset === preset.key) {
@@ -72,45 +116,81 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
       moods,
       budget,
       freeText: specificNotes,
+      bedrooms,
     });
   };
 
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 4 OF 4</Text>
-          <View style={styles.topBarSpacer} />
-        </View>
+        {/* Header background containing top bar & progress bar */}
+        <View style={styles.headerBackground}>
+          {/* Curved Image & Gradient Blend Wrapper */}
+          <View style={styles.topRightImageContainer}>
+            <Image 
+              source={{ uri: getDestinationImage(destination) }} 
+              style={[styles.headerImage, getFocalStyle(destination)]}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['#0F1714', 'rgba(15, 23, 20, 0.95)', 'rgba(15, 23, 20, 0.5)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+          {/* Bottom fade of the header background */}
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.15)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.headerBottomFade}
+          />
+
+          {/* Dedicated Header Content Container */}
+          <View style={styles.headerContent}>
+            {/* Back Button Row */}
+            <View style={styles.backButtonRow}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                <Feather name="chevron-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Step Label */}
+            <Text style={styles.stepIndicator}>STEP 4 OF 4</Text>
+
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+            </View>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
-            {/* Title */}
-            <Text style={styles.title}>{i18n.t('plan.step4.title')}</Text>
+            {/* Title & Subtitle */}
+            <Text style={styles.title}>Let's plan around your budget</Text>
+            <Text style={styles.subtitle}>Set your budget and tell us about any special needs.</Text>
 
             {/* Budget Header */}
             <View style={styles.budgetHeaderRow}>
-              <Text style={styles.budgetLabel}>{i18n.t('plan.step4.budgetLabel')}</Text>
+              <Text style={styles.budgetLabel}>YOUR BUDGET</Text>
               <View style={styles.totalForAllChip}>
-                <Text style={styles.totalForAllText}>{i18n.t('plan.step4.totalForAll')}</Text>
+                <Feather name="users" size={10} color="#1A6B5A" />
+                <Text style={styles.totalForAllText}>TOTAL FOR ALL</Text>
               </View>
             </View>
 
             {/* Budget Display Card */}
             <View style={styles.budgetCard}>
               <Text style={styles.budgetAmount}>{formatCurrency(budget)}</Text>
+              <Text style={styles.budgetSubtitleText}>Total trip budget</Text>
+              
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
@@ -142,7 +222,7 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.budgetChipText, isSelected && styles.budgetChipTextSelected]}>
-                      {i18n.t(preset.labelKey)}
+                      {preset.label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -150,25 +230,45 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
             </View>
 
             {/* Specific Notes */}
-            <Text style={styles.specificLabel}>{i18n.t('plan.step4.specificLabel')}</Text>
+            <View style={styles.specificLabelContainer}>
+              <Feather name="star" size={12} color="#1A6B5A" />
+              <Text style={styles.specificLabel}>ANYTHING SPECIFIC?</Text>
+            </View>
             <TextInput
               style={styles.specificInput}
-              placeholder={i18n.t('plan.step4.specificPlaceholder')}
+              placeholder="e.g. Vegetarian meals only, prefer balcony rooms, anniversary surprise..."
               placeholderTextColor="#A0A5A3"
               multiline
               value={specificNotes}
               onChangeText={setSpecificNotes}
               textAlignVertical="top"
             />
+
+            {/* AI Insight Chip */}
+            <View style={styles.aiInsightCard}>
+              <View style={styles.aiInsightIconCircle}>
+                <Feather name="info" size={16} color="#1A6B5A" />
+              </View>
+              <View style={styles.aiInsightContent}>
+                <Text style={styles.aiInsightTitle}>✨ AI Insight</Text>
+                <Text style={styles.aiInsightDesc}>
+                  {getAIInsightText()}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Get Matches Button */}
           <TouchableOpacity style={styles.matchButton} onPress={handleGetMatches} activeOpacity={0.85}>
-            <Text style={styles.matchButtonText}>
-              {i18n.t('plan.step4.getMatches')} <Feather name="target" size={20} color="#FFFFFF" />
-            </Text>
+            <Text style={styles.matchButtonText}>Get My Matches 🎯</Text>
           </TouchableOpacity>
-          <Text style={styles.aiNote}>{i18n.t('plan.step4.aiNote')}</Text>
+          
+          <View style={styles.aiNoteContainer}>
+            <Feather name="check-circle" size={14} color="#1A6B5A" />
+            <Text style={styles.aiNote}>
+              Secure planning. 100% personalized for you.
+            </Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>

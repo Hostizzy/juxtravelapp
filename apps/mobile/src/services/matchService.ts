@@ -23,38 +23,71 @@ export interface MatchedProperty {
   host_story?: string;
   status: string;
   matchScore?: number;
+  rating?: number;
+}
+
+export type Property = MatchedProperty;
+
+export interface MatchResult {
+  property: Property;
+  score: number;
+  scorePercentage: number;
+  breakdown: {
+    location: number;
+    capacity: number;
+    bedrooms: number;
+    budget: number;
+    vibe: number;
+    trust: number;
+    total: number;
+  };
+  priceBreakdown: {
+    nights: number;
+    weekdayNights: number;
+    weekendNights: number;
+    subtotal: number;
+    serviceFee: number;
+    grandTotal: number;
+    pricePerNight: number;
+  };
+  matchReasons: string[];
 }
 
 export const getMatches = async (
   destination: string,
+  checkIn: string,
+  checkOut: string,
   guests: number,
+  bedrooms: number,
+  groupType: string,
   moods: string[],
   budget: number,
-): Promise<MatchedProperty[]> => {
+): Promise<MatchResult[]> => {
   try {
     const token = await SecureStore.getItemAsync('access_token');
     
     if (!token) return [];
 
-    // Fetch active properties
-    const properties = await apiService.get<MatchedProperty[]>(
-      '/properties/active',
+    const results = await apiService.post<MatchResult[]>(
+      '/matches/find',
+      {
+        destination,
+        checkIn,
+        checkOut,
+        guests,
+        bedrooms,
+        groupType,
+        moods,
+        budget,
+      },
       token
     );
 
-    // Simple scoring algorithm
-    const scored = properties.map(
-      (prop, index) => ({
-        ...prop,
-        matchScore: [9.2, 8.7, 8.4][index] ?? 8.0,
-      })
-    );
-
-    // Return top 3
-    return scored.slice(0, 3);
+    return results;
 
   } catch (error) {
-    console.error('Get matches failed:', error);
+    console.error('Match failed:', error);
     return [];
   }
 };
+

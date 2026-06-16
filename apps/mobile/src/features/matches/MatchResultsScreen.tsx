@@ -13,7 +13,9 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { getMatches, MatchedProperty } from '../../services/matchService';
+import { getMatches, MatchResult, MatchedProperty } from '../../services/matchService';
+import * as SecureStore from 'expo-secure-store';
+import { apiService } from '../../services/api';
 import i18n from '../../locales/i18n';
 import styles from './MatchResultsScreen.styles';
 
@@ -37,35 +39,77 @@ export default function MatchResultsScreen() {
     moods,
     budget,
     freeText,
+    bedrooms,
   } = route.params;
 
   const [loading, setLoading] = useState(true);
-  const [matches, setMatches] = useState<MatchedProperty[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [savedProperties, setSavedProperties] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchMatches = async () => {
+    let interval: any;
+    if (loading) {
+      setCurrentStep(0);
+      interval = setInterval(() => {
+        setCurrentStep((prev) => {
+          if (prev < 4) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 400);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    const fetchMatchesAndSaved = async () => {
       try {
         setLoading(true);
-        // Simulate a slight network delay to show off premium skeleton loader
-        const [data] = await Promise.all([
-          getMatches(destination, guests, moods, budget),
-          new Promise((resolve) => setTimeout(resolve, 1500)),
+        const token = await SecureStore.getItemAsync('access_token');
+        const [data, savedData] = await Promise.all([
+          getMatches(destination, checkIn, checkOut, guests, bedrooms, groupType, moods, budget),
+          token ? apiService.get<MatchedProperty[]>('/users/saved-properties', token).catch(() => []) : [],
+          new Promise((resolve) => setTimeout(resolve, 2200)), // Extends display time for AI generation steps
         ]);
         setMatches(data);
+        setSavedProperties((savedData || []).map(p => p.id));
       } catch (error) {
         console.error('Failed to fetch matches:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchMatches();
-  }, [destination, guests, moods, budget]);
+    fetchMatchesAndSaved();
+  }, [destination, checkIn, checkOut, guests, bedrooms, groupType, moods, budget]);
 
-  const handleSave = (propertyId: string) => {
-    Alert.alert(
-      i18n.t('discover.data.reels.reelSavedAlert') || 'Saved!',
-      'This property has been added to your saved list.'
-    );
+  const handleSave = async (propertyId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      await apiService.post(
+        '/users/save-property',
+        { propertyId },
+        token
+      );
+
+      setSavedProperties(prev => 
+        prev.includes(propertyId)
+          ? prev.filter(id => id !== propertyId)
+          : [...prev, propertyId]
+      );
+
+      Alert.alert(
+        'Saved! ✓',
+        'Property saved to your profile'
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Could not save');
+    }
   };
 
   const handleViewProperty = (propertyId: string) => {
@@ -78,6 +122,14 @@ export default function MatchResultsScreen() {
   };
 
   if (loading) {
+    const checklistItems = [
+      'Analyzing travel preferences...',
+      `Scoring active properties in ${destination}...`,
+      `Filtering by ₹${budget.toLocaleString('en-IN')} budget...`,
+      `Matching group fit for ${guests} guests...`,
+      'Polishing your personalized concierge matches...',
+    ];
+
     return (
       <View style={styles.root}>
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -90,29 +142,43 @@ export default function MatchResultsScreen() {
             >
               <Feather name="arrow-left" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={styles.topBarTitle}>{i18n.t('matches.title')}</Text>
+            <Text style={styles.topBarTitle}>Concierge Search</Text>
             <View style={styles.topBarSpacer} />
           </View>
 
-          {/* Skeleton Loaders */}
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color="#84C9BA" size="large" />
-              <Text style={styles.loadingText}>{i18n.t('matches.loading')}</Text>
-            </View>
+          <View style={styles.conciergeLoadingContainer}>
+            <ActivityIndicator color="#1A6B5A" size="large" style={styles.loaderSpinner} />
+            <Text style={styles.loadingTitle}>Generating Your Escape...</Text>
+            <Text style={styles.loadingSubtitle}>AI Match Engine is curating your perfect matches</Text>
 
-            {[1, 2, 3].map((key) => (
-              <View key={key} style={styles.skeletonCard}>
-                <View style={styles.skeletonPhoto} />
-                <View style={styles.skeletonText} />
-                <View style={styles.skeletonTextShort} />
-                <View style={styles.skeletonButton} />
-              </View>
-            ))}
-          </ScrollView>
+            <View style={styles.checklistWrapper}>
+              {checklistItems.map((item, index) => {
+                const isCompleted = index < currentStep;
+                const isActive = index === currentStep;
+                
+                return (
+                  <View key={index} style={styles.checklistItem}>
+                    {isCompleted ? (
+                      <Feather name="check-circle" size={18} color="#1A6B5A" style={styles.checkIcon} />
+                    ) : isActive ? (
+                      <ActivityIndicator size="small" color="#D4704A" style={styles.checkIcon} />
+                    ) : (
+                      <Feather name="circle" size={18} color="#6B7370" style={styles.checkIcon} />
+                    )}
+                    <Text 
+                      style={[
+                        styles.checklistText,
+                        isCompleted && styles.checklistTextCompleted,
+                        isActive && styles.checklistTextActive
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         </SafeAreaView>
       </View>
     );
@@ -192,11 +258,12 @@ export default function MatchResultsScreen() {
           </View>
 
           {/* Matches List */}
-          {matches.map((property) => {
-            const score = property.matchScore ?? 8.5;
-            const vibePct = Math.min(100, Math.round(score * 10));
-            const groupPct = Math.min(100, Math.round((score - 0.2) * 10));
-            const budgetPct = Math.min(100, Math.round((score + 0.1) * 10));
+          {matches.map((result) => {
+            const property = result.property;
+            const score = result.score;
+            const vibePct = Math.min(100, Math.round((result.breakdown.vibe / 15) * 100));
+            const groupPct = Math.min(100, Math.round((result.breakdown.capacity / 20) * 100));
+            const budgetPct = Math.min(100, Math.round((result.breakdown.budget / 15) * 100));
 
             return (
               <View key={property.id} style={styles.card}>
@@ -216,7 +283,7 @@ export default function MatchResultsScreen() {
 
                   {/* Match Score Badge */}
                   <View style={styles.scoreBadge}>
-                    <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
+                    <Text style={styles.scoreValue}>{score.toFixed(0)}%</Text>
                     <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
                   </View>
                 </View>
@@ -229,7 +296,7 @@ export default function MatchResultsScreen() {
                       {property.name}
                     </Text>
                     <Text style={styles.propertyPrice}>
-                      ₹{property.price_per_night.toLocaleString('en-IN')}/night
+                      ₹{result.priceBreakdown.grandTotal.toLocaleString('en-IN')} for {result.priceBreakdown.nights} {result.priceBreakdown.nights === 1 ? 'night' : 'nights'}
                     </Text>
                   </View>
 
@@ -248,6 +315,19 @@ export default function MatchResultsScreen() {
                         <View key={amenity} style={styles.amenityChip}>
                           <Text style={styles.amenityChipText}>
                             {amenity.replace('_', ' ').toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Match Reasons Chips */}
+                  {result.matchReasons && result.matchReasons.length > 0 && (
+                    <View style={[styles.row3, { marginTop: 4, marginBottom: 12 }]}>
+                      {result.matchReasons.map((reason, idx) => (
+                        <View key={idx} style={[styles.amenityChip, { backgroundColor: '#F5E6D0', borderColor: '#D4704A', borderWidth: 1 }]}>
+                          <Text style={[styles.amenityChipText, { color: '#D4704A', fontWeight: '700' }]}>
+                            {reason}
                           </Text>
                         </View>
                       ))}
@@ -304,9 +384,17 @@ export default function MatchResultsScreen() {
                       onPress={() => handleSave(property.id)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.saveButtonText}>
-                        {i18n.t('matches.saveForLater')}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Feather 
+                          name="bookmark" 
+                          size={16} 
+                          color={savedProperties.includes(property.id) ? "#1A6B5A" : "#1A1F1E"} 
+                          fill={savedProperties.includes(property.id) ? "#1A6B5A" : "transparent"}
+                        />
+                        <Text style={styles.saveButtonText}>
+                          {savedProperties.includes(property.id) ? 'Saved' : i18n.t('matches.saveForLater')}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>

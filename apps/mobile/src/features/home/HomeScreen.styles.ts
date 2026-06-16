@@ -1,39 +1,58 @@
 import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#021412',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#0F1714', // Deep Dark Green Header bleed background
+    backgroundColor: '#FAF8F4',
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#FAF8F4', // Premium Cream content background
+    backgroundColor: '#FAF8F4',
     paddingBottom: 80,
   },
-  header: {
-    backgroundColor: '#0F1714',
-    paddingTop: Platform.OS === 'ios' ? 8 : 16,
-    paddingBottom: 36,
-    paddingHorizontal: 20,
+  headerWrapper: {
+    backgroundColor: '#021412',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  headerAbsoluteImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.45,
+  },
+  headerContentContainer: {
+    width: '100%',
+    paddingTop: Platform.OS === 'ios' ? 48 : 36,
+    paddingBottom: 64,
+    paddingHorizontal: 20,
   },
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 28,
+    marginBottom: 24,
+    zIndex: 30,
   },
   greetingText: {
     fontSize: 14,
     color: '#84C9BA',
-    fontWeight: '600',
     fontFamily: 'serif',
     fontStyle: 'italic',
     letterSpacing: 0.5,
   },
   appTitle: {
-    fontSize: 28,
+    fontSize: 32,
     color: '#FFFFFF',
     fontWeight: '800',
     fontFamily: 'serif',
@@ -55,54 +74,91 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   avatarText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   bannerCard: {
-    backgroundColor: '#1E2B25',
-    borderWidth: 1,
-    borderColor: '#2D3F37',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 12, // Shrunk by ~25% for editorial depth
+    paddingHorizontal: 22, // Widened card padding
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    position: 'relative',
+    marginBottom: -48, // Overlaps the bottom edge
+    zIndex: 20,
   },
   bannerBadgeContainer: {
     alignSelf: 'flex-start',
-    backgroundColor: '#0E5E4E',
-    borderRadius: 6,
-    paddingHorizontal: 8,
+    backgroundColor: '#E6F2EF',
+    borderRadius: 100,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   bannerBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#84C9BA',
+    color: '#1A6B5A',
     letterSpacing: 1,
   },
+  bannerContentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  bannerTextLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
   bannerTitle: {
-    fontSize: 20,
+    fontSize: 19, // Adjusted for reduced card height
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#1A1F1E',
     fontFamily: 'serif',
-    lineHeight: 26,
+    lineHeight: 25,
     marginBottom: 6,
   },
   bannerSubtitle: {
-    fontSize: 13,
-    color: '#A0A5A3',
-    lineHeight: 18,
-    marginBottom: 16,
+    fontSize: 11,
+    color: '#6B7370',
+    lineHeight: 16,
+    marginBottom: 6,
+  },
+  bannerTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 2,
+  },
+  bannerTag: {
+    backgroundColor: '#FAF8F4',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  bannerTagText: {
+    fontSize: 10,
+    color: '#1A6B5A',
+    fontWeight: '700',
+  },
+  bannerImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: '#F0EDE8',
   },
   bannerBtn: {
     backgroundColor: '#1A6B5A',
     borderRadius: 100,
-    height: 44,
+    height: 44, // Adjusted for reduced card height
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
@@ -113,7 +169,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   contentArea: {
-    paddingTop: 28,
+    paddingTop: 64, // Offset spacing for overlapping card
     backgroundColor: '#FAF8F4',
   },
   sectionHeader: {
@@ -134,7 +190,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#1A6B5A',
-    textDecorationLine: 'underline',
   },
   horizontalScroll: {
     paddingLeft: 20,
@@ -142,70 +197,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   tripCard: {
-    width: 220,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-    borderRadius: 16,
-    padding: 16,
-    marginRight: 12,
-    shadowColor: '#1A1F1E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  tripEmojiCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#F0EDE8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  tripEmoji: {
-    fontSize: 22,
-  },
-  tripTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1F1E',
-    marginBottom: 3,
-  },
-  tripLocation: {
-    fontSize: 12,
-    color: '#6B7370',
-    marginBottom: 12,
-  },
-  tripDivider: {
-    height: 1,
-    backgroundColor: '#F0EDE8',
-    marginBottom: 12,
-  },
-  tripFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  tripDate: {
-    fontSize: 10,
-    color: '#6B7370',
-    fontWeight: '500',
-  },
-  tripBadge: {
-    backgroundColor: '#E6F2EF',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  tripBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#1A6B5A',
-  },
-  momentCard: {
     width: 180,
+    height: 240,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8E2D9',
@@ -218,56 +211,73 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  momentImageContainer: {
+  tripImage: {
+    width: '100%',
     height: 110,
     backgroundColor: '#E6F2EF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
   },
-  momentImgEmoji: {
-    fontSize: 40,
-  },
-  momentLikeBadge: {
-    position: 'absolute',
-    left: 10,
-    bottom: 10,
-    backgroundColor: 'rgba(26, 31, 30, 0.65)',
-    borderRadius: 100,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  momentLikeText: {
-    fontSize: 9,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  momentMeta: {
+  tripTextContainer: {
     padding: 12,
+    flex: 1,
+    justifyContent: 'space-between',
   },
-  momentAuthor: {
-    fontSize: 13,
-    fontWeight: '700',
+  tripTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#1A1F1E',
+    marginBottom: 2,
   },
-  momentLocation: {
-    fontSize: 10,
-    color: '#6B7370',
+  tripLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginBottom: 6,
   },
-  momentCaption: {
+  tripLocation: {
     fontSize: 11,
     color: '#6B7370',
-    fontStyle: 'italic',
-    lineHeight: 15,
   },
-  trendingCard: {
+  tripFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tripDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tripDate: {
+    fontSize: 9,
+    color: '#6B7370',
+    fontWeight: '600',
+  },
+  tripBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tripBadgeCompleted: {
+    backgroundColor: '#E6F2EF',
+  },
+  tripBadgeUpcoming: {
+    backgroundColor: '#FDF2E9',
+  },
+  tripBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  tripBadgeTextCompleted: {
+    color: '#1A6B5A',
+  },
+  tripBadgeTextUpcoming: {
+    color: '#D4704A',
+  },
+  momentCard: {
     width: 160,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
+    height: 160,
     borderRadius: 16,
-    padding: 12,
+    overflow: 'hidden',
     marginRight: 12,
     shadowColor: '#1A1F1E',
     shadowOffset: { width: 0, height: 2 },
@@ -275,17 +285,43 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  trendingImageContainer: {
-    height: 90,
-    backgroundColor: '#F0EDE8',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    position: 'relative',
+  momentImageBg: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'flex-end',
   },
-  trendingImgEmoji: {
-    fontSize: 32,
+  momentOverlay: {
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  momentAuthor: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  momentLocation: {
+    fontSize: 9,
+    color: '#E8E2D9',
+  },
+  trendingCard: {
+    width: 160,
+    height: 200,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginRight: 12,
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  trendingImage: {
+    width: '100%',
+    height: 110,
+    backgroundColor: '#E6F2EF',
   },
   ratingBadge: {
     position: 'absolute',
@@ -293,38 +329,36 @@ const styles = StyleSheet.create({
     top: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 6,
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   ratingText: {
     fontSize: 9,
     color: '#1A1F1E',
     fontWeight: '700',
   },
+  trendingInfo: {
+    padding: 10,
+  },
   trendingName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: 'bold',
     color: '#1A1F1E',
-    marginBottom: 2,
   },
   trendingState: {
-    fontSize: 11,
-    color: '#6B7370',
-    marginBottom: 6,
-  },
-  trendingVisits: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#1A6B5A',
+    color: '#6B7370',
   },
   bottomSpacer: {
     height: 48,
-  },
-  root: {
-    flex: 1,
-    backgroundColor: '#0F1714',
   },
 });
 

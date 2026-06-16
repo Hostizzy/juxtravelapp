@@ -73,6 +73,7 @@ export type RootStackParamList = {
     checkOut: string;
     guests: number;
     groupType: string;
+    bedrooms: number;
   };
   PlanStep4: {
     destination: string;
@@ -81,6 +82,7 @@ export type RootStackParamList = {
     guests: number;
     groupType: string;
     moods: string[];
+    bedrooms: number;
   };
   HostOnboarding: undefined;
   HostVerification: undefined;
@@ -156,6 +158,7 @@ export type RootStackParamList = {
     moods: string[];
     budget: number;
     freeText?: string;
+    bedrooms: number;
   };
 };
 

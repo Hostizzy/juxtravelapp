@@ -4,13 +4,15 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Image,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import i18n from '../../locales/i18n';
 import styles from './PlanStep2Screen.styles';
 
 type PlanStep2Props = {
@@ -20,33 +22,99 @@ type PlanStep2Props = {
 
 interface GroupOption {
   key: string;
-  labelKey: string;
+  label: string;
+  desc: string;
   icon: keyof typeof Feather.glyphMap;
+  iconColor: string;
+  bgColor: string;
 }
 
 const GROUP_OPTIONS: GroupOption[] = [
-  { key: 'solo', labelKey: 'plan.step2.solo', icon: 'user' },
-  { key: 'couple', labelKey: 'plan.step2.couple', icon: 'heart' },
-  { key: 'friends', labelKey: 'plan.step2.friends', icon: 'users' },
-  { key: 'family', labelKey: 'plan.step2.family', icon: 'home' },
-  { key: 'corporate', labelKey: 'plan.step2.corporate', icon: 'briefcase' },
-  { key: 'other', labelKey: 'plan.step2.other', icon: 'more-horizontal' },
+  { key: 'solo', label: 'Solo', desc: 'Travelling alone', icon: 'user', iconColor: '#1A6B5A', bgColor: '#E6F2EF' },
+  { key: 'couple', label: 'Couple', desc: 'With your partner', icon: 'heart', iconColor: '#D4704A', bgColor: '#FDF2E9' },
+  { key: 'friends', label: 'Friends', desc: 'With your friends', icon: 'users', iconColor: '#5E5ADB', bgColor: '#F2F0FD' },
+  { key: 'family', label: 'Family', desc: 'With your family', icon: 'home', iconColor: '#2B5ADB', bgColor: '#EBF3FE' },
+  { key: 'corporate', label: 'Corporate', desc: 'Work related travel', icon: 'briefcase', iconColor: '#1C6F5E', bgColor: '#EBF7F4' },
+  { key: 'other', label: 'Other', desc: 'Other group type', icon: 'more-horizontal', iconColor: '#6B7370', bgColor: '#F0EDE8' },
 ];
 
 export default function PlanStep2Screen({ navigation, route }: PlanStep2Props) {
   const { destination, checkIn, checkOut } = route.params;
   const [guests, setGuests] = useState(1);
   const [groupType, setGroupType] = useState<string | null>(null);
+  const [bedrooms, setBedrooms] = useState(1);
 
-  const handleMinus = () => {
+  const getDestinationImage = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800';
+    }
+    if (d.includes('manali')) {
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
+    }
+    if (d.includes('kerala')) {
+      return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+    }
+    if (d.includes('rajasthan') || d.includes('jaipur')) {
+      return 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800';
+    }
+    return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+  };
+
+  const getFocalStyle = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return { top: -20 };
+    }
+    if (d.includes('manali')) {
+      return { top: 0 };
+    }
+    if (d.includes('kerala')) {
+      return { top: -40 };
+    }
+    return { top: 0 };
+  };
+
+  const getAIInsightText = () => {
+    const group = groupType || 'solo';
+    const dest = destination;
+
+    if (group === 'solo') {
+      return `Solo travelers in ${dest} highly rate homestays with local hosts for safety and authentic local food tips.`;
+    }
+    if (group === 'couple') {
+      return `Couple travelers visiting ${dest} consistently prefer private villas with pools, spending 35% more time relaxing indoors.`;
+    }
+    if (group === 'friends') {
+      return `Groups of friends in ${dest} save up to 40% per person by booking multi-bedroom private cottages instead of hotels.`;
+    }
+    if (group === 'family') {
+      return `Families traveling to ${dest} show higher satisfaction in properties featuring fully equipped kitchens and private lawns.`;
+    }
+    return `Travelers visiting ${dest} typically prefer homes with at least ${bedrooms} room${bedrooms > 1 ? 's' : ''} for comfortable stays.`;
+  };
+
+  const handleMinusGuests = () => {
     if (guests > 1) {
       setGuests(guests - 1);
     }
   };
 
-  const handlePlus = () => {
+  const handlePlusGuests = () => {
     if (guests < 20) {
       setGuests(guests + 1);
+    }
+  };
+
+  const handleMinusBedrooms = () => {
+    if (bedrooms > 1) {
+      setBedrooms(bedrooms - 1);
+    }
+  };
+
+  const handlePlusBedrooms = () => {
+    if (bedrooms < 10) {
+      setBedrooms(bedrooms + 1);
     }
   };
 
@@ -57,56 +125,91 @@ export default function PlanStep2Screen({ navigation, route }: PlanStep2Props) {
       checkOut,
       guests,
       groupType: groupType || 'solo',
+      bedrooms,
     });
   };
 
   const formattedGuests = guests.toString().padStart(2, '0');
+  const formattedBedrooms = bedrooms.toString().padStart(2, '0');
 
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 2 OF 4</Text>
-          <View style={styles.topBarSpacer} />
-        </View>
+        {/* Header background containing top bar & progress bar */}
+        <View style={styles.headerBackground}>
+          {/* Curved Image & Gradient Blend Wrapper */}
+          <View style={styles.topRightImageContainer}>
+            <Image 
+              source={{ uri: getDestinationImage(destination) }} 
+              style={[styles.headerImage, getFocalStyle(destination)]}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['#0F1714', 'rgba(15, 23, 20, 0.95)', 'rgba(15, 23, 20, 0.5)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={styles.progressSegment} />
-          <View style={styles.progressSegment} />
+          {/* Bottom fade of the header background */}
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.15)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.headerBottomFade}
+          />
+
+          {/* Dedicated Header Content Container */}
+          <View style={styles.headerContent}>
+            {/* Back Button Row */}
+            <View style={styles.backButtonRow}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                <Feather name="chevron-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Step Label */}
+            <Text style={styles.stepIndicator}>STEP 2 OF 4</Text>
+
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={styles.progressSegment} />
+              <View style={styles.progressSegment} />
+            </View>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             {/* Title */}
-            <Text style={styles.title}>{i18n.t('plan.step2.title')}</Text>
+            <Text style={styles.title}>Who's joining your adventure?</Text>
+            <Text style={styles.subtitle}>Tell us about your travel group</Text>
 
-            {/* Guest Counter Card */}
-            <View style={styles.guestCounterCard}>
-              <View style={styles.guestCounterLeft}>
-                <Text style={styles.guestLabel}>{i18n.t('plan.step2.guestsLabel')}</Text>
-                <Text style={styles.guestNumber}>{formattedGuests}</Text>
+            {/* Guests Counter Card */}
+            <View style={styles.counterCard}>
+              <View style={styles.counterLeft}>
+                <Text style={styles.counterLabel}>TOTAL GUESTS</Text>
+                <Text style={styles.counterValue}>{formattedGuests}</Text>
+                <Text style={styles.counterSubLabel}>
+                  {guests === 1 ? 'Guest' : 'Guests'}
+                </Text>
               </View>
-              <View style={styles.guestCounterButtons}>
-                <TouchableOpacity style={styles.minusButton} onPress={handleMinus} activeOpacity={0.7}>
+              <View style={styles.counterControls}>
+                <TouchableOpacity style={styles.minusButton} onPress={handleMinusGuests} activeOpacity={0.7}>
                   <Feather name="minus" size={20} color="#1A1F1E" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.plusButton} onPress={handlePlus} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.plusButton} onPress={handlePlusGuests} activeOpacity={0.7}>
                   <Feather name="plus" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Group Type Label */}
-            <Text style={styles.groupTypeLabel}>{i18n.t('plan.step2.groupTypeLabel')}</Text>
-
             {/* Group Type Grid */}
+            <Text style={styles.label}>GROUP TYPE</Text>
             <View style={styles.groupGrid}>
               {GROUP_OPTIONS.map((option) => {
                 const isSelected = groupType === option.key;
@@ -117,21 +220,59 @@ export default function PlanStep2Screen({ navigation, route }: PlanStep2Props) {
                     onPress={() => setGroupType(option.key)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.groupIconCircle, isSelected && styles.groupIconCircleSelected]}>
-                      <Feather name={option.icon} size={24} color={isSelected ? '#1A6B5A' : '#6B7370'} />
+                    <View style={[styles.groupIconCircle, { backgroundColor: option.bgColor }]}>
+                      <Feather name={option.icon} size={20} color={option.iconColor} />
                     </View>
-                    <Text style={[styles.groupCardLabel, isSelected && styles.groupCardLabelSelected]}>
-                      {i18n.t(option.labelKey)}
-                    </Text>
+                    {isSelected && (
+                      <View style={styles.checkmarkBadge}>
+                        <Feather name="check" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
+                    <View>
+                      <Text style={styles.groupCardLabel}>{option.label}</Text>
+                      <Text style={styles.groupCardDesc}>{option.desc}</Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
+            </View>
+
+            {/* Bedrooms Counter Card */}
+            <Text style={styles.label}>BEDROOMS NEEDED</Text>
+            <View style={styles.counterCard}>
+              <View style={styles.counterLeft}>
+                <Text style={styles.counterLabel}>BEDROOMS</Text>
+                <Text style={styles.counterValue}>{formattedBedrooms}</Text>
+                <Text style={styles.counterSubLabel}>Minimum rooms required</Text>
+              </View>
+              <View style={styles.counterControls}>
+                <TouchableOpacity style={styles.minusButton} onPress={handleMinusBedrooms} activeOpacity={0.7}>
+                  <Feather name="minus" size={20} color="#1A1F1E" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.plusButton} onPress={handlePlusBedrooms} activeOpacity={0.7}>
+                  <Feather name="plus" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* AI Insight Chip */}
+            <View style={styles.aiInsightCard}>
+              <View style={styles.aiInsightIconCircle}>
+                <Feather name="info" size={16} color="#1A6B5A" />
+              </View>
+              <View style={styles.aiInsightContent}>
+                <Text style={styles.aiInsightTitle}>✨ AI Insight</Text>
+                <Text style={styles.aiInsightDesc}>
+                  {getAIInsightText()}
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Continue Button */}
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.85}>
-            <Text style={styles.continueButtonText}>{i18n.t('plan.step2.continueBtn')}</Text>
+            <Text style={styles.continueButtonText}>Continue</Text>
+            <Feather name="arrow-right" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>

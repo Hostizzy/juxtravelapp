@@ -4,14 +4,16 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Image,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import i18n from '../../locales/i18n';
 import styles from './PlanStep3Screen.styles';
 
 type PlanStep3Props = {
@@ -22,24 +24,65 @@ type PlanStep3Props = {
 interface MoodOption {
   key: string;
   icon: keyof typeof Feather.glyphMap;
-  titleKey: string;
-  subtitleKey: string;
+  title: string;
+  desc: string;
+  tags: string;
 }
 
 const MOOD_OPTIONS: MoodOption[] = [
-  { key: 'peaceful', icon: 'wind', titleKey: 'plan.step3.peaceful', subtitleKey: 'plan.step3.peacefulSub' },
-  { key: 'adventure', icon: 'compass', titleKey: 'plan.step3.adventure', subtitleKey: 'plan.step3.adventureSub' },
-  { key: 'cultural', icon: 'book-open', titleKey: 'plan.step3.cultural', subtitleKey: 'plan.step3.culturalSub' },
-  { key: 'culinary', icon: 'coffee', titleKey: 'plan.step3.culinary', subtitleKey: 'plan.step3.culinarySub' },
-  { key: 'luxury', icon: 'star', titleKey: 'plan.step3.luxury', subtitleKey: 'plan.step3.luxurySub' },
-  { key: 'social', icon: 'users', titleKey: 'plan.step3.social', subtitleKey: 'plan.step3.socialSub' },
-  { key: 'romantic', icon: 'heart', titleKey: 'plan.step3.romantic', subtitleKey: 'plan.step3.romanticSub' },
-  { key: 'localLife', icon: 'home', titleKey: 'plan.step3.localLife', subtitleKey: 'plan.step3.localLifeSub' },
+  { key: 'peaceful', icon: 'wind', title: 'Peaceful', desc: 'Slow living, meditation, and quiet nature.', tags: '🌿 Nature • 🧘‍♀️ Yoga • 🤫 Quiet' },
+  { key: 'adventure', icon: 'compass', title: 'Adventure', desc: 'Hiking, wildlife, and off-beat trails.', tags: '🏔 Mountains • 🥾 Trekking • 🦌 Wildlife' },
+  { key: 'cultural', icon: 'book-open', title: 'Cultural', desc: 'Heritage sites, history, and local arts.', tags: '🏰 Forts • 🎨 Art • 📜 History' },
+  { key: 'culinary', icon: 'coffee', title: 'Culinary', desc: 'Street food tours and gourmet kitchens.', tags: '🍛 Curries • ☕ Coffee • 🥘 Street Food' },
+  { key: 'luxury', icon: 'star', title: 'Luxury', desc: 'High-end stays and exclusive access.', tags: '⭐️ 5-Star • 🏊‍♂️ Pool • 🍸 Lounge' },
+  { key: 'social', icon: 'users', title: 'Social', desc: 'Nightlife, festivals, and group events.', tags: '🎉 Clubs • 🎵 Music • 🍻 Meets' },
+  { key: 'romantic', icon: 'heart', title: 'Romantic', desc: 'Couple getaways and special moments.', tags: '❤️ Sunset • 🍾 Dinner • 🌹 Flowers' },
+  { key: 'localLife', icon: 'home', title: 'City Life', desc: 'Urban experiences and vibrant city vibes.', tags: '🛍 Shopping • 🚇 Metro • 🌃 Skyline' },
 ];
 
 export default function PlanStep3Screen({ navigation, route }: PlanStep3Props) {
-  const { destination, checkIn, checkOut, guests, groupType } = route.params;
+  const { destination, checkIn, checkOut, guests, groupType, bedrooms } = route.params;
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+
+  const getDestinationImage = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800';
+    }
+    if (d.includes('manali')) {
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
+    }
+    if (d.includes('kerala')) {
+      return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+    }
+    if (d.includes('rajasthan') || d.includes('jaipur')) {
+      return 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800';
+    }
+    return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800';
+  };
+
+  const getFocalStyle = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('goa')) {
+      return { top: -20 };
+    }
+    if (d.includes('manali')) {
+      return { top: 0 };
+    }
+    if (d.includes('kerala')) {
+      return { top: -40 };
+    }
+    return { top: 0 };
+  };
+
+  const getAIInsightText = () => {
+    const dest = destination;
+    if (selectedMoods.length === 0) {
+      return `Experience matches score 40% higher in guest feedback reviews. Choose some vibes to see contextual tips.`;
+    }
+    const vibesList = selectedMoods.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ');
+    return `Properties matching [${vibesList}] vibes in ${dest} currently show high demand. Booking these curated options ensures private tours and personalized hosts.`;
+  };
 
   const handleMoodToggle = (key: string) => {
     if (selectedMoods.includes(key)) {
@@ -63,42 +106,88 @@ export default function PlanStep3Screen({ navigation, route }: PlanStep3Props) {
       guests,
       groupType,
       moods: selectedMoods,
+      bedrooms,
     });
   };
+
+  const hasSelections = selectedMoods.length > 0;
 
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.stepIndicator}>STEP 3 OF 4</Text>
-          <View style={styles.topBarSpacer} />
-        </View>
+        {/* Header background containing top bar & progress bar */}
+        <View style={styles.headerBackground}>
+          {/* Curved Image & Gradient Blend Wrapper */}
+          <View style={styles.topRightImageContainer}>
+            <Image 
+              source={{ uri: getDestinationImage(destination) }} 
+              style={[styles.headerImage, getFocalStyle(destination)]}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['#0F1714', 'rgba(15, 23, 20, 0.95)', 'rgba(15, 23, 20, 0.5)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+          </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-          <View style={styles.progressSegment} />
+          {/* Bottom fade of the header background */}
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.15)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.headerBottomFade}
+          />
+
+          {/* Dedicated Header Content Container */}
+          <View style={styles.headerContent}>
+            {/* Back Button Row */}
+            <View style={styles.backButtonRow}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                <Feather name="chevron-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Step Label */}
+            <Text style={styles.stepIndicator}>STEP 3 OF 4</Text>
+
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
+              <View style={styles.progressSegment} />
+            </View>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             {/* Title & Subtitle */}
-            <Text style={styles.title}>{i18n.t('plan.step3.title')}</Text>
-            <Text style={styles.subtitle}>{i18n.t('plan.step3.subtitle')}</Text>
+            <Text style={styles.title}>What kind of experience?</Text>
+            <Text style={styles.subtitle}>Choose the vibe of your trip.</Text>
 
-            {/* Counter Chip */}
-            <View style={styles.counterChipRow}>
-              <View style={styles.counterChip}>
-                <Text style={styles.counterChipText}>
-                  {i18n.t('plan.step3.selectedCount', { count: selectedMoods.length })}
-                </Text>
+            {/* Selection badge and dynamic match score */}
+            <View style={styles.badgeAndMatchRow}>
+              <View style={styles.counterChipRow}>
+                <View style={styles.counterChip}>
+                  <Feather name="star" size={12} color="#1A6B5A" />
+                  <Text style={styles.counterChipText}>
+                    ✦ {selectedMoods.length}/3 SELECTED
+                  </Text>
+                </View>
               </View>
+
+              {hasSelections && (
+                <View style={styles.aiMatchBanner}>
+                  <Feather name="cpu" size={16} color="#1A6B5A" />
+                  <Text style={styles.aiMatchText}>
+                    ✨ AI Match Score: 92% match found. Popular among travelers visiting {destination}.
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Mood Cards Grid */}
@@ -112,25 +201,44 @@ export default function PlanStep3Screen({ navigation, route }: PlanStep3Props) {
                     onPress={() => handleMoodToggle(mood.key)}
                     activeOpacity={0.7}
                   >
-                    <Feather 
-                      name={mood.icon} 
-                      size={28} 
-                      color={isSelected ? '#1A6B5A' : '#6B7370'} 
-                      style={styles.moodEmoji} 
-                    />
-                    <Text style={[styles.moodTitle, isSelected && styles.moodTitleSelected]}>
-                      {i18n.t(mood.titleKey)}
-                    </Text>
-                    <Text style={styles.moodSubtitle}>{i18n.t(mood.subtitleKey)}</Text>
+                    <View style={styles.cardTopRow}>
+                      <View style={[styles.moodIconCircle, isSelected && styles.moodIconCircleSelected]}>
+                        <Feather name={mood.icon} size={20} color={isSelected ? '#1A6B5A' : '#6B7370'} />
+                      </View>
+                      <View style={[styles.checkboxCircle, isSelected && styles.checkboxCircleSelected]}>
+                        {isSelected && <Feather name="check" size={12} color="#FFFFFF" />}
+                      </View>
+                    </View>
+                    <View>
+                      <Text style={[styles.moodTitle, isSelected && styles.moodTitleSelected]}>
+                        {mood.title}
+                      </Text>
+                      <Text style={styles.moodSubtitle}>{mood.desc}</Text>
+                      <Text style={styles.moodTagsText}>{mood.tags}</Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
+            </View>
+
+            {/* AI Insight Chip */}
+            <View style={styles.aiInsightCard}>
+              <View style={styles.aiInsightIconCircle}>
+                <Feather name="info" size={16} color="#1A6B5A" />
+              </View>
+              <View style={styles.aiInsightContent}>
+                <Text style={styles.aiInsightTitle}>✨ AI Insight</Text>
+                <Text style={styles.aiInsightDesc}>
+                  {getAIInsightText()}
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Next Step Button */}
           <TouchableOpacity style={styles.nextButton} onPress={handleNextStep} activeOpacity={0.85}>
-            <Text style={styles.nextButtonText}>{i18n.t('plan.step3.nextBtn')}</Text>
+            <Text style={styles.nextButtonText}>Continue</Text>
+            <Feather name="arrow-right" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>

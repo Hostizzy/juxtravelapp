@@ -1,4 +1,7 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
+const headerHeight = Math.min(screenWidth * 0.65, 320);
 
 const styles = StyleSheet.create({
   root: {
@@ -13,66 +16,107 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#FAF8F4',
     paddingBottom: 40,
+    borderTopLeftRadius: 32, // Airbnb curved edge
+    marginTop: -24, // 24px content overlap
+    overflow: 'hidden',
   },
-
-  /* ── Shared Top Bar ── */
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 16,
-    paddingBottom: 12,
+  headerBackground: {
     backgroundColor: '#0F1714',
+    height: headerHeight,
+    position: 'relative',
+  },
+  topRightImageContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '70%',
+    height: '100%',
+    borderBottomLeftRadius: 180, // Organic curved edge
+    overflow: 'hidden',
+    zIndex: 10,
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.85,
+  },
+  headerBottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 48,
+    zIndex: 15,
+  },
+  headerContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: Platform.OS === 'ios' ? 48 : 36,
+    paddingHorizontal: 24,
+    zIndex: 20,
+  },
+  backButtonRow: {
+    flexDirection: 'row',
+    marginBottom: 24, // Consistent spacing
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepIndicator: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 12,
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    fontWeight: '600',
-  },
-  topBarSpacer: {
-    width: 40,
+    color: '#FFFFFF', // Step label to white
+    letterSpacing: 1.5,
+    fontWeight: '800',
+    marginBottom: 20, // Consistent spacing
   },
   progressBarContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 28,
     gap: 6,
+    width: '60%',
   },
   progressSegment: {
     flex: 1,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#E8E2D9',
+    height: 6, // 6px progress bar
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   progressSegmentFilled: {
     backgroundColor: '#1A6B5A',
+    // Subtle Linear.app style shadow glow (not gaming app neon)
+    shadowColor: '#1A6B5A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-
-  /* ── Content ── */
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
   title: {
     fontFamily: 'serif',
     fontSize: 28,
     fontWeight: '800',
     color: '#1A1F1E',
-    marginBottom: 28,
-    lineHeight: 34,
+    marginBottom: 6,
+    lineHeight: 38,
+    letterSpacing: 0.3,
   },
-
-  /* ── Budget Section Header ── */
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7370',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
   budgetHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -90,8 +134,11 @@ const styles = StyleSheet.create({
   totalForAllChip: {
     backgroundColor: '#E6F2EF',
     borderRadius: 100,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   totalForAllText: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
@@ -100,20 +147,23 @@ const styles = StyleSheet.create({
     color: '#1A6B5A',
     letterSpacing: 0.5,
   },
-
-  /* ── Budget Display Card ── */
   budgetCard: {
-    backgroundColor: '#E6F2EF',
-    borderRadius: 16,
+    backgroundColor: '#F0F9F7',
+    borderRadius: 24,
     padding: 24,
-    marginBottom: 16,
+    marginBottom: 20,
     alignItems: 'center',
   },
   budgetAmount: {
     fontFamily: 'serif',
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '800',
     color: '#1A6B5A',
+    marginBottom: 8,
+  },
+  budgetSubtitleText: {
+    fontSize: 12,
+    color: '#6B7370',
     marginBottom: 20,
   },
   sliderContainer: {
@@ -126,15 +176,13 @@ const styles = StyleSheet.create({
   sliderLabelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 2,
+    paddingHorizontal: 4,
   },
   sliderLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6B7370',
-    fontWeight: '500',
+    fontWeight: '700',
   },
-
-  /* ── Budget Chips ── */
   budgetChipsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -145,13 +193,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 100,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E8E2D9',
     backgroundColor: '#FFFFFF',
   },
   budgetChipSelected: {
     backgroundColor: '#1A6B5A',
     borderColor: '#1A6B5A',
+    shadowColor: '#1A6B5A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
   },
   budgetChipText: {
     fontSize: 13,
@@ -161,39 +214,78 @@ const styles = StyleSheet.create({
   budgetChipTextSelected: {
     color: '#FFFFFF',
   },
-
-  /* ── Specific Section ── */
+  specificLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
   specificLabel: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 9,
     fontWeight: '700',
-    color: '#6B7370',
+    color: '#1A6B5A',
     letterSpacing: 1.5,
-    marginBottom: 10,
     textTransform: 'uppercase',
   },
   specificInput: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E8E2D9',
     borderRadius: 16,
     padding: 16,
-    minHeight: 120,
+    minHeight: 100,
     fontSize: 14,
     color: '#1A1F1E',
     textAlignVertical: 'top',
     lineHeight: 20,
-    marginBottom: 32,
+    marginBottom: 24,
   },
-
-  /* ── Get Matches Button ── */
+  aiInsightCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EBF3FE',
+    borderWidth: 1,
+    borderColor: '#D4E8E3',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 32,
+    gap: 12,
+  },
+  aiInsightIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#D4E8E3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  aiInsightContent: {
+    flex: 1,
+  },
+  aiInsightTitle: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#1A6B5A',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  aiInsightDesc: {
+    fontSize: 12,
+    color: '#6B7370',
+    lineHeight: 16,
+  },
   matchButton: {
     backgroundColor: '#D4704A',
     borderRadius: 100,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: 24,
+    flexDirection: 'row',
+    gap: 8,
     shadowColor: '#D4704A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -205,12 +297,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  aiNoteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 40,
+  },
   aiNote: {
     fontSize: 11,
     color: '#6B7370',
     textAlign: 'center',
-    marginTop: 12,
-    paddingHorizontal: 40,
     lineHeight: 16,
   },
 });

@@ -45,4 +45,21 @@ export class UsersController {
       payload.sub, dto
     );
   }
+
+  @Post('save-property')
+  async saveProperty(
+    @CurrentUser() payload: JwtPayload,
+    @Body() body: { propertyId: string },
+  ) {
+    return this.usersService
+      .saveProperty(payload.sub, body.propertyId);
+  }
+
+  @Get('saved-properties')
+  async getSavedProperties(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.usersService
+      .getSavedProperties(payload.sub);
+  }
 }

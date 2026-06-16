@@ -70,8 +70,9 @@ export default function HostPropertyDetailScreen() {
   const [saveLoading, setSaveLoading] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [property, setProperty] = useState<PropertyData | null>(null);
+  const [savedProperties, setSavedProperties] = useState<string[]>([]);
 
-  const isHost = property?.host_id === user?.id;
+  const isOwner = user?.id === property?.host_id;
 
   const calculateNights = (inStr?: string, outStr?: string) => {
     if (!inStr || !outStr) return 1;
@@ -98,6 +99,32 @@ export default function HostPropertyDetailScreen() {
       guests: guestCount,
       totalAmount,
     });
+  };
+
+  const handleSaveProperty = async (propertyId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      await apiService.post(
+        '/users/save-property',
+        { propertyId },
+        token
+      );
+
+      setSavedProperties(prev => 
+        prev.includes(propertyId)
+          ? prev.filter(id => id !== propertyId)
+          : [...prev, propertyId]
+      );
+
+      Alert.alert(
+        'Saved! ✓',
+        'Property saved to your profile'
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Could not save');
+    }
   };
 
   // Editable Form fields
@@ -186,6 +213,20 @@ export default function HostPropertyDetailScreen() {
 
   useEffect(() => {
     fetchPropertyDetails();
+  }, [propertyId]);
+
+  useEffect(() => {
+    const fetchSaved = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) return;
+        const savedData = await apiService.get<PropertyData[]>('/users/saved-properties', token).catch(() => []);
+        setSavedProperties(savedData.map(p => p.id));
+      } catch (error) {
+        console.error('Failed to fetch saved properties:', error);
+      }
+    };
+    fetchSaved();
   }, [propertyId]);
 
   const handleBack = () => {
@@ -317,7 +358,7 @@ export default function HostPropertyDetailScreen() {
             <Feather name="arrow-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>Property Details</Text>
-          {isHost ? (
+          {isOwner ? (
             <TouchableOpacity 
               onPress={() => {
                 if (isEditing) {
@@ -333,13 +374,23 @@ export default function HostPropertyDetailScreen() {
               </Text>
             </TouchableOpacity>
           ) : (
-            <View style={{ width: 36 }} />
+            <TouchableOpacity 
+              onPress={() => handleSaveProperty(property.id)}
+              activeOpacity={0.7}
+            >
+              <Feather 
+                name="bookmark" 
+                size={22} 
+                color="#FFFFFF" 
+                fill={savedProperties.includes(property.id) ? "#FFFFFF" : "transparent"} 
+              />
+            </TouchableOpacity>
           )}
         </View>
 
         {renderStatusBanner()}
 
-        <ScrollView contentContainerStyle={[styles.scrollContent, !isHost && { paddingBottom: 110 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, !isOwner && { paddingBottom: 110 }]} showsVerticalScrollIndicator={false}>
           {/* Cover Photo */}
           {property.photos && property.photos.length > 0 ? (
             <Image source={{ uri: property.photos[0] }} style={styles.coverImage} />
@@ -371,24 +422,26 @@ export default function HostPropertyDetailScreen() {
               </Text>
 
               {/* Stats Row */}
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>0</Text>
-                  <Text style={styles.statLabel}>VIEWS</Text>
+              {isOwner && (
+                <View style={styles.statsRow}>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>VIEWS</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>{property.bookings ?? 0}</Text>
+                    <Text style={styles.statLabel}>BOOKINGS</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>N/A</Text>
+                    <Text style={styles.statLabel}>RATING</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statValue}>₹0</Text>
+                    <Text style={styles.statLabel}>REVENUE</Text>
+                  </View>
                 </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>{property.bookings ?? 0}</Text>
-                  <Text style={styles.statLabel}>BOOKINGS</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>N/A</Text>
-                  <Text style={styles.statLabel}>RATING</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statValue}>₹0</Text>
-                  <Text style={styles.statLabel}>REVENUE</Text>
-                </View>
-              </View>
+              )}
 
               {/* Technical Details */}
               <View style={styles.detailsCard}>
@@ -713,19 +766,33 @@ export default function HostPropertyDetailScreen() {
             </View>
           )}
         </ScrollView>
-        {!isHost && property && (
+        {!isOwner && property && (
           <View style={styles.bookingBar}>
             <View style={styles.priceContainer}>
               <Text style={styles.priceValue}>₹{(property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
               <Text style={styles.priceLabel}>/ night</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.bookButton}
-              onPress={handleBookNow}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.bookButtonText}>Book Now</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={styles.saveIconBtn}
+                onPress={() => handleSaveProperty(property.id)}
+                activeOpacity={0.7}
+              >
+                <Feather 
+                  name="bookmark" 
+                  size={24} 
+                  color={savedProperties.includes(property.id) ? "#D4704A" : "#FFFFFF"} 
+                  fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.bookButton}
+                onPress={handleBookNow}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.bookButtonText}>Book Now</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </SafeAreaView>
