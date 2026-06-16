@@ -15,8 +15,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanStep1Screen.styles';
+
+import PlanHeader from './PlanHeader';
 
 type PlanStep1Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanStep1'>;
@@ -52,6 +55,28 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const renderDateValue = (dateObj: Date | null, stringVal: string, placeholder: string) => {
+    if (!stringVal) {
+      return <Text style={styles.datePlaceholder}>{placeholder}</Text>;
+    }
+    if (dateObj) {
+      const dayMonth = dateObj.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+      });
+      const weekday = dateObj.toLocaleDateString('en-IN', {
+        weekday: 'long',
+      });
+      return (
+        <View style={styles.dateValueContainer}>
+          <Text style={styles.dateDayMonth}>{dayMonth}</Text>
+          <Text style={styles.dateWeekday}>{weekday}</Text>
+        </View>
+      );
+    }
+    return <Text style={styles.dateValue}>{stringVal}</Text>;
   };
 
   const handleChipPress = (chip: string) => {
@@ -108,54 +133,13 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Header background containing top bar & progress bar */}
-        <View style={styles.headerBackground}>
-          {/* Curved Image & Gradient Blend Wrapper */}
-          <View style={styles.topRightImageContainer}>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800' }} 
-              style={styles.headerImage}
-              resizeMode="cover"
-            />
-            <LinearGradient
-              colors={['#0F1714', 'rgba(15, 23, 20, 0.95)', 'rgba(15, 23, 20, 0.5)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              locations={[0, 0.35, 0.7, 1]}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </View>
-
-          {/* Bottom fade of the header background */}
-          <LinearGradient
-            colors={['transparent', 'rgba(2, 20, 18, 0.15)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.headerBottomFade}
-          />
-
-          {/* Dedicated Header Content Container */}
-          <View style={styles.headerContent}>
-            {/* Back Button Row */}
-            <View style={styles.backButtonRow}>
-              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                <Feather name="chevron-left" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Step Label */}
-            <Text style={styles.stepIndicator}>STEP 1 OF 4</Text>
-
-            {/* Progress Bar */}
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-              <View style={styles.progressSegment} />
-              <View style={styles.progressSegment} />
-              <View style={styles.progressSegment} />
-            </View>
-          </View>
-        </View>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        <PlanHeader
+          step={1}
+          imageUri="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800"
+          onBack={() => navigation.goBack()}
+        />
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
@@ -188,7 +172,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
             </View>
 
             {/* Popular Destination Chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScrollView} contentContainerStyle={styles.chipsScroll}>
               <View style={styles.chipsRow}>
                 {POPULAR_DESTINATIONS.map((chip) => {
                   const isSelected = selectedChip === chip.label;
@@ -227,9 +211,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
                   <Text style={styles.dateLabel}>CHECK IN</Text>
                   <Feather name="calendar" size={14} color="#1A6B5A" />
                 </View>
-                <Text style={[styles.dateValue, !checkIn && styles.datePlaceholder]}>
-                  {checkIn || 'Select Date'}
-                </Text>
+                {renderDateValue(checkInDate, checkIn, 'Select Date')}
               </TouchableOpacity>
 
               <Text style={styles.dateArrow}>→</Text>
@@ -239,9 +221,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
                   <Text style={styles.dateLabel}>CHECK OUT</Text>
                   <Feather name="calendar" size={14} color="#1A6B5A" />
                 </View>
-                <Text style={[styles.dateValue, !checkOut && styles.datePlaceholder]}>
-                  {checkOut || 'Select Date'}
-                </Text>
+                {renderDateValue(checkOutDate, checkOut, 'Select Date')}
               </TouchableOpacity>
             </View>
 
@@ -314,7 +294,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
             }}
           />
         )}
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

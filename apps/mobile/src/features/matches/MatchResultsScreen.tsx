@@ -386,10 +386,10 @@ export default function MatchResultsScreen() {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         <Feather 
-                          name="bookmark" 
+                          name="heart" 
                           size={16} 
-                          color={savedProperties.includes(property.id) ? "#1A6B5A" : "#1A1F1E"} 
-                          fill={savedProperties.includes(property.id) ? "#1A6B5A" : "transparent"}
+                          color={savedProperties.includes(property.id) ? "#D4704A" : "#1A1F1E"} 
+                          fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"}
                         />
                         <Text style={styles.saveButtonText}>
                           {savedProperties.includes(property.id) ? 'Saved' : i18n.t('matches.saveForLater')}

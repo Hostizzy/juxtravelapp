@@ -17,7 +17,7 @@ import { BecomeHostDto } from './dto/become-host.dto';
 export class UsersController {
   constructor(
     private usersService: UsersService
-  ) {}
+  ) { }
 
   @Get('me')
   async getMe(

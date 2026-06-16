@@ -1,7 +1,7 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
-const headerHeight = Math.min(screenWidth * 0.65, 320);
+const headerHeight = 220; // Target height 220px
 
 const styles = StyleSheet.create({
   root: {
@@ -10,33 +10,42 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#0F1714',
+    backgroundColor: '#FAF8F4', // Match the page content background
   },
   scrollContent: {
     flexGrow: 1,
     backgroundColor: '#FAF8F4',
     paddingBottom: 40,
     borderTopLeftRadius: 32, // Airbnb curved edge
-    marginTop: -24, // 24px content overlap
+    borderTopRightRadius: 32, // Symmetry
+    marginTop: -12, // Subtle 12px content overlap (Home Screen pattern)
     overflow: 'hidden',
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   headerBackground: {
     backgroundColor: '#0F1714',
     height: headerHeight,
     position: 'relative',
+    borderBottomLeftRadius: 32, // Rounded bottom left (Home Screen pattern)
+    borderBottomRightRadius: 32, // Rounded bottom right (Home Screen pattern)
+    overflow: 'hidden',
   },
   topRightImageContainer: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: '70%',
+    width: '100%', // Cover full width for seamless gradient fade
     height: '100%',
-    borderBottomLeftRadius: 180, // Organic curved edge
-    overflow: 'hidden',
     zIndex: 10,
   },
   headerImage: {
-    width: '100%',
+    position: 'absolute',
+    right: 0,
+    width: '75%', // Cover 75% of screen width on the right
     height: '100%',
     opacity: 0.85,
   },
@@ -54,7 +63,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: Platform.OS === 'ios' ? 48 : 36,
+    paddingTop: Platform.OS === 'ios' ? 60 : 48, // Immersive status bar offset (Home Screen pattern)
     paddingHorizontal: 24,
     zIndex: 20,
   },
@@ -76,7 +85,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', // Step label to white
     letterSpacing: 1.5,
     fontWeight: '800',
-    marginBottom: 20, // Consistent spacing
+    marginBottom: 16, // Consistent spacing
   },
   progressBarContainer: {
     flexDirection: 'row',
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 20, // Tightened title spacing
   },
   title: {
     fontFamily: 'serif',

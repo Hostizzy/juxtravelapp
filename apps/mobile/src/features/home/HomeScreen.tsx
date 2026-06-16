@@ -9,6 +9,7 @@ import { GuestTabParamList } from '../../navigation/GuestNavigator';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import i18n from '../../locales/i18n';
 import styles from './HomeScreen.styles';
 
@@ -180,7 +181,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
           {/* Header Hero Section */}
@@ -206,12 +208,9 @@ export default function HomeScreen() {
 
             <View style={styles.headerContentContainer}>
               <View style={styles.headerTopRow}>
-                <View>
-                  <Text style={styles.greetingText}>
-                    Good evening {userName}
-                  </Text>
-                  <Text style={styles.appTitle}>Ready for your next escape?</Text>
-                </View>
+                <Text style={styles.greetingText}>
+                  Good evening {userName}
+                </Text>
                 <TouchableOpacity 
                   style={styles.avatarCircle} 
                   onPress={() => navigation.navigate('Profile')}
@@ -221,32 +220,33 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* CTA Banner Card */}
-              <View style={styles.bannerCard}>
-                <View style={styles.bannerBadgeContainer}>
-                  <Text style={styles.bannerBadgeText}>✦ AI COMPASS</Text>
-                </View>
-                
-                <View style={styles.bannerContentRow}>
-                  <View style={styles.bannerTextLeft}>
-                    <Text style={styles.bannerTitle}>Based on your interests:</Text>
-                    <View style={styles.bannerTagsRow}>
-                      <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Adventure</Text></View>
-                      <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Nature</Text></View>
-                      <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Mid-range</Text></View>
-                    </View>
-                  </View>
-                </View>
-
-                <TouchableOpacity style={styles.bannerBtn} onPress={handleNextStep} activeOpacity={0.8}>
-                  <Text style={styles.bannerBtnText}>3 curated itineraries waiting →</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.appTitle}>Ready for your next escape?</Text>
             </View>
           </View>
 
           {/* Content Area */}
           <View style={styles.contentArea}>
+            {/* CTA Banner Card (overlap bottom of hero) */}
+            <View style={styles.bannerCard}>
+              <View style={styles.bannerBadgeContainer}>
+                <Text style={styles.bannerBadgeText}>✦ AI COMPASS</Text>
+              </View>
+              
+              <View style={styles.bannerContentRow}>
+                <View style={styles.bannerTextLeft}>
+                  <Text style={styles.bannerTitle}>Based on your interests:</Text>
+                  <View style={styles.bannerTagsRow}>
+                    <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Adventure</Text></View>
+                    <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Nature</Text></View>
+                    <View style={styles.bannerTag}><Text style={styles.bannerTagText}>✓ Mid-range</Text></View>
+                  </View>
+                </View>
+              </View>
+
+              <TouchableOpacity style={styles.bannerBtn} onPress={handleNextStep} activeOpacity={0.8}>
+                <Text style={styles.bannerBtnText}>3 curated itineraries waiting →</Text>
+              </TouchableOpacity>
+            </View>
             
             {/* Section: My Trips */}
             <View style={styles.sectionHeader}>
@@ -357,7 +357,7 @@ export default function HomeScreen() {
 
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

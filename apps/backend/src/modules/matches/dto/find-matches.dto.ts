@@ -45,4 +45,12 @@ export class FindMatchesDto {
   @IsArray()
   @IsOptional()
   requiredAmenities?: string[];
+
+  @IsString()
+  @IsOptional()
+  freeText?: string;
+
+  @IsString()
+  @IsOptional()
+  userId?: string;
 }

@@ -33,8 +33,8 @@ const styles = StyleSheet.create({
   },
   headerContentContainer: {
     width: '100%',
-    paddingTop: Platform.OS === 'ios' ? 48 : 36,
-    paddingBottom: 64,
+    paddingTop: Platform.OS === 'ios' ? 60 : 48, // Immersive status bar offset
+    paddingBottom: 32, // Compact space since banner is moved outside
     paddingHorizontal: 20,
   },
   headerTopRow: {
@@ -81,15 +81,16 @@ const styles = StyleSheet.create({
   bannerCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    paddingVertical: 12, // Shrunk by ~25% for editorial depth
-    paddingHorizontal: 22, // Widened card padding
+    paddingVertical: 16, // Premium padding
+    paddingHorizontal: 22,
     shadowColor: '#1A1F1E',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 8,
-    position: 'relative',
-    marginBottom: -48, // Overlaps the bottom edge
+    marginHorizontal: 20, // Add horizontal margin since it's outside
+    marginTop: -12, // Pull up to slightly overlap the rounded bottom of the hero by 12px
+    marginBottom: 24,
     zIndex: 20,
   },
   bannerBadgeContainer: {
@@ -169,7 +170,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   contentArea: {
-    paddingTop: 64, // Offset spacing for overlapping card
     backgroundColor: '#FAF8F4',
   },
   sectionHeader: {

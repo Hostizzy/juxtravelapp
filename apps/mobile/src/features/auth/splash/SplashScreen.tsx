@@ -48,7 +48,7 @@ export default function SplashScreen({ navigation }: Props) {
           name: userData.name,
           phone: userData.phone,
           email: userData.email,
-          role: userData.role,
+          role: userData.role as 'guest' | 'host' | 'both',
           avatar_url: userData.avatar_url,
           guest_profile: userData.guest_profile,
           host_profile: userData.host_profile,

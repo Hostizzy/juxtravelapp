@@ -37,23 +37,23 @@ export class UsersService {
 
   constructor(
     private supabaseService: SupabaseService
-  ) {}
+  ) { }
 
   async createUser(
     data: CreateUserData
   ): Promise<UserData> {
     // Create user
     const { data: user, error } = await this.supabaseService.admin
-        .from('users')
-        .insert({
-          id: data.id,
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          role: 'guest',
-        })
-        .select()
-        .single();
+      .from('users')
+      .insert({
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        role: 'guest',
+      })
+      .select()
+      .single();
 
     if (error) {
       this.logger.error('Create user failed', error);
@@ -74,14 +74,14 @@ export class UsersService {
     id: string
   ): Promise<UserData | null> {
     const { data, error } = await this.supabaseService.admin
-        .from('users')
-        .select(`
+      .from('users')
+      .select(`
           *,
           guest_profile:guest_profiles(*),
           host_profile:host_profiles(*)
         `)
-        .eq('id', id)
-        .single();
+      .eq('id', id)
+      .single();
 
     if (error) return null;
     return data as UserData;
@@ -91,14 +91,14 @@ export class UsersService {
     phone: string
   ): Promise<UserData | null> {
     const { data, error } = await this.supabaseService.admin
-        .from('users')
-        .select(`
+      .from('users')
+      .select(`
           *,
           guest_profile:guest_profiles(*),
           host_profile:host_profiles(*)
         `)
-        .eq('phone', phone)
-        .single();
+      .eq('phone', phone)
+      .single();
 
     if (error) return null;
     return data as UserData;
@@ -109,14 +109,14 @@ export class UsersService {
     dto: UpdateUserDto | { name: string }
   ): Promise<UserData> {
     const { data, error } = await this.supabaseService.admin
-        .from('users')
-        .update({
-          ...dto,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
+      .from('users')
+      .update({
+        ...dto,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       throw new NotFoundException('User not found');
@@ -140,10 +140,10 @@ export class UsersService {
 
     // Check if host profile exists using maybeSingle to avoid 406 error
     const { data: existingHost } = await this.supabaseService.admin
-        .from('host_profiles')
-        .select('id')
-        .eq('user_id', id)
-        .maybeSingle();
+      .from('host_profiles')
+      .select('id')
+      .eq('user_id', id)
+      .maybeSingle();
 
     if (!existingHost) {
       // Create host profile
@@ -178,7 +178,7 @@ export class UsersService {
 
     const savedProfile = profile as GuestProfileData | null;
     const current = savedProfile?.saved_properties ?? [];
-    
+
     if (!current.includes(propertyId)) {
       await this.supabaseService.admin
         .from('guest_profiles')

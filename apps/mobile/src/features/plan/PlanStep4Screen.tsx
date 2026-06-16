@@ -14,8 +14,11 @@ import { RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanStep4Screen.styles';
+
+import PlanHeader from './PlanHeader';
 
 type PlanStep4Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanStep4'>;
@@ -122,54 +125,14 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Header background containing top bar & progress bar */}
-        <View style={styles.headerBackground}>
-          {/* Curved Image & Gradient Blend Wrapper */}
-          <View style={styles.topRightImageContainer}>
-            <Image 
-              source={{ uri: getDestinationImage(destination) }} 
-              style={[styles.headerImage, getFocalStyle(destination)]}
-              resizeMode="cover"
-            />
-            <LinearGradient
-              colors={['#0F1714', 'rgba(15, 23, 20, 0.95)', 'rgba(15, 23, 20, 0.5)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              locations={[0, 0.35, 0.7, 1]}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </View>
-
-          {/* Bottom fade of the header background */}
-          <LinearGradient
-            colors={['transparent', 'rgba(2, 20, 18, 0.15)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.headerBottomFade}
-          />
-
-          {/* Dedicated Header Content Container */}
-          <View style={styles.headerContent}>
-            {/* Back Button Row */}
-            <View style={styles.backButtonRow}>
-              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                <Feather name="chevron-left" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Step Label */}
-            <Text style={styles.stepIndicator}>STEP 4 OF 4</Text>
-
-            {/* Progress Bar */}
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-              <View style={[styles.progressSegment, styles.progressSegmentFilled]} />
-            </View>
-          </View>
-        </View>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        <PlanHeader
+          step={4}
+          imageUri={getDestinationImage(destination)}
+          onBack={() => navigation.goBack()}
+          focalStyle={getFocalStyle(destination)}
+        />
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
@@ -270,7 +233,7 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
             </Text>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

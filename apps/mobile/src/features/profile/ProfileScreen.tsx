@@ -7,8 +7,11 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -36,13 +39,18 @@ interface TabItem {
   label: string;
 }
 
-interface TripCardData {
+interface TripBrief {
   id: string;
-  badgeText: string;
-  badgeBg: string;
-  title: string;
-  subtitle: string;
-  imageBg: string;
+  user_id: string;
+  destination: string;
+  check_in?: string;
+  check_out?: string;
+  guests?: number;
+  group_type?: string;
+  moods?: string[];
+  budget?: number;
+  free_text?: string;
+  created_at?: string;
 }
 
 interface HowStep {
@@ -73,6 +81,8 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('trips');
   const [savedProperties, setSavedProperties] = useState<MatchedProperty[]>([]);
   const [loadingSaved, setLoadingSaved] = useState<boolean>(false);
+  const [trips, setTrips] = useState<TripBrief[]>([]);
+  const [loadingTrips, setLoadingTrips] = useState<boolean>(false);
 
   const fetchSaved = async () => {
     try {
@@ -92,9 +102,29 @@ export default function ProfileScreen() {
     }
   };
 
+  const fetchTrips = async () => {
+    try {
+      setLoadingTrips(true);
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      const data = await apiService.get<TripBrief[]>(
+        '/users/my-trips',
+        token
+      );
+      setTrips(data || []);
+    } catch (err) {
+      console.error('Failed to fetch trips:', err);
+    } finally {
+      setLoadingTrips(false);
+    }
+  };
+
   React.useEffect(() => {
     if (activeTab === 'saved') {
       fetchSaved();
+    } else if (activeTab === 'trips') {
+      fetchTrips();
     }
   }, [activeTab]);
 
@@ -123,26 +153,6 @@ export default function ProfileScreen() {
     { key: 'how', label: i18n.t('profile.how') },
     { key: 'settings', label: 'settings' }, // label ignored for settings icon
   ];
-
-  const tripsData: TripCardData[] = [
-    {
-      id: '1',
-      badgeText: i18n.t('profile.upcoming'),
-      badgeBg: '#1A6B5A',
-      title: i18n.t('profile.trip1Title'),
-      subtitle: i18n.t('profile.trip1Subtitle'),
-      imageBg: '#1A6B5A',
-    },
-    {
-      id: '2',
-      badgeText: i18n.t('profile.completed'),
-      badgeBg: '#2D8F5E',
-      title: i18n.t('profile.trip2Title'),
-      subtitle: i18n.t('profile.trip2Subtitle'),
-      imageBg: '#D4704A',
-    },
-  ];
-
   const howSteps: HowStep[] = [
     {
       id: '1',
@@ -173,18 +183,57 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar Header */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.topBarLeft}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Feather name="arrow-left" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>{i18n.t('auth.login.title')}</Text>
-          <View style={styles.topBarRight} />
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        {/* Top Hero Header */}
+        <View style={styles.headerWrapper}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800' }} 
+            style={styles.headerAbsoluteImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            locations={[0, 0.35, 0.7, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-left" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.headerTitleText}>JuxTravel</Text>
+
+            <View style={styles.headerRightIcons}>
+              <TouchableOpacity 
+                style={styles.headerIconBtn} 
+                activeOpacity={0.7} 
+                onPress={() => Alert.alert('Notifications', 'No new notifications.')}
+              >
+                <Feather name="bell" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.headerIconBtn} 
+                activeOpacity={0.7} 
+                onPress={() => Alert.alert('Messages', 'No new messages.')}
+              >
+                <Feather name="message-square" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         <ScrollView
@@ -193,57 +242,106 @@ export default function ProfileScreen() {
         >
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{getInitials(userName)}</Text>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{getInitials(userName)}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.editButton} 
+                activeOpacity={0.8} 
+                onPress={() => Alert.alert('Edit Photo', 'Upload functionality coming soon!')}
+              >
+                <Feather name="edit-2" size={12} color="#1A6B5A" />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.profileName}>{userName}</Text>
-            <View style={styles.badgeRow}>
-              <Text style={styles.badgeText}>{i18n.t('profile.memberBadge')}</Text>
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{userName}</Text>
+              
+              <View style={styles.memberChip}>
+                <Feather name="award" size={10} color="#1A6B5A" />
+                <Text style={styles.memberChipText}>{i18n.t('profile.memberBadge')}</Text>
+              </View>
+
+              <Text style={styles.joinedText}>
+                Joined June 2026  •  Member since 2 months
+              </Text>
             </View>
           </View>
 
-          {/* Become a Host Banner */}
-          {isAlreadyHost ? (
-            <View style={styles.hostBanner}>
-              <View style={styles.hostBannerLeft}>
-                <Text style={styles.hostBannerTitle}>
-                  Switch to Host Mode
-                </Text>
-                <Text style={styles.hostBannerSubtitle}>
-                  Manage your listed properties and bookings.
-                </Text>
+          {/* Stats Card */}
+          <View style={styles.statsCard}>
+            <View style={styles.statColumn}>
+              <View style={styles.statHeader}>
+                <Feather name="briefcase" size={14} color="#1A6B5A" />
+                <Text style={styles.statValue}>3</Text>
               </View>
-              <TouchableOpacity
-                style={styles.switchHostBtn}
-                onPress={() => navigation.navigate('HostApp')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.switchHostText}>
-                  Switch to Host Mode
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.statLabel}>Trips</Text>
             </View>
-          ) : (
-            <View style={styles.hostBanner}>
-              <View style={styles.hostBannerLeft}>
-                <Text style={styles.hostBannerTitle}>
-                  Become a Host
-                </Text>
-                <Text style={styles.hostBannerSubtitle}>
-                  Earn extra income by listing your property.
-                </Text>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statColumn}>
+              <View style={styles.statHeader}>
+                <Feather name="heart" size={14} color="#D4704A" />
+                <Text style={styles.statValue}>1</Text>
               </View>
-              <TouchableOpacity
-                style={styles.becomeHostBtn}
-                onPress={() => navigation.navigate('HostOnboarding')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.becomeHostText}>
-                  Become a Host
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.statLabel}>Saved</Text>
             </View>
-          )}
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statColumn}>
+              <View style={styles.statHeader}>
+                <Feather name="star" size={14} color="#5E5ADB" />
+                <Text style={styles.statValue}>520</Text>
+              </View>
+              <Text style={styles.statLabel}>Points</Text>
+            </View>
+          </View>
+
+          {/* Become a Host / Switch to Host Mode Card */}
+          <View style={styles.hostCard}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800' }} 
+              style={styles.hostCardImageBg}
+              resizeMode="cover"
+            />
+            
+            <View style={styles.hostCardHeader}>
+              <Text style={styles.hostCardTag}>✦ HOSTING</Text>
+            </View>
+
+            {isAlreadyHost ? (
+              <>
+                <Text style={styles.hostCardTitle}>Switch to Host Mode</Text>
+                <Text style={styles.hostCardDesc}>
+                  Manage your listings and reservations on JuxTravel.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.hostCardCTA} 
+                  activeOpacity={0.85} 
+                  onPress={() => navigation.navigate('HostApp')}
+                >
+                  <Text style={styles.hostCardCTAText}>Switch to Host Mode →</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.hostCardTitle}>Become a Host</Text>
+                <Text style={styles.hostCardDesc}>
+                  Earn income by listing your property on JuxTravel.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.hostCardCTA} 
+                  activeOpacity={0.85} 
+                  onPress={handleBecomeHost}
+                >
+                  <Text style={styles.hostCardCTAText}>Become a Host →</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
           {/* Tab Selector Bar */}
           <View style={styles.tabsContainer}>
@@ -282,29 +380,91 @@ export default function ProfileScreen() {
             {/* TAB 1: TRIPS */}
             {activeTab === 'trips' && (
               <View>
-                {tripsData.map((trip) => (
-                  <View key={trip.id} style={styles.tripCard}>
-                    <View
-                      style={[
-                        styles.tripImagePlaceholder,
-                        { backgroundColor: trip.imageBg },
-                      ]}
+                {loadingTrips ? (
+                  <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
+                ) : trips.length === 0 ? (
+                  <View style={styles.emptySavedContainer}>
+                    <Feather name="briefcase" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
+                    <Text style={styles.emptySavedTitle}>
+                      No trips planned yet
+                    </Text>
+                    <Text style={styles.emptySavedSubtitle}>
+                      Complete a planning concierge search to see your trip briefs here.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.exploreButton}
+                      onPress={handleExplore}
+                      activeOpacity={0.8}
                     >
-                      <View
-                        style={[
-                          styles.tripBadge,
-                          { backgroundColor: trip.badgeBg },
-                        ]}
-                      >
-                        <Text style={styles.tripBadgeText}>{trip.badgeText}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.tripInfo}>
-                      <Text style={styles.tripTitle}>{trip.title}</Text>
-                      <Text style={styles.tripSubtitle}>{trip.subtitle}</Text>
-                    </View>
+                      <Text style={styles.exploreButtonText}>
+                        Start Planning
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                ))}
+                ) : (
+                  trips.map((trip) => {
+                    const checkInDate = trip.check_in ? new Date(trip.check_in) : null;
+                    const checkOutDate = trip.check_out ? new Date(trip.check_out) : null;
+                    const dateStr = (checkInDate && checkOutDate)
+                      ? `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                      : 'Dates flexible';
+
+                    return (
+                      <TouchableOpacity
+                        key={trip.id}
+                        style={styles.tripCard}
+                        activeOpacity={0.9}
+                        onPress={() => {
+                          navigation.navigate('MatchResults', {
+                            destination: trip.destination,
+                            checkIn: trip.check_in ?? '',
+                            checkOut: trip.check_out ?? '',
+                            guests: trip.guests ?? 1,
+                            groupType: trip.group_type ?? 'couple',
+                            moods: trip.moods ?? [],
+                            budget: trip.budget ?? 15000,
+                            freeText: trip.free_text ?? '',
+                            bedrooms: 1,
+                          });
+                        }}
+                      >
+                        <View style={styles.tripImageContainer}>
+                          <Image 
+                            source={{ uri: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} 
+                            style={styles.tripImage}
+                            resizeMode="cover"
+                          />
+                          <View style={[styles.tripStatusBadge, { backgroundColor: '#1A6B5A' }]}>
+                            <Text style={styles.tripStatusText}>PLANNING</Text>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.tripInfo}>
+                          <Text style={styles.tripTitle}>{trip.destination}</Text>
+                          <View style={styles.tripDetailsRow}>
+                            <Feather name="calendar" size={12} color="#6B7370" />
+                            <Text style={styles.tripDetailsText}>{dateStr}  •  {trip.guests ?? 1} {trip.guests === 1 ? 'Guest' : 'Guests'}</Text>
+                          </View>
+                          {trip.moods && trip.moods.length > 0 && (
+                            <View style={styles.tripVibeChips}>
+                              {trip.moods.slice(0, 3).map((vibe) => (
+                                <View key={vibe} style={styles.tripVibeChip}>
+                                  <Text style={styles.tripVibeText}>{vibe}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                          <View style={styles.tripActionRow}>
+                            <View style={styles.tripCTA}>
+                              <Text style={styles.tripCTAText}>View Matches</Text>
+                              <Feather name="chevron-right" size={14} color="#1A6B5A" />
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </View>
             )}
 
@@ -315,7 +475,7 @@ export default function ProfileScreen() {
                   <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
                 ) : savedProperties.length === 0 ? (
                   <View style={styles.emptySavedContainer}>
-                    <Feather name="bookmark" size={32} color="#6B7370" />
+                    <Feather name="bookmark" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
                     <Text style={styles.emptySavedTitle}>
                       No saved properties yet
                     </Text>
@@ -333,138 +493,43 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  savedProperties.map((property) => {
-                    const score = property.matchScore ?? 8.5;
-                    const vibePct = Math.min(100, Math.round(score * 10));
-                    const groupPct = Math.min(100, Math.round((score - 0.2) * 10));
-                    const budgetPct = Math.min(100, Math.round((score + 0.1) * 10));
-
-                    return (
-                      <View key={property.id} style={styles.card}>
-                        {/* Photo Area */}
-                        <View style={styles.photoArea}>
-                          {property.photos && property.photos.length > 0 ? (
-                            <Image
-                              source={{ uri: property.photos[0] }}
-                              style={styles.cardImage}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <View style={styles.placeholderContainer}>
-                              <Feather name="home" size={48} color="#84C9BA" />
-                            </View>
-                          )}
-
-                          {/* Match Score Badge */}
-                          <View style={styles.scoreBadge}>
-                            <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
-                            <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
+                  savedProperties.map((property) => (
+                    <View key={property.id} style={styles.card}>
+                      {/* Photo Area */}
+                      <View style={styles.photoArea}>
+                        {property.photos && property.photos.length > 0 ? (
+                          <Image
+                            source={{ uri: property.photos[0] }}
+                            style={styles.cardImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.placeholderContainer}>
+                            <Feather name="home" size={48} color="#84C9BA" />
                           </View>
-                        </View>
-
-                        {/* Content Area */}
-                        <View style={styles.contentArea}>
-                          {/* Row 1: Name + Price */}
-                          <View style={styles.row1}>
-                            <Text style={styles.propertyName} numberOfLines={1}>
-                              {property.name}
-                            </Text>
-                            <Text style={styles.propertyPrice}>
-                              ₹{property.price_per_night.toLocaleString('en-IN')}/night
-                            </Text>
-                          </View>
-
-                          {/* Row 2: Location */}
-                          <View style={styles.row2}>
-                            <Feather name="map-pin" size={14} color="#6B7370" />
-                            <Text style={styles.locationText} numberOfLines={1}>
-                              {property.location?.city}, {property.location?.state}
-                            </Text>
-                          </View>
-
-                          {/* Row 3: Amenities (max 3) */}
-                          {property.amenities && property.amenities.length > 0 && (
-                            <View style={styles.row3}>
-                              {property.amenities.slice(0, 3).map((amenity) => (
-                                <View key={amenity} style={styles.amenityChip}>
-                                  <Text style={styles.amenityChipText}>
-                                    {amenity.replace('_', ' ').toUpperCase()}
-                                  </Text>
-                                </View>
-                              ))}
-                            </View>
-                          )}
-
-                          {/* Row 4: Match Breakdown */}
-                          <View style={styles.row4}>
-                            {/* Vibe Match */}
-                            <View style={styles.breakdownItem}>
-                              <Text style={styles.breakdownLabel}>{i18n.t('matches.vibeMatch')}</Text>
-                              <View style={styles.breakdownBarContainer}>
-                                <View
-                                  style={[styles.breakdownBar, { width: `${vibePct}%` }]}
-                                />
-                              </View>
-                            </View>
-
-                            {/* Group Fit */}
-                            <View style={styles.breakdownItem}>
-                              <Text style={styles.breakdownLabel}>{i18n.t('matches.groupFit')}</Text>
-                              <View style={styles.breakdownBarContainer}>
-                                <View
-                                  style={[styles.breakdownBar, { width: `${groupPct}%` }]}
-                                />
-                              </View>
-                            </View>
-
-                            {/* Budget Fit */}
-                            <View style={styles.breakdownItem}>
-                              <Text style={styles.breakdownLabel}>{i18n.t('matches.budgetFit')}</Text>
-                              <View style={styles.breakdownBarContainer}>
-                                <View
-                                  style={[styles.breakdownBar, { width: `${budgetPct}%` }]}
-                                />
-                              </View>
-                            </View>
-                          </View>
-
-                          {/* Row 5: Action Buttons */}
-                          <View style={styles.row5}>
-                            <TouchableOpacity
-                              style={styles.viewButton}
-                              onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
-                              activeOpacity={0.8}
-                            >
-                              <Text style={styles.viewButtonText}>
-                                {i18n.t('matches.viewProperty')}
-                              </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              style={styles.saveButton}
-                              onPress={async () => {
-                                try {
-                                  const token = await SecureStore.getItemAsync('access_token');
-                                  if (!token) return;
-                                  await apiService.post('/users/save-property', { propertyId: property.id }, token);
-                                  Alert.alert('Removed! ✓', 'Property removed from saved');
-                                  fetchSaved();
-                                } catch (error) {
-                                  Alert.alert('Error', 'Could not remove');
-                                }
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                <Feather name="bookmark" size={16} color="#1A6B5A" fill="#1A6B5A" />
-                                <Text style={styles.saveButtonText}>Saved</Text>
-                              </View>
-                            </TouchableOpacity>
-                          </View>
+                        )}
+                        <View style={styles.scoreBadge}>
+                          <Text style={styles.scoreValue}>{(property.matchScore ?? 8.5).toFixed(1)}</Text>
+                          <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
                         </View>
                       </View>
-                    );
-                  })
+                      <View style={styles.contentArea}>
+                        <View style={styles.row1}>
+                          <Text style={styles.propertyName} numberOfLines={1}>{property.name}</Text>
+                          <Text style={styles.propertyPrice}>₹{property.price_per_night.toLocaleString('en-IN')}/night</Text>
+                        </View>
+                        <View style={styles.row5}>
+                          <TouchableOpacity
+                            style={styles.viewButton}
+                            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={styles.viewButtonText}>{i18n.t('matches.viewProperty')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  ))
                 )}
               </View>
             )}
@@ -472,9 +537,7 @@ export default function ProfileScreen() {
             {/* TAB 3: HOW */}
             {activeTab === 'how' && (
               <View>
-                <Text style={styles.howTitle}>
-                  {i18n.t('profile.howTitle')}
-                </Text>
+                <Text style={styles.howTitle}>{i18n.t('profile.howTitle')}</Text>
                 <View style={styles.howStepsContainer}>
                   {howSteps.map((step) => (
                     <View key={step.id} style={styles.howStepRow}>
@@ -485,9 +548,7 @@ export default function ProfileScreen() {
                       </View>
                       <View style={styles.howStepTextContainer}>
                         <Text style={styles.howStepTitle}>{step.title}</Text>
-                        <Text style={styles.howStepSubtitle}>
-                          {step.subtitle}
-                        </Text>
+                        <Text style={styles.howStepSubtitle}>{step.subtitle}</Text>
                       </View>
                     </View>
                   ))}
@@ -512,13 +573,13 @@ export default function ProfileScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.settingsItemLeft}>
-                      {item.id === 'edit' && <Feather name="user" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'notifications' && <Feather name="bell" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'language' && <Feather name="globe" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'privacy' && <Feather name="lock" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'help' && <Feather name="help-circle" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'terms' && <Feather name="file-text" size={20} color="#6B7370" style={styles.settingsItemIcon} />}
-                      {item.id === 'signout' && <Feather name="log-out" size={20} color="#D4704A" style={styles.settingsItemIcon} />}
+                      {item.id === 'edit' && <Feather name="user" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'notifications' && <Feather name="bell" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'language' && <Feather name="globe" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'privacy' && <Feather name="lock" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'help' && <Feather name="help-circle" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'terms' && <Feather name="file-text" size={18} color="#6B7370" style={styles.settingsItemIcon} />}
+                      {item.id === 'signout' && <Feather name="log-out" size={18} color="#D4704A" style={styles.settingsItemIcon} />}
                       <Text
                         style={[
                           styles.settingsItemLabel,
@@ -535,7 +596,7 @@ export default function ProfileScreen() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

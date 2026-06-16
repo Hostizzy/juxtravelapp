@@ -11,7 +11,7 @@ export class MatchesService {
   constructor(
     private supabaseService: SupabaseService,
     private matchEngine: MatchEngine,
-  ) {}
+  ) { }
 
   async findMatches(
     dto: FindMatchesDto
@@ -20,9 +20,9 @@ export class MatchesService {
 
     // Fetch all active properties
     const { data: properties, error } = await this.supabaseService.admin
-        .from('properties')
-        .select('*')
-        .eq('status', 'active');
+      .from('properties')
+      .select('*')
+      .eq('status', 'active');
 
     if (error || !properties) {
       this.logger.error('Failed to fetch properties');
