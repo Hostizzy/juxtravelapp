@@ -1,0 +1,154 @@
+.page {
+  max-width: 1200px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--white);
+  font-family: Georgia, serif;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+
+.statCard.warning {
+  border-color: rgba(214, 158, 46, 0.3);
+  background: rgba(214, 158, 46, 0.05);
+}
+
+.statIcon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--white);
+  font-family: Georgia, serif;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.section {
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 20px;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 12px 16px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(45,63,55,0.5);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.tableRow:hover {
+  background: var(--dark-3);
+}
+
+.propName {
+  font-weight: 600;
+  color: var(--white);
+}
+
+.propLocation {
+  color: var(--text-dim);
+}
+
+.date {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  text-align: center;
+}
+
+.active {
+  background: rgba(26,107,90,0.2);
+  color: var(--sage-light);
+}
+
+.under_review {
+  background: rgba(214,158,46,0.15);
+  color: #F6E05E;
+}
+
+.draft {
+  background: rgba(107,115,112,0.2);
+  color: var(--text-dim);
+}
+
+.rejected {
+  background: rgba(229,62,62,0.15);
+  color: #FC8181;
+}
+
+.emptyRow {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -47,6 +50,89 @@ export default function MatchResultsScreen() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [savedProperties, setSavedProperties] = useState<string[]>([]);
 
+  // Animation Refs
+  const orbitAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const loaderRotateAnim = useRef(new Animated.Value(0)).current;
+  const particle1Y = useRef(new Animated.Value(0)).current;
+  const particle2Y = useRef(new Animated.Value(0)).current;
+
+  // AI Concierge loader animation loops
+  useEffect(() => {
+    if (!loading) return;
+
+    const orbitLoop = Animated.loop(
+      Animated.timing(orbitAnim, {
+        toValue: 1,
+        duration: 3500,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    orbitLoop.start();
+
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.95,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseLoop.start();
+
+    const loaderRotateLoop = Animated.loop(
+      Animated.timing(loaderRotateAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    loaderRotateLoop.start();
+
+    const floatAnim = (val: Animated.Value, range: number, duration: number) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.timing(val, {
+            toValue: -range,
+            duration: duration,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(val, {
+            toValue: 0,
+            duration: duration,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    };
+
+    const float1 = floatAnim(particle1Y, 12, 2200);
+    const float2 = floatAnim(particle2Y, 16, 2800);
+    float1.start();
+    float2.start();
+
+    return () => {
+      orbitLoop.stop();
+      pulseLoop.stop();
+      loaderRotateLoop.stop();
+      float1.stop();
+      float2.stop();
+    };
+  }, [loading]);
+
+  // Steps checklist increment intervals (1000ms each)
   useEffect(() => {
     let interval: any;
     if (loading) {
@@ -58,7 +144,7 @@ export default function MatchResultsScreen() {
           }
           return prev;
         });
-      }, 400);
+      }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -73,7 +159,7 @@ export default function MatchResultsScreen() {
         const [data, savedData] = await Promise.all([
           getMatches(destination, checkIn, checkOut, guests, bedrooms, groupType, moods, budget),
           token ? apiService.get<MatchedProperty[]>('/users/saved-properties', token).catch(() => []) : [],
-          new Promise((resolve) => setTimeout(resolve, 2200)), // Extends display time for AI generation steps
+          new Promise((resolve) => setTimeout(resolve, 100)), // Short delay since PlanProcessingScreen already showed steps
         ]);
         setMatches(data);
         setSavedProperties((savedData || []).map(p => p.id));
@@ -123,31 +209,99 @@ export default function MatchResultsScreen() {
 
   if (loading) {
     const checklistItems = [
-      'Analyzing travel preferences...',
-      `Scoring active properties in ${destination}...`,
-      `Filtering by ₹${budget.toLocaleString('en-IN')} budget...`,
-      `Matching group fit for ${guests} guests...`,
-      'Polishing your personalized concierge matches...',
+      {
+        title: 'Analyzing travel preferences...',
+        helper: 'Understanding your taste and style',
+      },
+      {
+        title: `Scoring active properties in ${destination || 'Goa'}...`,
+        helper: 'Evaluating top-rated stays',
+      },
+      {
+        title: `Filtering by ₹${budget.toLocaleString('en-IN')} budget...`,
+        helper: 'Finding best value for your money',
+      },
+      {
+        title: `Matching group fit for ${guests} guest${guests !== 1 ? 's' : ''}...`,
+        helper: 'Ensuring the perfect experience',
+      },
+      {
+        title: 'Polishing your personalized concierge matches...',
+        helper: 'Adding final magic ✨',
+      },
     ];
+
+    const orbitRotation = orbitAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg'],
+    });
+
+    const loaderRotation = loaderRotateAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg'],
+    });
 
     return (
       <View style={styles.root}>
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           {/* Top Bar */}
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { backgroundColor: '#F8F7F3' }]}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              <Feather name="arrow-left" size={20} color="#1A1F1E" />
             </TouchableOpacity>
-            <Text style={styles.topBarTitle}>Concierge Search</Text>
+            <Text style={[styles.topBarTitle, { color: '#1A1F1E' }]}>Concierge Search</Text>
             <View style={styles.topBarSpacer} />
           </View>
 
           <View style={styles.conciergeLoadingContainer}>
-            <ActivityIndicator color="#1A6B5A" size="large" style={styles.loaderSpinner} />
+            {/* AI Hero Area */}
+            <View style={styles.heroArea}>
+              {/* Glow outer ring */}
+              <Animated.View style={[styles.glowRing, { transform: [{ scale: pulseAnim }] }]} />
+
+              {/* Orbit border ring */}
+              <View style={styles.orbitRing} />
+
+              {/* Orbit riding dot */}
+              <Animated.View style={[styles.orbitContainer, { transform: [{ rotate: orbitRotation }] }]}>
+                <View style={styles.orbitDot} />
+              </Animated.View>
+
+              {/* Center Canvas */}
+              <View style={styles.centerCanvas}>
+                {/* Cloud Decor */}
+                <Feather name="cloud" size={16} color="#A0D1C5" style={styles.decorCloud} />
+                
+                {/* Palm Silhouettes */}
+                <MaterialCommunityIcons name="palm-tree" size={54} color="#A7DED1" style={styles.decorPalm} />
+                <MaterialCommunityIcons name="palm-tree" size={42} color="#A7DED1" style={styles.decorPalmRight} />
+
+                {/* Suitcase Illustration */}
+                <View style={styles.decorSuitcase}>
+                  <View style={styles.suitcaseHandle} />
+                  <View style={styles.suitcaseBody}>
+                    <View style={styles.suitcaseStrapLeft} />
+                    <View style={styles.suitcaseStrapRight} />
+                    <View style={styles.suitcaseBadge}>
+                      <Feather name="feather" size={10} color="#1B7A69" />
+                    </View>
+                  </View>
+                  <View style={styles.suitcaseWheelsRow}>
+                    <View style={styles.suitcaseWheel} />
+                    <View style={styles.suitcaseWheel} />
+                  </View>
+                </View>
+              </View>
+
+              {/* Floating particles */}
+              <Animated.View style={[styles.floatingParticle, { top: 30, left: 16, transform: [{ translateY: particle1Y }] }]} />
+              <Animated.View style={[styles.floatingParticle, { bottom: 40, right: 10, transform: [{ translateY: particle2Y }] }]} />
+            </View>
+
             <Text style={styles.loadingTitle}>Generating Your Escape...</Text>
             <Text style={styles.loadingSubtitle}>AI Match Engine is curating your perfect matches</Text>
 
@@ -155,25 +309,57 @@ export default function MatchResultsScreen() {
               {checklistItems.map((item, index) => {
                 const isCompleted = index < currentStep;
                 const isActive = index === currentStep;
-                
+                const isLast = index === checklistItems.length - 1;
+
                 return (
-                  <View key={index} style={styles.checklistItem}>
-                    {isCompleted ? (
-                      <Feather name="check-circle" size={18} color="#1A6B5A" style={styles.checkIcon} />
-                    ) : isActive ? (
-                      <ActivityIndicator size="small" color="#D4704A" style={styles.checkIcon} />
-                    ) : (
-                      <Feather name="circle" size={18} color="#6B7370" style={styles.checkIcon} />
+                  <View key={index} style={[styles.checklistItem, isLast && styles.checklistItemLast]}>
+                    {/* Dotted vertical connector lines */}
+                    {!isLast && (
+                      <View
+                        style={[
+                          styles.verticalLine,
+                          isCompleted && styles.verticalLineActive,
+                        ]}
+                      />
                     )}
-                    <Text 
+
+                    <View
                       style={[
-                        styles.checklistText,
-                        isCompleted && styles.checklistTextCompleted,
-                        isActive && styles.checklistTextActive
+                        styles.checkIcon,
+                        isCompleted && styles.checkIconCompleted,
+                        isActive && styles.checkIconActive,
                       ]}
                     >
-                      {item}
-                    </Text>
+                      {isCompleted ? (
+                        <Feather name="check" size={14} color="#1B7A69" />
+                      ) : isActive ? (
+                        <Animated.View style={{ transform: [{ rotate: loaderRotation }] }}>
+                          <Feather name="loader" size={12} color="#D67A4A" />
+                        </Animated.View>
+                      ) : (
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#E6E8E5' }} />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text 
+                        style={[
+                          styles.checklistText,
+                          isCompleted && styles.checklistTextCompleted,
+                          isActive && styles.checklistTextActive
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text 
+                        style={[
+                          styles.helperText,
+                          isCompleted && styles.helperTextCompleted,
+                          isActive && styles.helperTextActive
+                        ]}
+                      >
+                        {item.helper}
+                      </Text>
+                    </View>
                   </View>
                 );
               })}

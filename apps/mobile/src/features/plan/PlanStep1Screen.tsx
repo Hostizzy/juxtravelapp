@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import CalendarBottomSheet from './CalendarBottomSheet';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanStep1Screen.styles';
@@ -44,8 +44,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
   const [checkOut, setCheckOut] = useState('');
   const [isFlexible, setIsFlexible] = useState(false);
 
-  const [showCheckIn, setShowCheckIn] = useState(false);
-  const [showCheckOut, setShowCheckOut] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
 
@@ -90,11 +89,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
   };
 
   const handleDateSelect = (type: 'checkIn' | 'checkOut') => {
-    if (type === 'checkIn') {
-      setShowCheckIn(true);
-    } else {
-      setShowCheckOut(true);
-    }
+    setShowCalendar(true);
   };
 
   const handleContinue = () => {
@@ -265,35 +260,20 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
           </TouchableOpacity>
         </ScrollView>
 
-        {showCheckIn && (
-          <DateTimePicker
-            value={checkInDate ?? new Date()}
-            mode="date"
-            minimumDate={new Date()}
-            onChange={(event: DateTimePickerEvent, date?: Date) => {
-              setShowCheckIn(false);
-              if (date) {
-                setCheckInDate(date);
-                setCheckIn(formatDate(date));
-              }
-            }}
-          />
-        )}
-
-        {showCheckOut && (
-          <DateTimePicker
-            value={checkOutDate ?? new Date()}
-            mode="date"
-            minimumDate={checkInDate ?? new Date()}
-            onChange={(event: DateTimePickerEvent, date?: Date) => {
-              setShowCheckOut(false);
-              if (date) {
-                setCheckOutDate(date);
-                setCheckOut(formatDate(date));
-              }
-            }}
-          />
-        )}
+        <CalendarBottomSheet
+          visible={showCalendar}
+          onClose={() => setShowCalendar(false)}
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          destination={destination}
+          onConfirm={(inDate, outDate) => {
+            setCheckInDate(inDate);
+            setCheckOutDate(outDate);
+            setCheckIn(formatDate(inDate));
+            setCheckOut(formatDate(outDate));
+            setShowCalendar(false);
+          }}
+        />
       </View>
     </View>
   );

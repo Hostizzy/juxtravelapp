@@ -110,7 +110,7 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
   };
 
   const handleGetMatches = () => {
-    navigation.navigate('MatchResults', {
+    navigation.navigate('PlanProcessing', {
       destination,
       checkIn,
       checkOut,

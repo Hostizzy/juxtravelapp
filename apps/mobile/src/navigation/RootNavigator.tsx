@@ -8,6 +8,7 @@ import PlanStep1Screen from '../features/plan/PlanStep1Screen';
 import PlanStep2Screen from '../features/plan/PlanStep2Screen';
 import PlanStep3Screen from '../features/plan/PlanStep3Screen';
 import PlanStep4Screen from '../features/plan/PlanStep4Screen';
+import PlanProcessingScreen from '../features/plan/PlanProcessingScreen';
 import MatchResultsScreen from '../features/matches/MatchResultsScreen';
 
 // Host screens
@@ -82,6 +83,17 @@ export type RootStackParamList = {
     guests: number;
     groupType: string;
     moods: string[];
+    bedrooms: number;
+  };
+  PlanProcessing: {
+    destination: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    groupType: string;
+    moods: string[];
+    budget: number;
+    freeText?: string;
     bedrooms: number;
   };
   HostOnboarding: undefined;
@@ -175,6 +187,7 @@ export default function RootNavigator() {
       <Stack.Screen name="PlanStep2" component={PlanStep2Screen} />
       <Stack.Screen name="PlanStep3" component={PlanStep3Screen} />
       <Stack.Screen name="PlanStep4" component={PlanStep4Screen} />
+      <Stack.Screen name="PlanProcessing" component={PlanProcessingScreen} />
 
       {/* Host Flow */}
       <Stack.Screen name="HostOnboarding" component={HostOnboardingScreen} />
