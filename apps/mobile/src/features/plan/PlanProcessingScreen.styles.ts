@@ -16,7 +16,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 56,
+    height: 36,
     marginTop: Platform.OS === 'ios' ? 12 : 8,
     marginBottom: 20,
   },

@@ -415,7 +415,7 @@ export default function ProfileScreen() {
                         style={styles.tripCard}
                         activeOpacity={0.9}
                         onPress={() => {
-                          navigation.navigate('MatchResults', {
+                          navigation.navigate('PlanProcessing', {
                             destination: trip.destination,
                             checkIn: trip.check_in ?? '',
                             checkOut: trip.check_out ?? '',

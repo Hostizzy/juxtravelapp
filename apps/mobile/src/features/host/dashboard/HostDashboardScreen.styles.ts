@@ -24,7 +24,7 @@ export default StyleSheet.create({
     color: '#84C9BA',
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 120,
   },
   // Stats
   statsSection: {

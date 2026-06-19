@@ -54,7 +54,7 @@ export default StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 16,
-    paddingBottom: 88,
+    paddingBottom: 120,
   },
   // Card Styles
   card: {

@@ -24,7 +24,7 @@ export default StyleSheet.create({
     marginLeft: 6,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 120,
     backgroundColor: '#0F1714',
   },
   // Profile Header

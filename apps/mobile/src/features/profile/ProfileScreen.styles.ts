@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scrollContent: {
-    paddingBottom: 100, // Safe buffer for tab bar overlap
+    paddingBottom: 120, // Safe buffer for tab bar overlap
   },
   // Profile Summary Row
   profileHeader: {

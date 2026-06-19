@@ -10,6 +10,7 @@ import PlanStep3Screen from '../features/plan/PlanStep3Screen';
 import PlanStep4Screen from '../features/plan/PlanStep4Screen';
 import PlanProcessingScreen from '../features/plan/PlanProcessingScreen';
 import MatchResultsScreen from '../features/matches/MatchResultsScreen';
+import { MatchResult } from '../services/matchService';
 
 // Host screens
 import HostOnboardingScreen from '../features/host/onboarding/HostOnboardingScreen';
@@ -171,6 +172,8 @@ export type RootStackParamList = {
     budget: number;
     freeText?: string;
     bedrooms: number;
+    matches: MatchResult[];
+    savedIds: string[];
   };
 };
 

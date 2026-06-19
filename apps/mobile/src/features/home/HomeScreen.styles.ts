@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     backgroundColor: '#FAF8F4',
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   headerWrapper: {
     backgroundColor: '#021412',

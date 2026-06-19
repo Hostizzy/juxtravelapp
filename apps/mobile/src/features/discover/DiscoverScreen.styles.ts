@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F1714',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 80, // (above nav bar)
+    paddingBottom: 120, // (above nav bar)
   },
   overlayHeaderRow: {
     flexDirection: 'row',

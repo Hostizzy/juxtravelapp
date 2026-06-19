@@ -14,6 +14,9 @@ import { RouteProp } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanProcessingScreen.styles';
+import { getMatches } from '../../services/matchService';
+import * as SecureStore from 'expo-secure-store';
+import { apiService } from '../../services/api';
 
 type PlanProcessingProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanProcessing'>;
@@ -131,36 +134,89 @@ export default function PlanProcessingScreen({ navigation, route }: PlanProcessi
 
   // Steps progression & routing timers (strictly top-level)
   useEffect(() => {
+    let isMounted = true;
+
+    // Step animation (visual)
     const stepInterval = setInterval(() => {
-      setActiveStep((prev) => {
-        if (prev < 4) {
-          return prev + 1;
-        } else {
-          clearInterval(stepInterval);
-          return prev;
-        }
-      });
+      setActiveStep((prev) => 
+        prev < 4 ? prev + 1 : prev
+      );
     }, 1200);
 
-    const completionTimer = setTimeout(() => {
-      navigation.replace('MatchResults', {
-        destination,
-        checkIn,
-        checkOut,
-        guests,
-        groupType,
-        moods,
-        budget,
-        freeText,
-        bedrooms,
-      });
-    }, 6000);
+    // Real data fetching
+    const fetchData = async () => {
+      const startTime = Date.now();
+      
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        
+        const [matches, savedData] = await Promise.all([
+          getMatches(
+            destination,
+            checkIn,
+            checkOut,
+            guests,
+            bedrooms,
+            groupType,
+            moods,
+            budget
+          ),
+          token
+            ? apiService.get<{ id: string }[]>('/users/saved-properties', token).catch(() => [])
+            : Promise.resolve([]),
+        ]);
+
+        // Ensure minimum 4.5 second display time for the animation
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, 4500 - elapsed);
+
+        setTimeout(() => {
+          if (isMounted) {
+            clearInterval(stepInterval);
+            navigation.replace('MatchResults', {
+              destination,
+              checkIn,
+              checkOut,
+              guests,
+              groupType,
+              moods,
+              budget,
+              freeText,
+              bedrooms,
+              matches,
+              savedIds: (savedData || []).map((p) => p.id),
+            });
+          }
+        }, remaining);
+
+      } catch (error) {
+        console.error('Match fetch failed:', error);
+        if (isMounted) {
+          clearInterval(stepInterval);
+          navigation.replace('MatchResults', {
+            destination,
+            checkIn,
+            checkOut,
+            guests,
+            groupType,
+            moods,
+            budget,
+            freeText,
+            bedrooms,
+            matches: [],
+            savedIds: [],
+          });
+        }
+      }
+    };
+
+    fetchData();
 
     return () => {
+      isMounted = false;
       clearInterval(stepInterval);
-      clearTimeout(completionTimer);
     };
-  }, [navigation, route.params, destination, checkIn, checkOut, guests, groupType, moods, budget, freeText, bedrooms]);
+  }, [navigation, destination, checkIn, checkOut, guests, groupType, moods, budget, freeText, bedrooms]);
 
   // Interpolations (evaluated at render time)
   const orbitRotation = orbitAnim.interpolate({
