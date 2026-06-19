@@ -268,39 +268,15 @@ export default function GuestVerificationScreen() {
   };
 
   const renderHeader = () => {
-    if (step === 1) {
-      return (
-        <View style={styles.heroHeader}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80' }} 
-            style={styles.heroImage} 
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['rgba(15,23,20,0.4)', '#0F1714']}
-            style={styles.gradientOverlay}
-          />
-          <View style={styles.headerTopRow}>
-            <TouchableOpacity style={styles.circleBackBtn} onPress={handleBack} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View style={{ width: 36 }} />
-          </View>
-
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>Verify Your Identity</Text>
-            <Text style={styles.heroSubtitle}>Required for trusted host bookings</Text>
-          </View>
-
-          {renderStepper()}
-        </View>
-      );
-    }
-
     return (
-      <View style={styles.simpleHeader}>
+      <View style={styles.heroHeader}>
+        <Image 
+          source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80' }} 
+          style={styles.heroImage} 
+          resizeMode="cover"
+        />
         <LinearGradient
-          colors={['#0F1714', '#1E2B25']}
+          colors={['rgba(15,23,20,0.4)', '#0F1714']}
           style={styles.gradientOverlay}
         />
         <View style={styles.headerTopRow}>
@@ -310,8 +286,9 @@ export default function GuestVerificationScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <View style={styles.simpleHeaderContent}>
-          <Text style={[styles.heroTitle, { fontSize: 24 }]}>Verify Your Identity</Text>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>Verify Your Identity</Text>
+          <Text style={styles.heroSubtitle}>Required for trusted host bookings</Text>
         </View>
 
         {renderStepper()}
