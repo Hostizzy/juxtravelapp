@@ -1,31 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   Alert,
-  Animated,
-  Easing,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { getMatches, MatchResult, MatchedProperty } from '../../services/matchService';
+import { MatchResult } from '../../services/matchService';
 import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../../services/api';
 import i18n from '../../locales/i18n';
 import styles from './MatchResultsScreen.styles';
 
-type MatchResultsScreenRouteProp = RouteProp<RootStackParamList, 'MatchResults'>;
+type ExtendedParamList = RootStackParamList & {
+  HostPropertyDetail: {
+    propertyId: string;
+    checkIn?: string;
+    checkOut?: string;
+    guests?: number;
+    matchReasons?: string[];
+  };
+};
+
+type MatchResultsScreenRouteProp = RouteProp<ExtendedParamList, 'MatchResults'>;
 
 type MatchResultsScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
+  ExtendedParamList,
   'MatchResults'
 >;
 
@@ -38,19 +44,13 @@ export default function MatchResultsScreen() {
     checkIn,
     checkOut,
     guests,
-    groupType,
     moods,
-    budget,
-    freeText,
-    bedrooms,
     matches: initialMatches,
     savedIds: initialSavedIds,
   } = route.params;
 
   const [matches] = useState<MatchResult[]>(initialMatches ?? []);
   const [savedProperties, setSavedProperties] = useState<string[]>(initialSavedIds ?? []);
-
-  // No loading state required - data fetched during PlanProcessingScreen.
 
   const handleSave = async (propertyId: string) => {
     try {
@@ -78,16 +78,51 @@ export default function MatchResultsScreen() {
     }
   };
 
-  const handleViewProperty = (propertyId: string) => {
+  const handleViewProperty = (propertyId: string, matchReasons?: string[]) => {
     navigation.navigate('HostPropertyDetail', {
       propertyId,
       checkIn,
       checkOut,
       guests,
+      matchReasons,
     });
   };
 
-  // No loading layout rendered.
+  const getProgressBorderColor = (score: number) => {
+    if (score >= 90) {
+      return {
+        borderColor: '#1A6B5A',
+      };
+    } else if (score >= 80) {
+      return {
+        borderColor: '#1A6B5A',
+        borderBottomColor: '#E8E2D9',
+      };
+    } else {
+      return {
+        borderColor: '#1A6B5A',
+        borderBottomColor: '#E8E2D9',
+        borderLeftColor: '#E8E2D9',
+      };
+    }
+  };
+
+  const getAmenityIconName = (amenity: string): keyof typeof Feather.glyphMap => {
+    const am = amenity.toLowerCase();
+    if (am.includes('wifi')) return 'wifi';
+    if (am.includes('tv')) return 'tv';
+    if (am.includes('hot') || am.includes('water')) return 'droplet';
+    if (am.includes('park')) return 'info';
+    if (am.includes('ac') || am.includes('air')) return 'wind';
+    if (am.includes('kitchen')) return 'coffee';
+    return 'check';
+  };
+
+  const getReasonIconName = (idx: number): keyof typeof Feather.glyphMap => {
+    if (idx === 0) return 'compass';
+    if (idx === 1) return 'home';
+    return 'star';
+  };
 
   if (matches.length === 0) {
     return (
@@ -100,10 +135,10 @@ export default function MatchResultsScreen() {
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              <Feather name="arrow-left" size={20} color="#1A1F1E" />
             </TouchableOpacity>
-            <Text style={styles.topBarTitle}>{i18n.t('matches.title')}</Text>
-            <View style={styles.topBarSpacer} />
+            <Text style={styles.topBarTitle}>Your Matches</Text>
+            <View style={{ width: 40 }} />
           </View>
 
           <View style={styles.emptyContainer}>
@@ -133,10 +168,13 @@ export default function MatchResultsScreen() {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <Feather name="arrow-left" size={20} color="#FFFFFF" />
+            <Feather name="arrow-left" size={20} color="#1A1F1E" />
           </TouchableOpacity>
-          <Text style={styles.topBarTitle}>{i18n.t('matches.title')}</Text>
-          <View style={styles.topBarSpacer} />
+          <Text style={styles.topBarTitle}>Your Matches</Text>
+          <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
+            <Feather name="sliders" size={14} color="#1A1F1E" />
+            <Text style={styles.filterButtonText}>Filters</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -146,14 +184,15 @@ export default function MatchResultsScreen() {
           {/* Hero Section */}
           <View style={styles.heroSection}>
             <Text style={styles.heroTitle}>
-              {i18n.t('matches.found', { count: matches.length })}
+              We found {matches.length} perfect matches for <Text style={styles.destinationText}>{destination}</Text>
             </Text>
             <Text style={styles.heroSubtitle}>
-              {i18n.t('matches.basedOn')} {destination}
+              Based on your preferences
             </Text>
             <View style={styles.moodsRow}>
               {moods.map((mood) => (
                 <View key={mood} style={styles.moodChip}>
+                  <Feather name="tag" size={12} color="#1A6B5A" />
                   <Text style={styles.moodChipText}>
                     {i18n.t(`plan.step3.${mood}`) || mood.toUpperCase()}
                   </Text>
@@ -163,12 +202,13 @@ export default function MatchResultsScreen() {
           </View>
 
           {/* Matches List */}
-          {matches.map((result) => {
+          {matches.map((result, index) => {
             const property = result.property;
             const score = result.score;
             const vibePct = Math.min(100, Math.round((result.breakdown.vibe / 15) * 100));
             const groupPct = Math.min(100, Math.round((result.breakdown.capacity / 20) * 100));
             const budgetPct = Math.min(100, Math.round((result.breakdown.budget / 15) * 100));
+            const isSaved = savedProperties.includes(property.id);
 
             return (
               <View key={property.id} style={styles.card}>
@@ -182,42 +222,56 @@ export default function MatchResultsScreen() {
                     />
                   ) : (
                     <View style={styles.placeholderContainer}>
-                      <Feather name="home" size={48} color="#84C9BA" />
+                      <Feather name="home" size={48} color="#1A6B5A" />
                     </View>
                   )}
 
-                  {/* Match Score Badge */}
-                  <View style={styles.scoreBadge}>
+                  {/* Top-Left Badge */}
+                  <View style={styles.badgeContainer}>
+                    <Feather name="star" size={12} color="#FFFFFF" fill="#FFFFFF" />
+                    <Text style={styles.badgeText}>
+                      {index === 0 ? 'BEST MATCH' : 'GREAT MATCH'}
+                    </Text>
+                  </View>
+
+                  {/* Top-Right Circular Match Score */}
+                  <View style={[styles.scoreRing, getProgressBorderColor(score)]}>
                     <Text style={styles.scoreValue}>{score.toFixed(0)}%</Text>
-                    <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
+                    <Text style={styles.scoreText}>MATCH</Text>
                   </View>
                 </View>
 
                 {/* Content Area */}
                 <View style={styles.contentArea}>
-                  {/* Row 1: Name + Price */}
-                  <View style={styles.row1}>
+                  {/* Property Info Row (Name + Price) */}
+                  <View style={styles.propertyInfoRow}>
                     <Text style={styles.propertyName} numberOfLines={1}>
                       {property.name}
                     </Text>
-                    <Text style={styles.propertyPrice}>
-                      ₹{result.priceBreakdown.grandTotal.toLocaleString('en-IN')} for {result.priceBreakdown.nights} {result.priceBreakdown.nights === 1 ? 'night' : 'nights'}
-                    </Text>
+                    <View style={styles.priceCol}>
+                      <Text style={styles.propertyPrice}>
+                        ₹{result.priceBreakdown.grandTotal.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={styles.nightsText}>
+                        for {result.priceBreakdown.nights} {result.priceBreakdown.nights === 1 ? 'night' : 'nights'}
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Row 2: Location */}
-                  <View style={styles.row2}>
+                  {/* Location Row */}
+                  <View style={styles.locationRow}>
                     <Feather name="map-pin" size={14} color="#6B7370" />
                     <Text style={styles.locationText} numberOfLines={1}>
                       {property.location?.city}, {property.location?.state}
                     </Text>
                   </View>
 
-                  {/* Row 3: Amenities (max 3) */}
+                  {/* Amenity Chips (WiFi, TV, Hot Water - max 3) */}
                   {property.amenities && property.amenities.length > 0 && (
-                    <View style={styles.row3}>
+                    <View style={styles.amenitiesRow}>
                       {property.amenities.slice(0, 3).map((amenity) => (
                         <View key={amenity} style={styles.amenityChip}>
+                          <Feather name={getAmenityIconName(amenity)} size={12} color="#1A1F1E" />
                           <Text style={styles.amenityChipText}>
                             {amenity.replace('_', ' ').toUpperCase()}
                           </Text>
@@ -226,12 +280,13 @@ export default function MatchResultsScreen() {
                     </View>
                   )}
 
-                  {/* Match Reasons Chips */}
+                  {/* Match Reasons Chips (Orange) */}
                   {result.matchReasons && result.matchReasons.length > 0 && (
-                    <View style={[styles.row3, { marginTop: 4, marginBottom: 12 }]}>
+                    <View style={styles.matchReasonsRow}>
                       {result.matchReasons.map((reason, idx) => (
-                        <View key={idx} style={[styles.amenityChip, { backgroundColor: '#F5E6D0', borderColor: '#D4704A', borderWidth: 1 }]}>
-                          <Text style={[styles.amenityChipText, { color: '#D4704A', fontWeight: '700' }]}>
+                        <View key={idx} style={styles.matchReasonChip}>
+                          <Feather name={getReasonIconName(idx)} size={12} color="#D4704A" />
+                          <Text style={styles.matchReasonChipText}>
                             {reason}
                           </Text>
                         </View>
@@ -239,67 +294,68 @@ export default function MatchResultsScreen() {
                     </View>
                   )}
 
-                  {/* Row 4: Match Breakdown */}
-                  <View style={styles.row4}>
+                  {/* Score Breakdown Section */}
+                  <View style={styles.breakdownSection}>
                     {/* Vibe Match */}
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownLabel}>{i18n.t('matches.vibeMatch')}</Text>
-                      <View style={styles.breakdownBarContainer}>
-                        <View
-                          style={[styles.breakdownBar, { width: `${vibePct}%` }]}
-                        />
+                    <View style={styles.breakdownRow}>
+                      <View style={styles.breakdownLabelCol}>
+                        <Feather name="heart" size={14} color="#6B7370" />
+                        <Text style={styles.breakdownLabelText}>Vibe Match</Text>
                       </View>
+                      <View style={styles.progressBarContainer}>
+                        <View style={[styles.progressBarFill, { width: `${vibePct}%` }]} />
+                      </View>
+                      <Text style={styles.breakdownValueText}>{vibePct}%</Text>
                     </View>
 
                     {/* Group Fit */}
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownLabel}>{i18n.t('matches.groupFit')}</Text>
-                      <View style={styles.breakdownBarContainer}>
-                        <View
-                          style={[styles.breakdownBar, { width: `${groupPct}%` }]}
-                        />
+                    <View style={styles.breakdownRow}>
+                      <View style={styles.breakdownLabelCol}>
+                        <Feather name="users" size={14} color="#6B7370" />
+                        <Text style={styles.breakdownLabelText}>Group Fit</Text>
                       </View>
+                      <View style={styles.progressBarContainer}>
+                        <View style={[styles.progressBarFill, { width: `${groupPct}%` }]} />
+                      </View>
+                      <Text style={styles.breakdownValueText}>{groupPct}%</Text>
                     </View>
 
                     {/* Budget Fit */}
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownLabel}>{i18n.t('matches.budgetFit')}</Text>
-                      <View style={styles.breakdownBarContainer}>
-                        <View
-                          style={[styles.breakdownBar, { width: `${budgetPct}%` }]}
-                        />
+                    <View style={styles.breakdownRow}>
+                      <View style={styles.breakdownLabelCol}>
+                        <Feather name="credit-card" size={14} color="#6B7370" />
+                        <Text style={styles.breakdownLabelText}>Budget Fit</Text>
                       </View>
+                      <View style={styles.progressBarContainer}>
+                        <View style={[styles.progressBarFill, { width: `${budgetPct}%` }]} />
+                      </View>
+                      <Text style={styles.breakdownValueText}>{budgetPct}%</Text>
                     </View>
                   </View>
 
-                  {/* Row 5: Action Buttons */}
-                  <View style={styles.row5}>
+                  {/* Bottom Action Row */}
+                  <View style={styles.cardActionsRow}>
                     <TouchableOpacity
                       style={styles.viewButton}
-                      onPress={() => handleViewProperty(property.id)}
+                      onPress={() => handleViewProperty(property.id, result.matchReasons)}
                       activeOpacity={0.8}
                     >
                       <Text style={styles.viewButtonText}>
-                        {i18n.t('matches.viewProperty')}
+                        View Property →
                       </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.saveButton}
+                      style={styles.saveCircleButton}
                       onPress={() => handleSave(property.id)}
                       activeOpacity={0.7}
                     >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        <Feather 
-                          name="heart" 
-                          size={16} 
-                          color={savedProperties.includes(property.id) ? "#D4704A" : "#1A1F1E"} 
-                          fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"}
-                        />
-                        <Text style={styles.saveButtonText}>
-                          {savedProperties.includes(property.id) ? 'Saved' : i18n.t('matches.saveForLater')}
-                        </Text>
-                      </View>
+                      <Feather 
+                        name="heart" 
+                        size={20} 
+                        color={isSaved ? "#D4704A" : "#6B7370"} 
+                        fill={isSaved ? "#D4704A" : "transparent"}
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>

@@ -21,7 +21,18 @@ import { useAuthStore } from '../../../stores/authStore';
 import i18n from '../../../locales/i18n';
 import styles from './HostPropertyDetailScreen.styles';
 
-type DetailScreenRouteProp = RouteProp<RootStackParamList, 'HostPropertyDetail'>;
+type DetailScreenRouteProp = RouteProp<
+  RootStackParamList & {
+    HostPropertyDetail: {
+      propertyId: string;
+      checkIn?: string;
+      checkOut?: string;
+      guests?: number;
+      matchReasons?: string[];
+    };
+  },
+  'HostPropertyDetail'
+>;
 
 interface PropertyLocation {
   address: string;
@@ -62,7 +73,7 @@ type PolicyType = 'flexible' | 'moderate' | 'strict';
 export default function HostPropertyDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<DetailScreenRouteProp>();
-  const { propertyId, checkIn, checkOut, guests } = route.params;
+  const { propertyId, checkIn, checkOut, guests, matchReasons } = route.params;
   const { user } = useAuthStore();
 
   // Loading & Screen states
@@ -329,6 +340,244 @@ export default function HostPropertyDetailScreen() {
     }
   };
 
+  const renderGuestView = () => {
+    if (!property) return null;
+    return (
+      <View style={styles.rootLight}>
+        <SafeAreaView style={styles.containerLight} edges={['top']}>
+          {/* Top Header */}
+          <View style={styles.topBarLight}>
+            <TouchableOpacity style={styles.circleHeaderBtn} onPress={handleBack} activeOpacity={0.7}>
+              <Feather name="arrow-left" size={20} color="#1A1F1E" />
+            </TouchableOpacity>
+            <Text style={styles.topBarTitleLight}>Property Details</Text>
+            <TouchableOpacity 
+              style={styles.circleHeaderBtn}
+              onPress={() => handleSaveProperty(property.id)}
+              activeOpacity={0.7}
+            >
+              <Feather 
+                name="heart" 
+                size={20} 
+                color={savedProperties.includes(property.id) ? "#D4704A" : "#6B7370"} 
+                fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView 
+            contentContainerStyle={{ paddingBottom: 160 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Cover Photo */}
+            <View style={{ position: 'relative' }}>
+              {property.photos && property.photos.length > 0 ? (
+                <Image source={{ uri: property.photos[0] }} style={styles.coverImageGuest} />
+              ) : (
+                <View style={[styles.imagePlaceholder, { borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }]}>
+                  <Feather name="image" size={48} color="#6B7370" />
+                </View>
+              )}
+              {/* Top-right Photo counter */}
+              <View style={styles.imageCounterBadge}>
+                <Text style={styles.imageCounterText}>1/{property.photos?.length || 1}</Text>
+              </View>
+              {/* Bottom-right View Photos button */}
+              <TouchableOpacity style={styles.viewPhotosBtn} activeOpacity={0.8}>
+                <Feather name="image" size={14} color="#1A1F1E" />
+                <Text style={styles.viewPhotosText}>View Photos</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Property Identity Section */}
+            <View style={styles.identitySection}>
+              {/* Type Badge */}
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>
+                  {property.type ? property.type.replace('_', ' ').toUpperCase() : 'HOMESTAY'}
+                </Text>
+              </View>
+
+              {/* Name + Rating */}
+              <View style={[styles.nameRatingRow, { marginTop: 8 }]}>
+                <Text style={styles.propertyNameGuest}>{property.name}</Text>
+                <View style={styles.ratingContainer}>
+                  <Text style={{ fontSize: 14 }}>⭐ </Text>
+                  <Text style={styles.ratingText}>4.8</Text>
+                  <Text style={styles.reviewCountText}>(128 reviews)</Text>
+                </View>
+              </View>
+
+              {/* Location */}
+              <View style={styles.locationRowGuest}>
+                <Feather name="map-pin" size={16} color="#6B7370" />
+                <Text style={styles.locationTextGuest}>
+                  {property.location?.city}, {property.location?.state}
+                </Text>
+              </View>
+
+              {/* Price */}
+              <Text style={styles.priceTagGuest}>
+                ₹{(property.price_per_night ?? 0).toLocaleString('en-IN')} / night
+              </Text>
+            </View>
+
+            {/* Amenity Strip */}
+            <View style={styles.amenityStrip}>
+              <View style={styles.amenityStripItem}>
+                <Feather name="users" size={20} color="#1A1F1E" />
+                <Text style={styles.amenityStripLabel}>{property.capacity?.maxGuests || 1} Guests</Text>
+              </View>
+              <View style={styles.amenityStripItem}>
+                <Feather name="home" size={20} color="#1A1F1E" />
+                <Text style={styles.amenityStripLabel}>{property.capacity?.rooms || 1} Rooms</Text>
+              </View>
+              <View style={styles.amenityStripItem}>
+                <Feather name="wifi" size={20} color="#1A1F1E" />
+                <Text style={styles.amenityStripLabel}>WiFi</Text>
+              </View>
+              <View style={styles.amenityStripItem}>
+                <Feather name="droplet" size={20} color="#1A1F1E" />
+                <Text style={styles.amenityStripLabel}>Hot Water</Text>
+              </View>
+              <View style={styles.amenityStripItem}>
+                <Feather name="info" size={20} color="#1A1F1E" />
+                <Text style={styles.amenityStripLabel}>Parking</Text>
+              </View>
+            </View>
+
+            {/* Why This Matches You */}
+            {matchReasons && matchReasons.length > 0 && (
+              <View style={styles.whyMatchesCard}>
+                <View style={styles.whyMatchesHeader}>
+                  <Text style={{ fontSize: 16 }}>✨</Text>
+                  <Text style={styles.whyMatchesTitle}>Why this matches you</Text>
+                </View>
+                <View style={styles.whyMatchesGrid}>
+                  {matchReasons.map((reason: string, idx: number) => (
+                    <View key={idx} style={styles.whyMatchesGridItem}>
+                      <View style={styles.whyMatchesIconCircle}>
+                        <Feather name={idx === 0 ? "compass" : idx === 1 ? "home" : "star"} size={18} color="#1A6B5A" />
+                      </View>
+                      <Text style={styles.whyMatchesGridText} numberOfLines={2}>
+                        {reason}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Photos Scroll */}
+            <View style={styles.photosHeaderRow}>
+              <Text style={styles.photosSectionTitle}>Photos</Text>
+              <TouchableOpacity activeOpacity={0.7}>
+                <Text style={styles.viewAllPhotosLink}>View all &gt;</Text>
+              </TouchableOpacity>
+            </View>
+            {property.photos && property.photos.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosScrollView}>
+                {property.photos.map((photoUrl, idx) => (
+                  <Image key={idx} source={{ uri: photoUrl }} style={styles.photoThumbnailGuest} />
+                ))}
+              </ScrollView>
+            ) : null}
+
+            {/* Amenities + Pricing 2 Column cards */}
+            <View style={styles.twoColumnSection}>
+              {/* Card 1: Amenities */}
+              <View style={styles.sideCard}>
+                <Text style={styles.sideCardTitle}>Amenities</Text>
+                <View style={styles.amenityGrid2Col}>
+                  {property.amenities?.slice(0, 6).map((amenity) => (
+                    <View key={amenity} style={styles.amenityCheckItem}>
+                      <Feather name="check" size={14} color="#1A6B5A" />
+                      <Text style={styles.checkText} numberOfLines={1}>
+                        {amenity.replace('_', ' ').charAt(0).toUpperCase() + amenity.replace('_', ' ').slice(1)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                {property.amenities && property.amenities.length > 6 && (
+                  <TouchableOpacity activeOpacity={0.7} style={{ marginTop: 8 }}>
+                    <Text style={{ fontSize: 12, color: '#1A6B5A', fontWeight: '700' }}>View all amenities &gt;</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Card 2: Pricing */}
+              <View style={styles.sideCard}>
+                <Text style={styles.sideCardTitle}>Pricing</Text>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Weekdays</Text>
+                  <Text style={styles.pricingValue}>₹{(property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
+                </View>
+                <View style={styles.pricingRow}>
+                  <Text style={styles.pricingLabel}>Weekends</Text>
+                  <Text style={styles.pricingValue}>₹{(property.weekend_price ?? property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
+                </View>
+                <View style={[styles.pricingRow, { borderTopWidth: 1, borderTopColor: '#F0EDE8', paddingTop: 8, marginTop: 4 }]}>
+                  <Text style={styles.pricingLabel}>Min Stay</Text>
+                  <Text style={styles.pricingValue}>{property.minimum_stay ?? 1} Night(s)</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Host section */}
+            <View style={styles.hostCard}>
+              <View style={styles.hostInfoCol}>
+                <View style={styles.hostAvatar}>
+                  <Text style={styles.hostAvatarText}>H</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.hostName}>Hosted by Raj Sharma</Text>
+                  <View style={styles.superHostBadge}>
+                    <Text style={styles.superHostText}>Super Host</Text>
+                  </View>
+                  <Text style={styles.hostSmallText}>Response time &lt; 1hr</Text>
+                  <Text style={styles.hostSmallText}>Joined March 2021</Text>
+                </View>
+              </View>
+              <View style={styles.hostActionGroup}>
+                <TouchableOpacity style={styles.hostOutlineBtn} activeOpacity={0.7}>
+                  <Feather name="message-square" size={16} color="#1A6B5A" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.hostOutlineBtn} activeOpacity={0.7}>
+                  <Feather name="phone" size={16} color="#1A6B5A" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Sticky Bottom Bar */}
+          <View style={styles.stickyBottomBar}>
+            <View style={styles.stickyPriceCol}>
+              <Text style={styles.stickyPriceText}>₹{(property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
+              <Text style={styles.stickyPriceLabel}>Total before taxes</Text>
+            </View>
+            <View style={styles.stickyActionGroup}>
+              <TouchableOpacity 
+                style={styles.stickySaveBtn}
+                onPress={() => handleSaveProperty(property.id)}
+                activeOpacity={0.7}
+              >
+                <Feather 
+                  name="bookmark" 
+                  size={20} 
+                  color={savedProperties.includes(property.id) ? "#D4704A" : "#6B7370"} 
+                  fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.bookNowBtn} onPress={handleBookNow} activeOpacity={0.8}>
+                <Text style={styles.bookNowText}>Book Now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -347,6 +596,10 @@ export default function HostPropertyDetailScreen() {
         </TouchableOpacity>
       </View>
     );
+  }
+
+  if (!isOwner) {
+    return renderGuestView();
   }
 
   return (
