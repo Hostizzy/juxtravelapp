@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
@@ -19,6 +20,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { GuestTabParamList } from '../../navigation/GuestNavigator';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { apiService } from '../../services/api';
@@ -279,35 +282,66 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <View style={[styles.container, activeTab === 'stories' && styles.lightContainer]}>
-      {activeTab === 'reels' ? (
-        <SafeAreaView edges={['top']} style={styles.safeAreaReels}>
-          {/* Top Bar - same as stories */}
-          <View style={styles.topBarDark}>
-            <TouchableOpacity style={styles.topBarLeft} onPress={() => navigation.goBack()}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+    <View style={styles.root}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        {/* Top Hero Header */}
+        <View style={styles.headerWrapper}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }} 
+            style={styles.headerAbsoluteImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            locations={[0, 0.35, 0.7, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+              <Feather name="chevron-left" size={22} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={styles.topBarTitleWhite}>JuxTravel</Text>
-            <View style={styles.topBarRightIconsContainer}>
-              <TouchableOpacity onPress={handleSearch}>
-                <Feather name="search" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleNotifications}>
-                <Feather name="bell" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+            
+            <Text style={styles.headerTitleText}>JuxTravel</Text>
+            
+            <View style={{ width: 40 }} />
           </View>
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity style={[styles.tabButton, styles.activeTabButton]} onPress={() => setActiveTab('reels')} activeOpacity={0.7}>
-              <Text style={[styles.tabButtonText, styles.activeTabButtonText]}>{i18n.t('discover.reels')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tabButton} onPress={() => setActiveTab('stories')} activeOpacity={0.7}>
-              <Text style={styles.tabButtonText}>{i18n.t('discover.stories')}</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Reel list */}
-          {loadingReels ? (
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'reels' && styles.activeTabButton]} 
+            onPress={() => setActiveTab('reels')} 
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'reels' && styles.activeTabButtonText]}>
+              {i18n.t('discover.reels')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'stories' && styles.activeTabButton]} 
+            onPress={() => setActiveTab('stories')} 
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'stories' && styles.activeTabButtonText]}>
+              {i18n.t('discover.stories')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Reel list or Stories Coming Soon */}
+        {activeTab === 'reels' ? (
+          loadingReels ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F1714' }}>
               <ActivityIndicator size="large" color="#84C9BA" />
             </View>
@@ -331,148 +365,20 @@ export default function DiscoverScreen() {
               showsVerticalScrollIndicator={false}
               decelerationRate="fast"
             />
-          )}
-        </SafeAreaView>
-      ) : (
-        <SafeAreaView style={styles.safeAreaStories} edges={['top']}>
-          {/* Top Bar Navigation (Stories) */}
-          <View style={styles.topBarDark}>
-            <TouchableOpacity 
-              style={styles.topBarLeft}
-              onPress={() => navigation.goBack()}
-            >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.topBarTitleWhite}>
-              JuxTravel
+          )
+        ) : (
+          /* Main Discover Layout (Stories) - Coming Soon */
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, backgroundColor: '#0F1714' }}>
+            <Feather name="clock" size={48} color="#84C9BA" style={{ marginBottom: 16 }} />
+            <Text style={{ fontFamily: 'serif', fontWeight: 'bold', fontSize: 22, color: '#FFFFFF', textAlign: 'center', marginBottom: 8 }}>
+              Coming Soon
             </Text>
-            <View style={styles.topBarRightIconsContainer}>
-              <TouchableOpacity onPress={handleSearch}>
-                <Feather name="search" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleNotifications}>
-                <Feather name="bell" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+            <Text style={{ color: '#6B7370', fontSize: 14, textAlign: 'center' }}>
+              Stories feature launching shortly
+            </Text>
           </View>
-
-          {/* Tabs Selector (Stories) */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity
-              style={styles.tabButton}
-              onPress={() => setActiveTab('reels')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.tabButtonText}>
-                {i18n.t('discover.reels')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabButton, styles.activeTabButton]}
-              onPress={() => setActiveTab('stories')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabButtonText, styles.activeTabButtonText]}>
-                {i18n.t('discover.stories')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Main Discover Layout (Stories) */}
-          <View style={styles.storiesContainer}>
-            <ScrollView
-              contentContainerStyle={styles.storiesScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Filter Chips Scroll */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterScroll}
-              >
-                {filters.map((filter) => (
-                  <TouchableOpacity
-                    key={filter.key}
-                    style={[
-                      styles.filterChip,
-                      selectedFilter === filter.key && styles.filterChipSelected,
-                    ]}
-                    onPress={() => setSelectedFilter(filter.key)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedFilter === filter.key && styles.filterChipTextSelected,
-                      ]}
-                    >
-                      {filter.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* TRIP STORIES section */}
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionLabel}>{i18n.t('discover.tripStories')}</Text>
-                <TouchableOpacity activeOpacity={0.6}>
-                  <Text style={styles.sectionLink}>{i18n.t('discover.viewAll')}</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Stories Cards List */}
-              {storiesData.map((story, index) => (
-                <View key={story.id} style={styles.storyCard}>
-                  <View
-                    style={[
-                      styles.storyImage,
-                      index === 0 ? styles.storyBgGreen : styles.storyBgOrange,
-                    ]}
-                  >
-                    <MaterialCommunityIcons name={story.iconName as unknown as keyof typeof MaterialCommunityIcons.glyphMap} size={50} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.storyContent}>
-                    <Text style={styles.storyTitle}>
-                      {story.title}
-                    </Text>
-                    <Text style={styles.storyBody}>{story.body}</Text>
-                    <TouchableOpacity onPress={() => handleReadStory(story.title)} activeOpacity={0.6}>
-                      <Text style={styles.readStoryButtonText}>
-                        {i18n.t('discover.readStory')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-
-              {/* MOMENTS section */}
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionLabel}>{i18n.t('discover.moments')}</Text>
-              </View>
-
-              {/* Moments Horizontal Scroll */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.momentsScrollContent}
-              >
-                {momentsData.map((moment, idx) => (
-                  <View
-                    key={moment.id}
-                    style={[
-                      styles.momentSquare,
-                      idx % 2 === 0 ? styles.momentBgEven : styles.momentBgOdd,
-                    ]}
-                  >
-                    <MaterialCommunityIcons name={moment.iconName as unknown as keyof typeof MaterialCommunityIcons.glyphMap} size={30} color="#1A6B5A" />
-                  </View>
-                ))}
-              </ScrollView>
-            </ScrollView>
-          </View>
-        </SafeAreaView>
-      )}
+        )}
+      </View>
     </View>
   );
 }

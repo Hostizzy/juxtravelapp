@@ -1,49 +1,48 @@
 .container {
-  min-height: 100vh;
   display: flex;
+  min-height: 100vh;
   align-items: center;
   justify-content: center;
-  background: var(--dark);
-  background-image: radial-gradient(
-    ellipse at top left,
-    rgba(26, 107, 90, 0.15) 0%,
-    transparent 50%
-  );
+  background-color: var(--bg);
+  padding: 24px;
 }
 
 .card {
   width: 100%;
-  max-width: 400px;
-  background: var(--dark-2);
+  max-width: 420px;
+  background-color: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .logo {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 32px;
 }
 
-.logoIcon {
-  font-size: 40px;
-  display: block;
-  margin-bottom: 8px;
+.logoMark {
+  width: 32px;
+  height: 32px;
+  background-color: var(--sage);
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 .logoText {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
-  color: var(--white);
-  font-family: Georgia, serif;
+  color: var(--text);
+  margin-bottom: 4px;
 }
 
 .logoSub {
-  font-size: 12px;
-  color: var(--sage-light);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
 }
 
 .form {
@@ -53,12 +52,13 @@
 }
 
 .error {
-  background: rgba(229, 62, 62, 0.1);
-  border: 1px solid rgba(229, 62, 62, 0.3);
-  color: #FC8181;
-  padding: 12px;
+  background-color: var(--danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: var(--danger);
   border-radius: 8px;
+  padding: 12px 16px;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .field {
@@ -68,42 +68,42 @@
 }
 
 .label {
-  font-size: 12px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text);
 }
 
 .input {
-  background: var(--dark-3);
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: var(--white);
+  background-color: var(--card-bg);
+  padding: 0 16px;
   font-size: 14px;
+  color: var(--text);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s ease;
 }
 
 .input:focus {
   border-color: var(--sage);
 }
 
-.input::placeholder {
-  color: var(--text-dim);
-}
-
 .button {
-  background: var(--sage);
-  color: var(--white);
+  height: 44px;
+  background-color: var(--sage);
+  color: #FFFFFF;
   border: none;
-  border-radius: 100px;
-  padding: 14px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.2s ease;
   margin-top: 8px;
-  transition: opacity 0.2s;
 }
 
 .button:hover {

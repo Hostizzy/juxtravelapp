@@ -1,0 +1,217 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: 1.5fr 2.5fr;
+  }
+}
+
+.profileCard {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.infoItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.infoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.kycGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kycMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.kycMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  align-self: flex-start;
+}
+
+.badge.verified {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.badge.pending {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.badge.rejected {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.photosRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.photoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.photoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.photoImg {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 2.5fr 2fr 1fr 1fr;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 2.5fr 2fr 1fr 1fr;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.tableRow:hover {
+  background-color: var(--bg);
+}
+
+.propName {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dates, .amount {
+  color: var(--text-dim);
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}

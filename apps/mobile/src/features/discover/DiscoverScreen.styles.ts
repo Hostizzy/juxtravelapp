@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 8 : 16,
     paddingBottom: 12,
-    backgroundColor: '#0F1714',
+    backgroundColor: '#FAF8F4',
     borderBottomWidth: 1,
     borderBottomColor: '#1E2B25',
   },
@@ -397,6 +397,50 @@ const styles = StyleSheet.create({
   },
   flatListFlex: {
     flex: 1,
+  },
+  root: {
+    flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  headerWrapper: {
+    backgroundColor: '#021412',
+    height: 100,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerAbsoluteImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.35,
+
+    overflow: 'hidden',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    letterSpacing: 0.5,
   },
 });
 

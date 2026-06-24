@@ -62,4 +62,12 @@ export class UsersController {
     return this.usersService
       .getSavedProperties(payload.sub);
   }
+
+  @Get('my-trips')
+  async getMyTrips(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.usersService.getMyTrips(payload.sub);
+  }
 }
+

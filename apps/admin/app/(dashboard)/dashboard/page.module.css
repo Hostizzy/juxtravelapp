@@ -1,0 +1,212 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.statCard {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.statBadge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--sage);
+}
+
+.statBadge.warning {
+  background-color: var(--warning);
+}
+
+.statBadge.success {
+  background-color: var(--success);
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.sectionsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 1200px) {
+  .sectionsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.section {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1.2fr;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.bookingTableHeader {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr 1.2fr 1.2fr;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1.2fr;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.bookingTableRow {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr 1.2fr 1.2fr;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.tableRow:hover, .bookingTableRow:hover {
+  background-color: var(--bg);
+}
+
+.propName, .guestName {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.propLocation, .propDates {
+  color: var(--text-dim);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge.active, .badge.confirmed {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.badge.under_review, .badge.pending {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.badge.rejected, .badge.cancelled {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge.draft, .badge.completed {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.date, .amount {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.emptyRow {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}

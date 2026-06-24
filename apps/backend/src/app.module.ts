@@ -10,6 +10,8 @@ import { PropertiesModule } from './modules/properties/properties.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { InstagramModule } from './modules/instagram/instagram.module';
 import { MatchesModule } from './modules/matches/matches.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -36,6 +38,8 @@ import configuration from './config/configuration';
     VerificationModule,
     InstagramModule,
     MatchesModule,
+    BookingsModule,
+    ConversationsModule,
   ],
 })
 export class AppModule {}

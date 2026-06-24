@@ -8,12 +8,13 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, RouteProp, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -23,7 +24,7 @@ import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../stores/authStore';
 import { apiService } from '../../services/api';
-import { MatchedProperty } from '../../services/matchService';
+import { Property } from '../discover/DiscoverScreen';
 import i18n from '../../locales/i18n';
 import styles from './ProfileScreen.styles';
 
@@ -39,18 +40,31 @@ interface TabItem {
   label: string;
 }
 
-interface TripBrief {
+interface SavedProperty extends Property {
+  matchScore?: number;
+}
+
+interface Booking {
   id: string;
-  user_id: string;
-  destination: string;
-  check_in?: string;
-  check_out?: string;
-  guests?: number;
-  group_type?: string;
-  moods?: string[];
-  budget?: number;
-  free_text?: string;
-  created_at?: string;
+  guest_id: string;
+  host_id: string;
+  property_id: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  total_amount: number;
+  status: string;
+  payment_id: string;
+  created_at: string;
+  property: {
+    name: string;
+    photos: string[];
+    location: {
+      city: string;
+      state: string;
+    };
+    price_per_night: number;
+  };
 }
 
 interface HowStep {
@@ -73,60 +87,90 @@ const getInitials = (name: string): string => {
   return name.slice(0, 2).toUpperCase();
 };
 
+type ProfileRouteProp = RouteProp<
+  GuestTabParamList & {
+    Profile: { activeTab?: TabType };
+  },
+  'Profile'
+>;
+
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const route = useRoute<ProfileRouteProp>();
   const { user, session } = useAuthStore();
   const userName = user?.name ?? 'Traveller';
   const isAlreadyHost = user?.role === 'host' || user?.role === 'both';
   const [activeTab, setActiveTab] = useState<TabType>('trips');
-  const [savedProperties, setSavedProperties] = useState<MatchedProperty[]>([]);
-  const [loadingSaved, setLoadingSaved] = useState<boolean>(false);
-  const [trips, setTrips] = useState<TripBrief[]>([]);
-  const [loadingTrips, setLoadingTrips] = useState<boolean>(false);
+  const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([]);
+  const [trips, setTrips] = useState<Booking[]>([]);
+  const [savedLoaded, setSavedLoaded] = useState(false);
+  const [tripsLoaded, setTripsLoaded] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [tripsLoading, setTripsLoading] = useState(false);
 
-  const fetchSaved = async () => {
+  const tripsCount = trips.length;
+  const savedCount = savedProperties.length;
+  const pointsTotal = trips.filter(
+    (t) => t.status === 'confirmed' || t.status === 'completed'
+  ).length * 100;
+
+  const fetchSaved = async (force = false) => {
+    if (savedLoaded && !force) return;
+    setSavedLoading(true);
     try {
-      setLoadingSaved(true);
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      
-      const data = await apiService.get<MatchedProperty[]>(
-        '/users/saved-properties', 
+      if (!token) {
+        console.log('No token for saved fetch');
+        return;
+      }
+
+      console.log('Fetching saved properties...');
+      const data = await apiService.get<SavedProperty[]>(
+        '/users/saved-properties',
         token
       );
-      setSavedProperties(data || []);
-    } catch (err) {
-      console.error('Failed to fetch saved properties:', err);
+      console.log('Saved properties received:', data?.length);
+      setSavedProperties(data ?? []);
+      setSavedLoaded(true);
+    } catch (error) {
+      console.log('Fetch saved error:', error);
     } finally {
-      setLoadingSaved(false);
+      setSavedLoading(false);
     }
   };
 
-  const fetchTrips = async () => {
+  const fetchTrips = async (force = false) => {
+    if (tripsLoaded && !force) return;
+    setTripsLoading(true);
     try {
-      setLoadingTrips(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
 
-      const data = await apiService.get<TripBrief[]>(
-        '/users/my-trips',
+      const data = await apiService.get<Booking[]>(
+        '/bookings/my-bookings',
         token
       );
-      setTrips(data || []);
+      setTrips(data ?? []);
+      setTripsLoaded(true);
     } catch (err) {
       console.error('Failed to fetch trips:', err);
     } finally {
-      setLoadingTrips(false);
+      setTripsLoading(false);
     }
   };
 
   React.useEffect(() => {
-    if (activeTab === 'saved') {
-      fetchSaved();
-    } else if (activeTab === 'trips') {
-      fetchTrips();
+    if (route.params?.activeTab) {
+      setActiveTab(route.params.activeTab);
     }
-  }, [activeTab]);
+  }, [route.params?.activeTab]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchSaved();
+      fetchTrips();
+    }, [savedLoaded, tripsLoaded])
+  );
 
   const handleBecomeHost = () => {
     navigation.navigate('HostOnboarding');
@@ -188,7 +232,7 @@ export default function ProfileScreen() {
         {/* Top Hero Header */}
         <View style={styles.headerWrapper}>
           <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800' }} 
+            source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }} 
             style={styles.headerAbsoluteImage}
             resizeMode="cover"
           />
@@ -225,13 +269,6 @@ export default function ProfileScreen() {
               >
                 <Feather name="bell" size={18} color="#FFFFFF" />
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.headerIconBtn} 
-                activeOpacity={0.7} 
-                onPress={() => Alert.alert('Messages', 'No new messages.')}
-              >
-                <Feather name="message-square" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -239,6 +276,15 @@ export default function ProfileScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={activeTab === 'saved' ? savedLoading : activeTab === 'trips' ? tripsLoading : false}
+              onRefresh={() => {
+                if (activeTab === 'saved') fetchSaved(true);
+                if (activeTab === 'trips') fetchTrips(true);
+              }}
+            />
+          }
         >
           {/* Profile Header */}
           <View style={styles.profileHeader}>
@@ -274,7 +320,7 @@ export default function ProfileScreen() {
             <View style={styles.statColumn}>
               <View style={styles.statHeader}>
                 <Feather name="briefcase" size={14} color="#1A6B5A" />
-                <Text style={styles.statValue}>3</Text>
+                <Text style={styles.statValue}>{tripsCount}</Text>
               </View>
               <Text style={styles.statLabel}>Trips</Text>
             </View>
@@ -284,7 +330,7 @@ export default function ProfileScreen() {
             <View style={styles.statColumn}>
               <View style={styles.statHeader}>
                 <Feather name="heart" size={14} color="#D4704A" />
-                <Text style={styles.statValue}>1</Text>
+                <Text style={styles.statValue}>{savedCount}</Text>
               </View>
               <Text style={styles.statLabel}>Saved</Text>
             </View>
@@ -294,7 +340,7 @@ export default function ProfileScreen() {
             <View style={styles.statColumn}>
               <View style={styles.statHeader}>
                 <Feather name="star" size={14} color="#5E5ADB" />
-                <Text style={styles.statValue}>520</Text>
+                <Text style={styles.statValue}>{pointsTotal}</Text>
               </View>
               <Text style={styles.statLabel}>Points</Text>
             </View>
@@ -380,16 +426,16 @@ export default function ProfileScreen() {
             {/* TAB 1: TRIPS */}
             {activeTab === 'trips' && (
               <View>
-                {loadingTrips ? (
+                {(tripsLoading && !tripsLoaded) ? (
                   <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
                 ) : trips.length === 0 ? (
                   <View style={styles.emptySavedContainer}>
                     <Feather name="briefcase" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
                     <Text style={styles.emptySavedTitle}>
-                      No trips planned yet
+                      No bookings found
                     </Text>
                     <Text style={styles.emptySavedSubtitle}>
-                      Complete a planning concierge search to see your trip briefs here.
+                      Once you book a stay, your upcoming and completed trips will appear here.
                     </Text>
                     <TouchableOpacity
                       style={styles.exploreButton}
@@ -415,48 +461,41 @@ export default function ProfileScreen() {
                         style={styles.tripCard}
                         activeOpacity={0.9}
                         onPress={() => {
-                          navigation.navigate('PlanProcessing', {
-                            destination: trip.destination,
-                            checkIn: trip.check_in ?? '',
-                            checkOut: trip.check_out ?? '',
-                            guests: trip.guests ?? 1,
-                            groupType: trip.group_type ?? 'couple',
-                            moods: trip.moods ?? [],
-                            budget: trip.budget ?? 15000,
-                            freeText: trip.free_text ?? '',
-                            bedrooms: 1,
-                          });
+                          navigation.navigate('BookingDetail', { bookingId: trip.id });
                         }}
                       >
                         <View style={styles.tripImageContainer}>
                           <Image 
-                            source={{ uri: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} 
+                            source={{ uri: trip.property?.photos?.[0] || 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} 
                             style={styles.tripImage}
                             resizeMode="cover"
                           />
-                          <View style={[styles.tripStatusBadge, { backgroundColor: '#1A6B5A' }]}>
-                            <Text style={styles.tripStatusText}>PLANNING</Text>
+                          <View style={[
+                            styles.tripStatusBadge, 
+                            { 
+                              backgroundColor: 
+                                trip.status === 'confirmed' ? '#1A6B5A' :
+                                trip.status === 'completed' ? '#2E7D32' :
+                                trip.status === 'cancelled' ? '#C62828' : '#F57C00' 
+                            }
+                          ]}>
+                            <Text style={styles.tripStatusText}>{trip.status.toUpperCase()}</Text>
                           </View>
                         </View>
                         
                         <View style={styles.tripInfo}>
-                          <Text style={styles.tripTitle}>{trip.destination}</Text>
+                          <Text style={styles.tripTitle}>{trip.property?.name || 'Beautiful Stay'}</Text>
+                          <View style={styles.tripDetailsRow}>
+                            <Feather name="map-pin" size={12} color="#6B7370" />
+                            <Text style={styles.tripDetailsText}>{trip.property?.location?.city || 'India'}</Text>
+                          </View>
                           <View style={styles.tripDetailsRow}>
                             <Feather name="calendar" size={12} color="#6B7370" />
                             <Text style={styles.tripDetailsText}>{dateStr}  •  {trip.guests ?? 1} {trip.guests === 1 ? 'Guest' : 'Guests'}</Text>
                           </View>
-                          {trip.moods && trip.moods.length > 0 && (
-                            <View style={styles.tripVibeChips}>
-                              {trip.moods.slice(0, 3).map((vibe) => (
-                                <View key={vibe} style={styles.tripVibeChip}>
-                                  <Text style={styles.tripVibeText}>{vibe}</Text>
-                                </View>
-                              ))}
-                            </View>
-                          )}
                           <View style={styles.tripActionRow}>
                             <View style={styles.tripCTA}>
-                              <Text style={styles.tripCTAText}>View Matches</Text>
+                              <Text style={styles.tripCTAText}>View Stay Details</Text>
                               <Feather name="chevron-right" size={14} color="#1A6B5A" />
                             </View>
                           </View>
@@ -471,7 +510,7 @@ export default function ProfileScreen() {
             {/* TAB 2: SAVED */}
             {activeTab === 'saved' && (
               <View>
-                {loadingSaved ? (
+                {(savedLoading && !savedLoaded) ? (
                   <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
                 ) : savedProperties.length === 0 ? (
                   <View style={styles.emptySavedContainer}>

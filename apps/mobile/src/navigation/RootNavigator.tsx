@@ -27,9 +27,26 @@ import HostPropertyDetailScreen from '../features/host/property/HostPropertyDeta
 import GuestVerificationScreen from '../features/verification/GuestVerificationScreen';
 import PaymentScreen from '../features/payment/PaymentScreen';
 import InstagramConnectScreen from '../features/host/instagram/InstagramConnectScreen';
+import BookingSuccessScreen from '../features/booking/BookingSuccessScreen';
+import BookingDetailScreen from '../features/booking/BookingDetailScreen';
+import ChatDetailScreen from '../features/messages/ChatDetailScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
+  BookingSuccess: {
+    bookingId: string;
+    propertyName: string;
+    checkIn: string;
+    checkOut: string;
+  };
+  BookingDetail: {
+    bookingId: string;
+  };
+  ChatDetail: {
+    conversationId: string;
+    otherPartyName: string;
+    propertyName: string;
+  };
   HostPropertyDetail: {
     propertyId: string;
     checkIn?: string;
@@ -208,6 +225,9 @@ export default function RootNavigator() {
       <Stack.Screen name="GuestVerification" component={GuestVerificationScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="InstagramConnect" component={InstagramConnectScreen} />
+      <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
+      <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+      <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
     </Stack.Navigator>
   );
 }

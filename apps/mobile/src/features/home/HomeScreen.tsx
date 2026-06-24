@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Image, StyleSheet, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
@@ -10,6 +10,8 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import * as SecureStore from 'expo-secure-store';
+import { apiService } from '../../services/api';
 import i18n from '../../locales/i18n';
 import styles from './HomeScreen.styles';
 
@@ -17,6 +19,29 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<GuestTabParamList, 'Home'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
+
+interface Booking {
+  id: string;
+  guest_id: string;
+  host_id: string;
+  property_id: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  total_amount: number;
+  status: string;
+  payment_id: string;
+  created_at: string;
+  property: {
+    name: string;
+    photos: string[];
+    location: {
+      city: string;
+      state: string;
+    };
+    price_per_night: number;
+  };
+}
 
 interface TripItem {
   id: string;
@@ -46,6 +71,24 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Lakshay';
+  const [myTrips, setMyTrips] = useState<Booking[]>([]);
+
+  useEffect(() => {
+    const fetchTrips = async () => {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      try {
+        const data = await apiService.get<Booking[]>(
+          '/bookings/my-bookings',
+          token
+        );
+        setMyTrips(data ?? []);
+      } catch (error) {
+        console.log('Fetch trips error:', error);
+      }
+    };
+    fetchTrips();
+  }, []);
 
   const handleNextStep = () => {
     navigation.navigate('PlanStep1');
@@ -251,53 +294,77 @@ export default function HomeScreen() {
             {/* Section: My Trips */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{i18n.t('home.myTrips')}</Text>
-              <TouchableOpacity onPress={handleViewAllTrips} activeOpacity={0.6}>
+              <TouchableOpacity onPress={() => navigation.navigate('Profile', { activeTab: 'trips' })} activeOpacity={0.6}>
                 <Text style={styles.viewAllText}>{i18n.t('home.viewAll')} &gt;</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {myTripsData.map((trip) => (
-                <View key={trip.id} style={styles.tripCard}>
-                  <Image source={{ uri: trip.imageUrl }} style={styles.tripImage} />
-                  <View style={styles.tripTextContainer}>
-                    <View>
-                      <Text style={styles.tripTitle} numberOfLines={1}>{trip.title}</Text>
-                      <View style={styles.tripLocationRow}>
-                        <Text style={{ fontSize: 10 }}>📍</Text>
-                        <Text style={styles.tripLocation} numberOfLines={1}>
-                          {trip.location.split(',')[0]}
-                        </Text>
+            {myTrips.length === 0 ? (
+              <View style={{ marginHorizontal: 20, padding: 24, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1.5, borderColor: '#E8E2D9', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                <Feather name="briefcase" size={28} color="#6B7370" style={{ marginBottom: 10 }} />
+                <Text style={{ fontSize: 14, color: '#1A1F1E', fontWeight: '700', marginBottom: 4 }}>No trips booked yet</Text>
+                <Text style={{ fontSize: 12, color: '#6B7370', textAlign: 'center', marginBottom: 12, lineHeight: 16 }}>Use our AI compass to find your perfect stay and itinerary!</Text>
+                <TouchableOpacity onPress={handleNextStep} style={{ backgroundColor: '#1A6B5A', borderRadius: 100, paddingVertical: 8, paddingHorizontal: 20 }}>
+                  <Text style={{ fontSize: 12, color: '#FFFFFF', fontWeight: '700' }}>Start Planning</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {myTrips.map((trip) => {
+                  const checkInDate = trip.check_in ? new Date(trip.check_in) : null;
+                  const checkOutDate = trip.check_out ? new Date(trip.check_out) : null;
+                  const dateStr = (checkInDate && checkOutDate)
+                    ? `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : 'Dates flexible';
+
+                  return (
+                    <TouchableOpacity 
+                      key={trip.id} 
+                      style={styles.tripCard}
+                      onPress={() => navigation.navigate('BookingDetail', { bookingId: trip.id })}
+                      activeOpacity={0.9}
+                    >
+                      <Image source={{ uri: trip.property?.photos?.[0] || 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} style={styles.tripImage} />
+                      <View style={styles.tripTextContainer}>
+                        <View>
+                          <Text style={styles.tripTitle} numberOfLines={1}>{trip.property?.name || 'Stay'}</Text>
+                          <View style={styles.tripLocationRow}>
+                            <Text style={{ fontSize: 10 }}>📍</Text>
+                            <Text style={styles.tripLocation} numberOfLines={1}>
+                              {trip.property?.location?.city || 'India'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.tripFooterRow}>
+                          <View style={styles.tripDateContainer}>
+                            <Text style={{ fontSize: 10 }}>🗓</Text>
+                            <Text style={styles.tripDate}>{dateStr}</Text>
+                          </View>
+                          <View 
+                            style={[
+                              styles.tripBadge, 
+                              trip.status === 'confirmed' ? styles.tripBadgeUpcoming : styles.tripBadgeCompleted
+                            ]}
+                          >
+                            <Text 
+                              style={[
+                                styles.tripBadgeText,
+                                trip.status === 'confirmed' ? styles.tripBadgeTextUpcoming : styles.tripBadgeTextCompleted
+                              ]}
+                            >
+                              {trip.status.toUpperCase()}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.tripFooterRow}>
-                      <View style={styles.tripDateContainer}>
-                        <Text style={{ fontSize: 10 }}>🗓</Text>
-                        <Text style={styles.tripDate}>{trip.date}</Text>
-                      </View>
-                      <View 
-                        style={[
-                          styles.tripBadge, 
-                          trip.status === 'Completed' ? styles.tripBadgeCompleted : styles.tripBadgeUpcoming
-                        ]}
-                      >
-                        <Text 
-                          style={[
-                            styles.tripBadgeText,
-                            trip.status === 'Completed' ? styles.tripBadgeTextCompleted : styles.tripBadgeTextUpcoming
-                          ]}
-                        >
-                          {trip.status === 'Completed' ? 'Completed' : '✨ AI Planned'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {/* Section: Trip Moments */}
             <View style={styles.sectionHeader}>

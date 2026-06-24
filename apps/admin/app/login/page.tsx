@@ -44,37 +44,20 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>
-            🌿
-          </span>
-          <h1 className={styles.logoText}>
-            JuxTravel
-          </h1>
-          <p className={styles.logoSub}>
-            Admin Panel
-          </p>
+          <div className={styles.logoMark} />
+          <h1 className={styles.logoText}>JuxTravel</h1>
+          <p className={styles.logoSub}>Admin Panel Control</p>
         </div>
 
-        <form 
-          onSubmit={handleLogin}
-          className={styles.form}
-        >
-          {error && (
-            <div className={styles.error}>
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleLogin} className={styles.form}>
+          {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.field}>
-            <label className={styles.label}>
-              Email
-            </label>
+            <label className={styles.label}>Email Address</label>
             <input
               type="email"
               value={email}
-              onChange={e => 
-                setEmail(e.target.value)
-              }
+              onChange={e => setEmail(e.target.value)}
               className={styles.input}
               placeholder="admin@juxtravel.com"
               required
@@ -82,27 +65,19 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>
-              Password
-            </label>
+            <label className={styles.label}>Password</label>
             <input
               type="password"
               value={password}
-              onChange={e => 
-                setPassword(e.target.value)
-              }
+              onChange={e => setPassword(e.target.value)}
               className={styles.input}
               placeholder="••••••••"
               required
             />
           </div>
 
-          <button
-            type="submit"
-            className={styles.button}
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign In →'}
+          <button type="submit" className={styles.button} disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>

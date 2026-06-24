@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
   },
   tripCard: {
     width: 180,
-    height: 240,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8E2D9',
@@ -218,29 +217,29 @@ const styles = StyleSheet.create({
   },
   tripTextContainer: {
     padding: 12,
-    flex: 1,
-    justifyContent: 'space-between',
   },
   tripTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#1A1F1E',
+    marginTop: 10,
     marginBottom: 2,
   },
   tripLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   tripLocation: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6B7370',
   },
   tripFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 0,
   },
   tripDateContainer: {
     flexDirection: 'row',

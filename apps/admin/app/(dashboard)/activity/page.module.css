@@ -1,0 +1,140 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.tableContainer {
+  width: 100%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg);
+}
+
+.table td {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.row:hover {
+  background-color: var(--bg);
+}
+
+.email {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.actionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.actionBadge.approved_property,
+.actionBadge.approved_host,
+.actionBadge.approved_kyc {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.actionBadge.rejected_property,
+.actionBadge.rejected_host,
+.actionBadge.rejected_kyc {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.actionBadge.verified_property {
+  background-color: var(--primary-bg);
+  color: var(--primary);
+}
+
+.actionBadge[class*="bulk_"] {
+  background-color: #F3E8FF;
+  color: #7C3AED;
+}
+
+.defaultAction {
+  background-color: var(--border);
+  color: var(--text-dim);
+}
+
+.targetType {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.targetName {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.jsonPre {
+  margin: 0;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  background-color: var(--bg);
+  padding: 6px;
+  border-radius: 4px;
+  max-width: 250px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.time {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}

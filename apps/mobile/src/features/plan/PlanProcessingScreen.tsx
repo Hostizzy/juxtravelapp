@@ -7,11 +7,15 @@ import {
   Animated,
   Easing,
   Platform,
+  Image,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanProcessingScreen.styles';
 import { getMatches } from '../../services/matchService';
@@ -253,19 +257,43 @@ export default function PlanProcessingScreen({ navigation, route }: PlanProcessi
   ];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <View style={styles.root}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
       <View style={styles.container}>
-        {/* Top Navigation Bar */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Feather name="arrow-left" size={20} color="#1A1F1E" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Concierge Search</Text>
-          <View style={styles.headerRightPlaceholder} />
+        {/* Top Hero Header */}
+        <View style={styles.headerWrapper}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=800' }} 
+            style={styles.headerAbsoluteImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            locations={[0, 0.35, 0.7, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-left" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.headerTitleText}>Concierge Search</Text>
+            
+            <View style={{ width: 40 }} />
+          </View>
         </View>
 
         <ScrollView
@@ -394,6 +422,6 @@ export default function PlanProcessingScreen({ navigation, route }: PlanProcessi
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

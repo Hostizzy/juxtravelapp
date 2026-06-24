@@ -1,0 +1,251 @@
+import { StyleSheet, Platform } from 'react-native';
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#021412',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAF8F4',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAF8F4',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#6B7370',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '600',
+  },
+  backBtn: {
+    backgroundColor: '#1A6B5A',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 100,
+  },
+  backBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  headerWrapper: {
+    backgroundColor: '#021412',
+    height: 100,
+    position: 'relative',
+
+    overflow: 'hidden',
+  },
+  headerAbsoluteImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.35,
+   
+    overflow: 'hidden',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    letterSpacing: 0.5,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  heroContainer: {
+    width: '100%',
+    height: 240,
+    backgroundColor: '#1E2B25',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E2B25',
+  },
+  badgeContainer: {
+    paddingHorizontal: 20,
+    marginTop: 16,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  propertyInfo: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  propertyName: {
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: 'serif',
+    color: '#1A1F1E',
+    marginBottom: 6,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  locationText: {
+    fontSize: 13,
+    color: '#6B7370',
+    fontWeight: '600',
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E8E2D9',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 16,
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  cardHeader: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1A1F1E',
+    fontFamily: 'serif',
+    marginBottom: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E8E2D9',
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: '#6B7370',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 13,
+    color: '#1A1F1E',
+    fontWeight: '700',
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#1A1F1E',
+    fontWeight: '800',
+  },
+  totalValue: {
+    fontSize: 16,
+    color: '#1A6B5A',
+    fontWeight: '800',
+  },
+  hostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hostAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E6F2EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  hostAvatarText: {
+    color: '#1A6B5A',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  hostMeta: {
+    flex: 1,
+  },
+  hostName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    marginBottom: 2,
+  },
+  hostSub: {
+    fontSize: 12,
+    color: '#6B7370',
+    fontWeight: '500',
+  },
+  hostActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  hostActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E6F2EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  referenceText: {
+    fontSize: 10,
+    color: '#6B7370',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    lineHeight: 14,
+  },
+});
+
+export default styles;

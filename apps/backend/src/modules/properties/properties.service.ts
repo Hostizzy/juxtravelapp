@@ -135,17 +135,26 @@ export class PropertiesService {
   }
 
   async findById(id: string) {
-    const { data, error } = await this.supabaseService.admin
+    const { data: property, error } = await this.supabaseService.admin
         .from('properties')
         .select('*')
         .eq('id', id)
         .single();
 
-    if (error) {
+    if (error || !property) {
       throw new NotFoundException('Property not found');
     }
 
-    return data;
+    const { data: host } = await this.supabaseService.admin
+        .from('users')
+        .select('id, name, phone')
+        .eq('id', property.host_id)
+        .single();
+
+    return {
+      ...property,
+      host: host ?? null,
+    };
   }
 
   async update(

@@ -21,7 +21,10 @@ export class VerificationController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: CreateVerificationDto,
   ) {
-    return this.verificationService.createVerification(payload.sub, dto);
+    console.log('Verification DTO received:', dto);
+    return this.verificationService.createVerification(
+      payload.sub, dto
+    );
   }
 
   @Get('status')

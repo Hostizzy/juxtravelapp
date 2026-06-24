@@ -14,6 +14,8 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import * as SecureStore from 'expo-secure-store';
+import { apiService } from '../../services/api';
 
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
 type PaymentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
@@ -23,6 +25,7 @@ export default function PaymentScreen() {
   const route = useRoute<PaymentScreenRouteProp>();
   
   const {
+    propertyId,
     propertyName,
     checkIn,
     checkOut,
@@ -34,13 +37,42 @@ export default function PaymentScreen() {
   const [success, setSuccess] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'upi' | 'card' | 'netbanking'>('upi');
 
-  const handlePay = () => {
+  const handlePayment = async () => {
     setLoading(true);
-    // Simulate premium payment processing
-    setTimeout(() => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      const bookingResult = await apiService.post<{
+        id: string;
+      }>(
+        '/bookings/create-direct',
+        {
+          propertyId,
+          checkIn,
+          checkOut,
+          guests,
+          totalAmount,
+        },
+        token
+      );
+
+      navigation.navigate('BookingSuccess', {
+        bookingId: bookingResult.id,
+        propertyName,
+        checkIn,
+        checkOut,
+      });
+
+    } catch (error) {
+      console.log('Booking creation error:', error);
+      Alert.alert(
+        'Error', 
+        'Failed to confirm booking. Please try again.'
+      );
+    } finally {
       setLoading(false);
-      setSuccess(true);
-    }, 2000);
+    }
   };
 
   const handleGoHome = () => {
@@ -191,7 +223,7 @@ export default function PaymentScreen() {
           {loading ? (
             <ActivityIndicator size="small" color="#D4704A" style={styles.payLoader} />
           ) : (
-            <TouchableOpacity style={styles.payButton} onPress={handlePay} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.payButton} onPress={handlePayment} activeOpacity={0.8}>
               <Text style={styles.payButtonText}>Pay ₹{totalAmount.toLocaleString('en-IN')}</Text>
             </TouchableOpacity>
           )}

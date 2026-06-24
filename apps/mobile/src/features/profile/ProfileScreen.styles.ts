@@ -11,10 +11,8 @@ const styles = StyleSheet.create({
   },
   headerWrapper: {
     backgroundColor: '#021412',
-    height: 110, // Strict fixed height to establish the header/hero sizing hierarchy
+    height: 100, // Strict fixed height to establish the header/hero sizing hierarchy
     position: 'relative',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
   headerAbsoluteImage: {

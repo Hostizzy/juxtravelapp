@@ -1,0 +1,221 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.userName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.userPhone {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.idInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge.verified {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.badge.pending {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.badge.rejected {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.photosRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.photoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.photoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.photoImg {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.approveBtn {
+  height: 36px;
+  padding: 0 16px;
+  background-color: transparent;
+  color: var(--success);
+  border: 1px solid var(--success);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.approveBtn:hover {
+  background-color: var(--success-bg);
+}
+
+.rejectBtn {
+  height: 36px;
+  padding: 0 16px;
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.rejectBtn:hover {
+  background-color: var(--danger-bg);
+}
+
+.empty {
+  padding: 48px;
+  text-align: center;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  color: var(--sage);
+  border-bottom-color: var(--sage);
+}
+
+.tabBadge {
+  background-color: var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.tabBadgeHighlight {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}

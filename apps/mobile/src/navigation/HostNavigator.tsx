@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,8 @@ import HostMessagesScreen from '../features/host/messages/HostMessagesScreen';
 import HostProfileScreen from '../features/host/profile/HostProfileScreen';
 import FloatingNavBar from '../components/FloatingNavBar/FloatingNavBar';
 import { RootStackParamList } from './RootNavigator';
+import * as SecureStore from 'expo-secure-store';
+import { apiService } from '../services/api';
 
 export type HostTabParamList = {
   HostDashboard: undefined;
@@ -26,8 +28,39 @@ const ListPlaceholder = () => (
   </View>
 );
 
+function useUnreadCount(role: 'guest' | 'host') {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) return;
+        const conversations = await apiService.get<{ unreadCount: number }[]>(
+          `/conversations?role=${role}`,
+          token
+        );
+        const total = (conversations ?? []).reduce(
+          (sum, c) => sum + (c.unreadCount ?? 0),
+          0
+        );
+        setCount(total);
+      } catch {
+        // silent fail, keep previous count
+      }
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 10000);
+    return () => clearInterval(interval);
+  }, [role]);
+
+  return count;
+}
+
 export default function HostNavigator() {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const unreadCount = useUnreadCount('host');
 
   return (
     <Tab.Navigator
@@ -38,7 +71,7 @@ export default function HostNavigator() {
             { name: 'HostDashboard', icon: 'home' },
             { name: 'HostBookings', icon: 'calendar' },
             { name: 'HostListProperty', icon: 'plus', isCenter: true },
-            { name: 'HostMessages', icon: 'message-circle', badge: 0 },
+            { name: 'HostMessages', icon: 'message-circle', badge: unreadCount },
             { name: 'HostProfile', icon: 'user' },
           ]}
         />

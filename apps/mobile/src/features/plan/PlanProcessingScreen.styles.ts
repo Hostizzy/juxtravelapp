@@ -6,49 +6,59 @@ const scannerSize = 180;
 export default StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F8F7F3',
+    backgroundColor: '#021412',
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    backgroundColor: '#F8F7F3',
   },
-  headerRow: {
+  headerWrapper: {
+    backgroundColor: '#021412',
+    height: 100,
+    position: 'relative',
+  
+    overflow: 'hidden',
+  },
+  headerAbsoluteImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.35,
+  
+    overflow: 'hidden',
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 36,
-    marginTop: Platform.OS === 'ios' ? 12 : 8,
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6E8E5',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1A1F1E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
   },
-  headerTitle: {
-    fontFamily: 'serif',
-    fontSize: 19,
+  headerTitleText: {
+    fontSize: 20,
     fontWeight: '800',
-    color: '#1A1F1E',
-    textAlign: 'center',
-  },
-  headerRightPlaceholder: {
-    width: 40,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    letterSpacing: 0.5,
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
     paddingBottom: 48,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   heroArea: {
     width: scannerSize + 40,

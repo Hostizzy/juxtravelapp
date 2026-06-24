@@ -8,12 +8,15 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { apiService } from '../../../services/api';
 import { updateProperty } from '../../../services/propertyService';
@@ -65,6 +68,11 @@ interface PropertyData {
   minimum_stay?: number;
   cancellation_policy?: string;
   bookings?: number;
+  host?: {
+    id: string;
+    name: string;
+    phone?: string;
+  } | null;
 }
 
 type PropertyType = 'Homestay' | 'Farmstay' | 'Villa' | 'Boutique Hotel' | 'Cottage';
@@ -82,6 +90,7 @@ export default function HostPropertyDetailScreen() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [property, setProperty] = useState<PropertyData | null>(null);
   const [savedProperties, setSavedProperties] = useState<string[]>([]);
+  const [bookingLoading, setBookingLoading] = useState<boolean>(false);
 
   const isOwner = user?.id === property?.host_id;
 
@@ -96,19 +105,13 @@ export default function HostPropertyDetailScreen() {
 
   const handleBookNow = () => {
     if (!property) return;
-    const inDate = checkIn || new Date().toISOString().split('T')[0];
-    const outDate = checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const guestCount = guests || 1;
-    const nights = calculateNights(inDate, outDate);
-    const totalAmount = property.price_per_night * nights;
-
     navigation.navigate('GuestVerification', {
       propertyId: property.id,
       propertyName: property.name,
-      checkIn: inDate,
-      checkOut: outDate,
-      guests: guestCount,
-      totalAmount,
+      checkIn: checkIn ?? new Date().toISOString().split('T')[0],
+      checkOut: checkOut ?? new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      guests: guests ?? 1,
+      totalAmount: property.price_per_night,
     });
   };
 
@@ -135,6 +138,37 @@ export default function HostPropertyDetailScreen() {
       );
     } catch (error) {
       Alert.alert('Error', 'Could not save');
+    }
+  };
+
+  const handleMessageHost = async () => {
+    if (!property) return;
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      
+      const conv = await apiService.get<{ id: string }>(
+        `/conversations/by-property/${property.id}`,
+        token
+      ).catch(() => null);
+
+      if (conv?.id) {
+        navigation.navigate('ChatDetail', {
+          conversationId: conv.id,
+          otherPartyName: property.host?.name ?? 'Host',
+          propertyName: property.name,
+        });
+      } else {
+        Alert.alert(
+          'Message Host',
+          'Book this property first to start chatting with the host.'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        'Message Host',
+        'Book this property first to start chatting with the host.'
+      );
     }
   };
 
@@ -344,25 +378,49 @@ export default function HostPropertyDetailScreen() {
     if (!property) return null;
     return (
       <View style={styles.rootLight}>
-        <SafeAreaView style={styles.containerLight} edges={['top']}>
-          {/* Top Header */}
-          <View style={styles.topBarLight}>
-            <TouchableOpacity style={styles.circleHeaderBtn} onPress={handleBack} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={20} color="#1A1F1E" />
-            </TouchableOpacity>
-            <Text style={styles.topBarTitleLight}>Property Details</Text>
-            <TouchableOpacity 
-              style={styles.circleHeaderBtn}
-              onPress={() => handleSaveProperty(property.id)}
-              activeOpacity={0.7}
-            >
-              <Feather 
-                name="heart" 
-                size={20} 
-                color={savedProperties.includes(property.id) ? "#D4704A" : "#6B7370"} 
-                fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
-              />
-            </TouchableOpacity>
+        <StatusBar style="light" translucent backgroundColor="transparent" />
+        <View style={styles.containerLight}>
+          {/* Top Hero Header */}
+          <View style={styles.headerWrapper}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800' }} 
+              style={styles.headerAbsoluteImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+                <Feather name="chevron-left" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+              
+              <Text style={styles.headerTitleText}>Property Details</Text>
+              
+              <TouchableOpacity 
+                style={styles.headerIconBtn}
+                onPress={() => handleSaveProperty(property.id)}
+                activeOpacity={0.7}
+              >
+                <Feather 
+                  name="heart" 
+                  size={20} 
+                  color={savedProperties.includes(property.id) ? "#D4704A" : "#FFFFFF"} 
+                  fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView 
@@ -527,10 +585,12 @@ export default function HostPropertyDetailScreen() {
             <View style={styles.hostCard}>
               <View style={styles.hostInfoCol}>
                 <View style={styles.hostAvatar}>
-                  <Text style={styles.hostAvatarText}>H</Text>
+                  <Text style={styles.hostAvatarText}>
+                    {property.host?.name?.charAt(0).toUpperCase() || 'H'}
+                  </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.hostName}>Hosted by Raj Sharma</Text>
+                  <Text style={styles.hostName}>Hosted by {property.host?.name ?? 'Host'}</Text>
                   <View style={styles.superHostBadge}>
                     <Text style={styles.superHostText}>Super Host</Text>
                   </View>
@@ -539,7 +599,11 @@ export default function HostPropertyDetailScreen() {
                 </View>
               </View>
               <View style={styles.hostActionGroup}>
-                <TouchableOpacity style={styles.hostOutlineBtn} activeOpacity={0.7}>
+                <TouchableOpacity 
+                  style={styles.hostOutlineBtn} 
+                  onPress={handleMessageHost}
+                  activeOpacity={0.7}
+                >
                   <Feather name="message-square" size={16} color="#1A6B5A" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.hostOutlineBtn} activeOpacity={0.7}>
@@ -568,12 +632,21 @@ export default function HostPropertyDetailScreen() {
                   fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.bookNowBtn} onPress={handleBookNow} activeOpacity={0.8}>
-                <Text style={styles.bookNowText}>Book Now</Text>
+              <TouchableOpacity 
+                style={styles.bookNowBtn} 
+                onPress={handleBookNow} 
+                activeOpacity={0.8}
+                disabled={bookingLoading}
+              >
+                {bookingLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.bookNowText}>Book Now</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     );
   };
@@ -1042,8 +1115,13 @@ export default function HostPropertyDetailScreen() {
                 style={styles.bookButton}
                 onPress={handleBookNow}
                 activeOpacity={0.8}
+                disabled={bookingLoading}
               >
-                <Text style={styles.bookButtonText}>Book Now</Text>
+                {bookingLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.bookButtonText}>Book Now</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

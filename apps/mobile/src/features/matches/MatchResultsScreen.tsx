@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
@@ -127,18 +130,42 @@ export default function MatchResultsScreen() {
   if (matches.length === 0) {
     return (
       <View style={styles.root}>
-        <SafeAreaView style={styles.container} edges={['top']}>
-          {/* Top Bar */}
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.7}
-            >
-              <Feather name="arrow-left" size={20} color="#1A1F1E" />
-            </TouchableOpacity>
-            <Text style={styles.topBarTitle}>Your Matches</Text>
-            <View style={{ width: 40 }} />
+        <StatusBar style="light" translucent backgroundColor="transparent" />
+        <View style={styles.container}>
+          {/* Top Hero Header */}
+          <View style={styles.headerWrapper}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800' }} 
+              style={styles.headerAbsoluteImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+              >
+                <Feather name="chevron-left" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+              
+              <Text style={styles.headerTitleText}>Your Matches</Text>
+              
+              <View style={{ width: 40 }} />
+            </View>
           </View>
 
           <View style={styles.emptyContainer}>
@@ -153,28 +180,52 @@ export default function MatchResultsScreen() {
               <Text style={styles.backToPlanText}>{i18n.t('matches.backToPlan')}</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Feather name="arrow-left" size={20} color="#1A1F1E" />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Your Matches</Text>
-          <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
-            <Feather name="sliders" size={14} color="#1A1F1E" />
-            <Text style={styles.filterButtonText}>Filters</Text>
-          </TouchableOpacity>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        {/* Top Hero Header */}
+        <View style={styles.headerWrapper}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800' }} 
+            style={styles.headerAbsoluteImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            locations={[0, 0.35, 0.7, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-left" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.headerTitleText}>Your Matches</Text>
+            
+            <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
+              <Feather name="sliders" size={14} color="#FFFFFF" />
+              <Text style={styles.filterButtonText}>Filters</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -363,7 +414,7 @@ export default function MatchResultsScreen() {
             );
           })}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

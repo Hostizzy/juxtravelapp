@@ -2,6 +2,7 @@ import {
   IsString, IsNotEmpty, IsNumber,
   IsOptional, IsEmail, Min, Max
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateVerificationDto {
   @IsString()
@@ -12,6 +13,8 @@ export class CreateVerificationDto {
   @IsNotEmpty()
   email: string;
 
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(18)
   @Max(99)
@@ -45,9 +48,14 @@ export class CreateVerificationDto {
   @IsNotEmpty()
   checkOut: string;
 
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   guests: number;
 
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   totalAmount: number;
 }
+

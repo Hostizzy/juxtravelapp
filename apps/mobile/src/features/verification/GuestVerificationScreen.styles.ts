@@ -24,6 +24,9 @@ export default StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    overflow: 'hidden',
   },
   gradientOverlay: {
     position: 'absolute',

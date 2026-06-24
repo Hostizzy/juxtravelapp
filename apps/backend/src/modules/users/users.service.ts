@@ -39,6 +39,40 @@ export class UsersService {
     private supabaseService: SupabaseService
   ) { }
 
+  private async ensureGuestProfile(
+    userId: string
+  ): Promise<void> {
+    const { data: existing } = await this.supabaseService.admin
+      .from('guest_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!existing) {
+      try {
+        const { error } = await this.supabaseService.admin
+          .from('guest_profiles')
+          .insert({
+            user_id: userId,
+            saved_properties: [],
+            trip_briefs: [],
+          });
+        if (error) throw error;
+      } catch (err) {
+        this.logger.warn(`Failed to insert guest_profile with trip_briefs, trying fallback without trip_briefs:`, err);
+        await this.supabaseService.admin
+          .from('guest_profiles')
+          .insert({
+            user_id: userId,
+            saved_properties: [],
+          });
+      }
+      this.logger.log(
+        `Auto-created guest_profile for ${userId}`
+      );
+    }
+  }
+
   async createUser(
     data: CreateUserData
   ): Promise<UserData> {
@@ -170,24 +204,32 @@ export class UsersService {
     userId: string,
     propertyId: string
   ): Promise<{ success: boolean }> {
-    const { data: profile } = await this.supabaseService.admin
-      .from('guest_profiles')
-      .select('saved_properties')
-      .eq('user_id', userId)
-      .single();
+    await this.ensureGuestProfile(userId);
 
-    const savedProfile = profile as GuestProfileData | null;
-    const current = savedProfile?.saved_properties ?? [];
+    const { data: profile, error: fetchError } = await this.supabaseService.admin
+      .from('guest_profiles')
+      .select('id, saved_properties')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (fetchError || !profile) {
+      this.logger.error('Guest profile not found', fetchError);
+      throw new Error('Guest profile not found');
+    }
+
+    const current: string[] = profile.saved_properties ?? [];
 
     if (!current.includes(propertyId)) {
-      await this.supabaseService.admin
+      const updated = [...current, propertyId];
+      const { error: updateError } = await this.supabaseService.admin
         .from('guest_profiles')
-        .update({
-          saved_properties: [
-            ...current, propertyId
-          ]
-        })
+        .update({ saved_properties: updated })
         .eq('user_id', userId);
+
+      if (updateError) {
+        this.logger.error('Save property failed', updateError);
+        throw new Error('Failed to save property');
+      }
     }
 
     return { success: true };
@@ -196,22 +238,56 @@ export class UsersService {
   async getSavedProperties(
     userId: string
   ): Promise<unknown[]> {
+    await this.ensureGuestProfile(userId);
+
     const { data: profile } = await this.supabaseService.admin
       .from('guest_profiles')
       .select('saved_properties')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    const savedProfile = profile as GuestProfileData | null;
-    const savedIds = savedProfile?.saved_properties ?? [];
+    const savedIds: string[] = profile?.saved_properties ?? [];
 
     if (savedIds.length === 0) return [];
 
-    const { data: properties } = await this.supabaseService.admin
+    const { data: properties, error } = await this.supabaseService.admin
       .from('properties')
       .select('*')
       .in('id', savedIds);
 
-    return (properties as unknown[]) ?? [];
+    if (error) {
+      this.logger.error('Fetch saved properties failed', error);
+      return [];
+    }
+
+    return properties ?? [];
+  }
+
+  async getMyTrips(userId: string) {
+    try {
+      const { data, error } = await this.supabaseService.admin
+        .from('trip_briefs')
+        .select(`
+          *,
+          match_results(
+            property_id,
+            score,
+            properties(name, photos, location, price_per_night)
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
+    } catch (err) {
+      this.logger.warn('Failed to join trip_briefs with match_results, falling back to simple select', err);
+      const { data } = await this.supabaseService.admin
+        .from('trip_briefs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      return data ?? [];
+    }
   }
 }
