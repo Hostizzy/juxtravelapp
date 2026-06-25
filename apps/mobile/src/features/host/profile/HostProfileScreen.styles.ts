@@ -195,6 +195,11 @@ export default StyleSheet.create({
     letterSpacing: 1.5,
     fontWeight: '700',
   },
+  sectionAction: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D4704A',
+  },
   // Reels Section
   reelsContainer: {
     marginBottom: 24,

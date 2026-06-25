@@ -147,7 +147,7 @@ export default function ListStep1Screen() {
         {/* TAGLINE WITH LEAF ICON & CHAR COUNT */}
         <Text style={styles.sectionLabel}>TAGLINE</Text>
         <View style={styles.multilineContainer}>
-          <Feather name="leaf" size={20} color="#1A6B5A" style={styles.multilineIcon} />
+          <MaterialCommunityIcons name="leaf" size={20} color="#1A6B5A" style={styles.multilineIcon} />
           <TextInput
             style={styles.multilineField}
             placeholder="e.g. A century-old stone cottage nestled in the rolling hills, perfect for quiet retreats."
