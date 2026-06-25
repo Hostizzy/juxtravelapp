@@ -5,50 +5,70 @@ const { width: screenWidth } = Dimensions.get('window');
 export default StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#0F1714',
+    backgroundColor: '#FAF8F4',
   },
   container: {
     flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  // Shared Header Styles
+  headerWrapper: {
+    height: 240,
+    borderBottomLeftRadius: 100, // swoop curve
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
-  // Top Bar
-  topBar: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#0F1714',
+  headerBgImage: {
+    width: '100%',
+    height: '100%',
   },
-  topBarRow: {
-    flexDirection: 'row',
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  headerContent: {
+    flex: 1,
     justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  backBtn: {
-    padding: 4,
+  backBtnCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  stepIndicator: {
-    fontSize: 10,
+  stepText: {
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#FFFFFF',
     letterSpacing: 1,
   },
   percentText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#D4704A',
+    color: '#E67E52',
   },
   progressBarContainer: {
     height: 4,
-    backgroundColor: '#E8E2D9',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
-    flexDirection: 'row',
     overflow: 'hidden',
   },
   progressBarFilled: {
     height: '100%',
-    backgroundColor: '#D4704A',
+    backgroundColor: '#E67E52',
   },
   scrollContent: {
     padding: 24,
@@ -97,8 +117,10 @@ export default StyleSheet.create({
   photoSquare: {
     width: (screenWidth - 48 - 16) / 3,
     aspectRatio: 1.0,
-    backgroundColor: '#F0EDE8',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -107,7 +129,7 @@ export default StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: 'red',
+    backgroundColor: '#D4704A',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -131,8 +153,10 @@ export default StyleSheet.create({
   reelSquare: {
     width: (screenWidth - 48 - 12) / 2,
     height: 120,
-    backgroundColor: '#F0EDE8',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -142,11 +166,16 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D4704A',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 22,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 24,
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   instaIconCol: {
     marginRight: 12,
@@ -183,7 +212,7 @@ export default StyleSheet.create({
   // Info banner
   infoBanner: {
     backgroundColor: '#E6F2EF',
-    borderRadius: 12,
+    borderRadius: 22,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',

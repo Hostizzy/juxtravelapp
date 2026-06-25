@@ -15,17 +15,19 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores/authStore';
 import {
   conversationService,
   Message,
 } from '../../services/conversationService';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { messageCache } from '../../services/messageCache';
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetail'>;
 
@@ -41,34 +43,47 @@ export default function ChatDetailScreen() {
   const { conversationId, otherPartyName, propertyName } = route.params;
   const { getAccessToken, user } = useAuthStore();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<Message[]>(() =>
+    (messageCache.getMessages(conversationId) as Message[]) ?? []
+  );
+  const [isInitialLoading, setIsInitialLoading] = useState(
+    messageCache.getMessages(conversationId) === null
+  );
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const fetchMessages = useCallback(async (silent = false) => {
+    if (!silent) setIsInitialLoading(true);
     try {
       const token = await getAccessToken();
       if (!token) return;
       const detail = await conversationService.getConversation(conversationId, token);
-      setMessages(detail.messages);
+      const messagesData = detail.messages ?? [];
+      setMessages(messagesData);
+      messageCache.setMessages(conversationId, messagesData);
     } catch (err) {
       console.error('Failed to load conversation', err);
     } finally {
-      setLoading(false);
+      setIsInitialLoading(false);
     }
   }, [conversationId, getAccessToken]);
 
   useEffect(() => {
-    void load(false);
+    const cached = messageCache.getMessages(conversationId);
+    if (cached) {
+      setMessages(cached as Message[]);
+      void fetchMessages(true);
+    } else {
+      void fetchMessages(false);
+    }
+
     const interval = setInterval(() => {
-      void load(true);
+      void fetchMessages(true);
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [load]);
+  }, [conversationId, fetchMessages]);
 
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {
@@ -77,10 +92,10 @@ export default function ChatDetailScreen() {
   };
 
   useEffect(() => {
-    if (!loading) {
+    if (!isInitialLoading) {
       setTimeout(scrollToBottom, 100);
     }
-  }, [loading, messages.length]);
+  }, [isInitialLoading, messages.length]);
 
   const handleSend = async () => {
     const text = draft.trim();
@@ -91,7 +106,11 @@ export default function ChatDetailScreen() {
       const token = await getAccessToken();
       if (!token) throw new Error('No token');
       const msg = await conversationService.sendMessage(conversationId, text, token);
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => {
+        const updated = [...prev, msg];
+        messageCache.setMessages(conversationId, updated);
+        return updated;
+      });
       setTimeout(scrollToBottom, 100);
     } catch (err) {
       console.error('Failed to send message', err);
@@ -169,27 +188,40 @@ export default function ChatDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" />
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
         {/* Header - stays fixed, NEVER moves */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
+        <View style={styles.headerWrapper}>
+          <ImageBackground
+            source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }}
+            style={styles.headerImage}
+            resizeMode="cover"
           >
-            <Feather name="chevron-left" size={24} color="#1A1F1E" />
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerName} numberOfLines={1}>{otherPartyName}</Text>
-            {propertyName ? (
-              <Text style={styles.headerSub} numberOfLines={1}>{propertyName}</Text>
-            ) : null}
-          </View>
-          <View style={{ width: 40 }} />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.65)']}
+              style={styles.headerOverlay}
+            >
+              <View style={styles.topBarContent}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => navigation.goBack()}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="arrow-left" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+                <View style={styles.topBarInfo}>
+                  <Text style={styles.topBarName}>{otherPartyName}</Text>
+                  {propertyName ? (
+                    <Text style={styles.topBarProperty} numberOfLines={1}>{propertyName}</Text>
+                  ) : null}
+                </View>
+                <View style={{ width: 40 }} />
+              </View>
+            </LinearGradient>
+          </ImageBackground>
         </View>
 
-        {loading ? (
+        {isInitialLoading && messages.length === 0 ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color="#1A6B5A" />
           </View>
@@ -238,7 +270,7 @@ export default function ChatDetailScreen() {
             </View>
           </KeyboardAvoidingView>
         )}
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -255,36 +287,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
-  topBar: {
+  headerWrapper: {
+    height: Platform.OS === 'ios' ? 130 : 115,
+    overflow: 'hidden',
+    backgroundColor: '#021412',
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  headerOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  topBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDECEA',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
   },
-  backBtn: {
+  backButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerCenter: {
+  topBarInfo: {
     flex: 1,
     alignItems: 'center',
+    marginHorizontal: 12,
   },
-  headerName: {
+  topBarName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1A1F1E',
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
   },
-  headerSub: {
+  topBarProperty: {
     fontSize: 12,
-    color: '#6B7370',
-    marginTop: 1,
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 2,
   },
   center: {
     flex: 1,

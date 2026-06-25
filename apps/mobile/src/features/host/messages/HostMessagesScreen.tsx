@@ -21,44 +21,58 @@ import {
   ConversationSummary,
 } from '../../../services/conversationService';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { messageCache } from '../../../services/messageCache';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HostMessagesScreen() {
   const navigation = useNavigation<NavProp>();
   const { getAccessToken } = useAuthStore();
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<ConversationSummary[]>(() =>
+    (messageCache.getConversations('host') as ConversationSummary[]) ?? []
+  );
+  const [isInitialLoading, setIsInitialLoading] = useState(
+    messageCache.getConversations('host') === null
+  );
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const fetchConversations = useCallback(async (silent = false) => {
+    if (!silent) setIsInitialLoading(true);
     try {
       const token = await getAccessToken();
       if (!token) return;
       const data = await conversationService.getMyConversations(token, 'host');
-      setConversations(data);
-    } catch (err) {
-      console.error('Failed to load host conversations', err);
+      setConversations(data ?? []);
+      messageCache.setConversations('host', data ?? []);
+    } catch (error) {
+      console.log('Fetch conversations error:', error);
     } finally {
-      setLoading(false);
+      setIsInitialLoading(false);
       setRefreshing(false);
     }
   }, [getAccessToken]);
 
   useFocusEffect(
     useCallback(() => {
-      void load(conversations.length > 0);
+      const cached = messageCache.getConversations('host');
+      if (cached) {
+        setConversations(cached as ConversationSummary[]);
+        void fetchConversations(true);
+      } else {
+        void fetchConversations(false);
+      }
+
       const interval = setInterval(() => {
-        void load(true);
+        void fetchConversations(true);
       }, 8000);
+
       return () => clearInterval(interval);
-    }, [load, conversations.length])
+    }, [fetchConversations])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    void load(true);
+    void fetchConversations(true);
   };
 
   const openChat = (conv: ConversationSummary) => {
@@ -141,7 +155,7 @@ export default function HostMessagesScreen() {
         </View>
 
         {/* Content */}
-        {loading ? (
+        {isInitialLoading && conversations.length === 0 ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color="#D4704A" />
           </View>

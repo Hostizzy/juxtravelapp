@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -114,7 +115,7 @@ export default function ListStep3Screen() {
         const uri = photos[i];
         slots.push(
           <View key={i} style={styles.photoSquare}>
-            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
             <TouchableOpacity
               style={styles.removeBtn}
               onPress={() => handleRemovePhoto(i)}
@@ -147,7 +148,7 @@ export default function ListStep3Screen() {
         const uri = reels[i];
         slots.push(
           <View key={i} style={styles.reelSquare}>
-            <View style={{ width: '100%', height: '100%', borderRadius: 8, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: '100%', height: '100%', borderRadius: 12, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
               <Feather name="video" size={32} color="#84C9BA" />
               <Text style={{ color: '#84C9BA', fontSize: 10, marginTop: 4 }}>Reel {i + 1}</Text>
             </View>
@@ -177,88 +178,99 @@ export default function ListStep3Screen() {
     return slots;
   };
 
+  const stepNumber = 3;
+  const totalSteps = 5;
+  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Progress Header */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.stepIndicator}>STEP 3 OF 5</Text>
-            <Text style={styles.percentText}>60% COMPLETE</Text>
+      {/* Dark Image Background Header */}
+      <View style={styles.headerWrapper}>
+        <ImageBackground
+          source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800' }}
+          style={styles.headerBgImage}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay} />
+          <SafeAreaView style={styles.headerContent} edges={['top']}>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity style={styles.backBtnCircle} onPress={handleBack} activeOpacity={0.7}>
+                <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <Text style={styles.stepText}>STEP {stepNumber} OF {totalSteps}</Text>
+              <Text style={styles.percentText}>{percentComplete}% COMPLETE</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFilled, { width: `${percentComplete}%` }]} />
+            </View>
+          </SafeAreaView>
+        </ImageBackground>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={styles.title}>{i18n.t('host.listProperty.photosTitle') || 'Photos and video reels of your property'}</Text>
+        <Text style={styles.subtitle}>{i18n.t('host.listProperty.photosSub') || 'Upload pictures and reels to showcase your stay.'}</Text>
+
+        {/* PROPERTY PHOTOS */}
+        <View style={styles.sectionLabelRow}>
+          <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyPhotos') || 'PROPERTY PHOTOS'}</Text>
+          <Text style={styles.maxPhotosInfo}>
+            {photos.length}/10 PHOTOS
+          </Text>
+        </View>
+
+        <View style={styles.photoGrid}>
+          {renderPhotoSlots()}
+        </View>
+        <Text style={styles.gridTip}>{i18n.t('host.listProperty.tipNaturalLight') || 'Use natural light and capture wide angles.'}</Text>
+
+        {/* PROPERTY REELS */}
+        <View style={styles.sectionLabelRow}>
+          <Text style={styles.sectionLabel}>PROPERTY REELS</Text>
+          <Text style={styles.maxPhotosInfo}>
+            {reels.length}/4 REELS
+          </Text>
+        </View>
+
+        <View style={styles.reelsGrid}>
+          {renderReelSlots()}
+        </View>
+
+        {/* IMPORT FROM INSTAGRAM */}
+        <View style={[styles.instaCard, isInstaConnected && { borderColor: '#1A6B5A' }]}>
+          <View style={styles.instaIconCol}>
+            <MaterialCommunityIcons 
+              name="instagram" 
+              size={36} 
+              color={isInstaConnected ? "#1A6B5A" : "#D4704A"} 
+            />
           </View>
-          <View style={styles.progressBarContainer}>
-            <View style={[styles.progressBarFilled, { width: '60%' }]} />
+          <View style={styles.instaContentCol}>
+            <Text style={styles.instaTitle}>{i18n.t('host.listProperty.connectInsta') || 'Sync with Instagram'}</Text>
+            <Text style={styles.instaBody}>{i18n.t('host.listProperty.instaBody') || 'Import photos and reels directly from your profile posts.'}</Text>
+            <TouchableOpacity 
+              style={[styles.instaBtn, isInstaConnected && { borderColor: '#1A6B5A' }]} 
+              onPress={handleConnectInstagram}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.instaBtnText, isInstaConnected && { color: '#1A6B5A' }]}>
+                {isInstaConnected ? 'CONNECTED' : i18n.t('host.listProperty.connectInstaBtn') || 'Sync Profile'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Text style={styles.title}>{i18n.t('host.listProperty.photosTitle')}</Text>
-          <Text style={styles.subtitle}>{i18n.t('host.listProperty.photosSub')}</Text>
+        {/* INFO BANNER */}
+        <View style={styles.infoBanner}>
+          <Feather name="info" size={16} color="#1A6B5A" style={styles.infoIcon} />
+          <Text style={styles.infoText}>{i18n.t('host.listProperty.discoverFeedNote') || 'Video reels will display on the guest discover feed.'}</Text>
+        </View>
 
-          {/* PROPERTY PHOTOS */}
-          <View style={styles.sectionLabelRow}>
-            <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyPhotos')}</Text>
-            <Text style={styles.maxPhotosInfo}>
-              {photos.length}/10 PHOTOS
-            </Text>
-          </View>
-
-          <View style={styles.photoGrid}>
-            {renderPhotoSlots()}
-          </View>
-          <Text style={styles.gridTip}>{i18n.t('host.listProperty.tipNaturalLight')}</Text>
-
-          {/* PROPERTY REELS */}
-          <View style={styles.sectionLabelRow}>
-            <Text style={styles.sectionLabel}>PROPERTY REELS</Text>
-            <Text style={styles.maxPhotosInfo}>
-              {reels.length}/4 REELS
-            </Text>
-          </View>
-
-          <View style={styles.reelsGrid}>
-            {renderReelSlots()}
-          </View>
-
-          {/* IMPORT FROM INSTAGRAM */}
-          <View style={[styles.instaCard, isInstaConnected && { borderColor: '#2D8F5E' }]}>
-            <View style={styles.instaIconCol}>
-              <MaterialCommunityIcons 
-                name="instagram" 
-                size={36} 
-                color={isInstaConnected ? "#2D8F5E" : "#D4704A"} 
-              />
-            </View>
-            <View style={styles.instaContentCol}>
-              <Text style={styles.instaTitle}>{i18n.t('host.listProperty.connectInsta')}</Text>
-              <Text style={styles.instaBody}>{i18n.t('host.listProperty.instaBody')}</Text>
-              <TouchableOpacity 
-                style={[styles.instaBtn, isInstaConnected && { borderColor: '#2D8F5E' }]} 
-                onPress={handleConnectInstagram}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.instaBtnText, isInstaConnected && { color: '#2D8F5E' }]}>
-                  {isInstaConnected ? 'CONNECTED' : i18n.t('host.listProperty.connectInstaBtn')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* INFO BANNER */}
-          <View style={styles.infoBanner}>
-            <Feather name="info" size={16} color="#1A6B5A" style={styles.infoIcon} />
-            <Text style={styles.infoText}>{i18n.t('host.listProperty.discoverFeedNote')}</Text>
-          </View>
-
-          {/* CONTINUE */}
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
-            <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue')}</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
+        {/* CONTINUE */}
+        <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
+          <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }

@@ -30,6 +30,8 @@ import InstagramConnectScreen from '../features/host/instagram/InstagramConnectS
 import BookingSuccessScreen from '../features/booking/BookingSuccessScreen';
 import BookingDetailScreen from '../features/booking/BookingDetailScreen';
 import ChatDetailScreen from '../features/messages/ChatDetailScreen';
+import HostBookingDetailScreen from '../features/host/bookings/HostBookingDetailScreen';
+
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -42,6 +44,10 @@ export type RootStackParamList = {
   BookingDetail: {
     bookingId: string;
   };
+  HostBookingDetail: {
+    bookingId: string;
+  };
+
   ChatDetail: {
     conversationId: string;
     otherPartyName: string;
@@ -227,7 +233,9 @@ export default function RootNavigator() {
       <Stack.Screen name="InstagramConnect" component={InstagramConnectScreen} />
       <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+      <Stack.Screen name="HostBookingDetail" component={HostBookingDetailScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+
     </Stack.Navigator>
   );
 }

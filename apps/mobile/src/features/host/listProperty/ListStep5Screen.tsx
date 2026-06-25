@@ -8,6 +8,7 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -68,12 +69,8 @@ export default function ListStep5Screen() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    // First day of current month
     const firstDayOfMonth = new Date(year, month, 1);
-    // Weekday of first day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const startDayOfWeek = firstDayOfMonth.getDay();
-
-    // Sunday of the first week
     const gridStartDate = new Date(year, month, 1 - startDayOfWeek);
 
     const cells = [];
@@ -184,34 +181,46 @@ export default function ListStep5Screen() {
     }
   };
 
+  const stepNumber = 5;
+  const totalSteps = 5;
+  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Shared Progress Header */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarRow}>
-            <TouchableOpacity 
-              style={styles.backBtn} 
-              onPress={handleBack} 
-              activeOpacity={0.7}
-              disabled={loading}
-            >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.stepIndicator}>STEP 5 OF 5</Text>
-            <Text style={styles.percentText}>100% COMPLETE</Text>
-          </View>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBarFilled, { width: '100%' }]} />
-        </View>
+      {/* Dark Image Background Header */}
+      <View style={styles.headerWrapper}>
+        <ImageBackground
+          source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800' }}
+          style={styles.headerBgImage}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay} />
+          <SafeAreaView style={styles.headerContent} edges={['top']}>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity 
+                style={styles.backBtnCircle} 
+                onPress={handleBack} 
+                activeOpacity={0.7}
+                disabled={loading}
+              >
+                <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <Text style={styles.stepText}>STEP {stepNumber} OF {totalSteps}</Text>
+              <Text style={styles.percentText}>{percentComplete}% COMPLETE</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFilled, { width: `${percentComplete}%` }]} />
+            </View>
+          </SafeAreaView>
+        </ImageBackground>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>{i18n.t('host.listProperty.availabilityTitle')}</Text>
+        <Text style={styles.title}>{i18n.t('host.listProperty.availabilityTitle') || 'Set availability and rules'}</Text>
 
         {/* AVAILABLE UNITS TOGGLE */}
         <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>{i18n.t('host.listProperty.availableUnits')}</Text>
+          <Text style={styles.toggleText}>{i18n.t('host.listProperty.availableUnits') || 'Available Units'}</Text>
           <Switch
             trackColor={{ false: '#E8E2D9', true: '#FAF8F4' }}
             thumbColor={availableUnits ? '#D4704A' : '#6B7370'}
@@ -239,43 +248,45 @@ export default function ListStep5Screen() {
 
           {/* Weekdays */}
           <View style={styles.daysOfWeek}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
-              <Text key={idx} style={styles.dayOfWeekText}>{d}</Text>
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, idx) => (
+              <Text key={idx} style={styles.dayOfWeekText}>{day}</Text>
             ))}
           </View>
 
-          {/* Days Grid */}
+          {/* Grid */}
           <View style={styles.daysGrid}>
-            {calendarDays.map((day, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.dayCell}
-                onPress={() => toggleDate(day.dateStr)}
-                activeOpacity={0.8}
-              >
-                <View style={[
-                  styles.dayCircle,
-                  day.isBlocked && styles.dayBlocked,
-                  day.isToday && styles.dayToday,
-                  !day.isCurrentMonth && styles.dayOtherMonth
-                ]}>
-                  <Text style={[
-                    styles.dayText,
-                    day.isBlocked && styles.dayBlockedText
+            {calendarDays.map((cell, idx) => {
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.dayCell, !cell.isCurrentMonth && styles.dayOtherMonth]}
+                  disabled={!cell.isCurrentMonth}
+                  onPress={() => toggleDate(cell.dateStr)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[
+                    styles.dayCircle,
+                    cell.isBlocked && styles.dayBlocked,
+                    cell.isToday && !cell.isBlocked && styles.dayToday
                   ]}>
-                    {day.dayNum}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                    <Text style={[
+                      styles.dayText,
+                      cell.isBlocked && styles.dayBlockedText
+                    ]}>
+                      {cell.dayNum}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* MINIMUM STAY */}
         <View style={styles.counterRow}>
           <View>
-            <Text style={styles.counterTitle}>{i18n.t('host.listProperty.minStay')}</Text>
-            <Text style={styles.requiredNights}>{i18n.t('host.listProperty.requiredNights')}</Text>
+            <Text style={styles.counterTitle}>{i18n.t('host.listProperty.minimumStay') || 'Minimum Stay'}</Text>
+            <Text style={styles.requiredNights}>required nights</Text>
           </View>
           <View style={styles.counterContainer}>
             <TouchableOpacity onPress={() => setMinStay((s) => Math.max(1, s - 1))}>
@@ -292,21 +303,9 @@ export default function ListStep5Screen() {
           </View>
         </View>
 
-        {/* PRICING INPUTS */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.basePricePerNight')}</Text>
-        <View style={styles.inputRow}>
-          <Text style={styles.inputCurrency}>₹</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="eg. 4500"
-            keyboardType="numeric"
-            value={basePrice}
-            onChangeText={setBasePrice}
-          />
-        </View>
-
+        {/* WEEKEND PRICING */}
         <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>{i18n.t('host.listProperty.weekendPricing')}</Text>
+          <Text style={styles.toggleText}>{i18n.t('host.listProperty.weekendPricing') || 'Weekend Pricing'}</Text>
           <Switch
             trackColor={{ false: '#E8E2D9', true: '#FAF8F4' }}
             thumbColor={weekendEnabled ? '#D4704A' : '#6B7370'}
@@ -321,16 +320,17 @@ export default function ListStep5Screen() {
             <Text style={styles.inputCurrency}>₹</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="eg. 5500"
               keyboardType="numeric"
+              placeholder="Weekend price per night"
+              placeholderTextColor="#6B7370"
               value={weekendPrice}
-              onChangeText={setWeekendPrice}
+              onChangeText={weekendPrice ? setWeekendPrice : undefined}
             />
           </View>
         )}
 
         {/* CANCELLATION POLICY */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.cancellationPolicy')}</Text>
+        <Text style={styles.sectionLabel}>CANCELLATION POLICY</Text>
         
         {/* Flexible */}
         <TouchableOpacity
@@ -343,7 +343,7 @@ export default function ListStep5Screen() {
           </View>
           <View style={styles.radioTextContainer}>
             <Text style={styles.radioTitle}>Flexible</Text>
-            <Text style={styles.radioDesc}>{i18n.t('host.listProperty.policyFlexible')}</Text>
+            <Text style={styles.radioDesc}>Full refund 1 day prior to arrival, except fees.</Text>
           </View>
         </TouchableOpacity>
 
@@ -358,7 +358,7 @@ export default function ListStep5Screen() {
           </View>
           <View style={styles.radioTextContainer}>
             <Text style={styles.radioTitle}>Moderate</Text>
-            <Text style={styles.radioDesc}>{i18n.t('host.listProperty.policyModerate')}</Text>
+            <Text style={styles.radioDesc}>Full refund 5 days prior to arrival, except fees.</Text>
           </View>
         </TouchableOpacity>
 
@@ -373,36 +373,35 @@ export default function ListStep5Screen() {
           </View>
           <View style={styles.radioTextContainer}>
             <Text style={styles.radioTitle}>Strict</Text>
-            <Text style={styles.radioDesc}>{i18n.t('host.listProperty.policyStrict')}</Text>
+            <Text style={styles.radioDesc}>50% refund up until 1 week prior to arrival, except fees.</Text>
           </View>
         </TouchableOpacity>
 
-        {/* BOTTOM ACTIONS */}
+        {/* BOTTOM NAV ROWS */}
         <View style={styles.bottomRow}>
           <TouchableOpacity 
-            style={[styles.outlineBtn, loading && { opacity: 0.5 }]} 
-            onPress={handleSaveDraft} 
-            activeOpacity={0.8}
+            style={styles.outlineBtn} 
+            onPress={handleBack} 
             disabled={loading}
+            activeOpacity={0.8}
           >
-            <Text style={styles.outlineBtnText}>{i18n.t('host.listProperty.saveDraft')}</Text>
+            <Text style={styles.outlineBtnText}>{i18n.t('host.listProperty.back') || 'Back'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
+            style={styles.submitBtn} 
             onPress={handleSubmitReview} 
-            activeOpacity={0.8}
             disabled={loading}
+            activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.submitBtnText}>{i18n.t('host.listProperty.submitReview')}</Text>
+              <Text style={styles.submitBtnText}>{i18n.t('host.listProperty.submitReview') || 'Submit for Review'}</Text>
             )}
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
-  </View>
-);
+    </View>
+  );
 }

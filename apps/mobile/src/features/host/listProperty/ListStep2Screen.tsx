@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -86,29 +87,41 @@ export default function ListStep2Screen() {
     }
   };
 
+  const stepNumber = 2;
+  const totalSteps = 5;
+  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Progress Header */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.stepIndicator}>STEP 2 OF 5</Text>
-            <Text style={styles.percentText}>40% COMPLETE</Text>
-          </View>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBarFilled, { width: '40%' }]} />
-        </View>
+      {/* Dark Image Background Header */}
+      <View style={styles.headerWrapper}>
+        <ImageBackground
+          source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800' }}
+          style={styles.headerBgImage}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay} />
+          <SafeAreaView style={styles.headerContent} edges={['top']}>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity style={styles.backBtnCircle} onPress={handleBack} activeOpacity={0.7}>
+                <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <Text style={styles.stepText}>STEP {stepNumber} OF {totalSteps}</Text>
+              <Text style={styles.percentText}>{percentComplete}% COMPLETE</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFilled, { width: `${percentComplete}%` }]} />
+            </View>
+          </SafeAreaView>
+        </ImageBackground>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>{i18n.t('host.listProperty.titleDetails')}</Text>
+        <Text style={styles.title}>{i18n.t('host.listProperty.titleDetails') || 'Provide details about your property'}</Text>
         <Text style={styles.subtitle}>Provide technical details about your listing, capacity, pricing, and rules.</Text>
 
         {/* ADDRESS */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.address')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.address') || 'ADDRESS'}</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter complete physical address"
@@ -118,11 +131,11 @@ export default function ListStep2Screen() {
         />
 
         {/* CAPACITY */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.verification.capacity')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.verification.capacity') || 'CAPACITY'}</Text>
         
         {/* Rooms Counter */}
         <View style={styles.capacityRow}>
-          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.rooms')}</Text>
+          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.rooms') || 'Rooms'}</Text>
           <View style={styles.counterContainer}>
             <TouchableOpacity onPress={() => setRooms((r) => Math.max(1, r - 1))}>
               <View style={styles.counterBtnMinus}>
@@ -140,7 +153,7 @@ export default function ListStep2Screen() {
 
         {/* Max Guests Counter */}
         <View style={styles.capacityRow}>
-          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.maxGuests')}</Text>
+          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.maxGuests') || 'Max Guests'}</Text>
           <View style={styles.counterContainer}>
             <TouchableOpacity onPress={() => setMaxGuests((g) => Math.max(1, g - 1))}>
               <View style={styles.counterBtnMinus}>
@@ -158,7 +171,7 @@ export default function ListStep2Screen() {
 
         {/* Comfortable Guests Counter */}
         <View style={styles.capacityRow}>
-          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.comfortable')}</Text>
+          <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.comfortable') || 'Comfortable Guests'}</Text>
           <View style={styles.counterContainer}>
             <TouchableOpacity onPress={() => setComfortGuests((g) => Math.max(1, g - 1))}>
               <View style={styles.counterBtnMinus}>
@@ -175,7 +188,7 @@ export default function ListStep2Screen() {
         </View>
 
         {/* BASE PRICE */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.basePricePerNight')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.basePricePerNight') || 'BASE PRICE PER NIGHT'}</Text>
         <TextInput
           style={styles.input}
           placeholder="₹ Price"
@@ -184,10 +197,10 @@ export default function ListStep2Screen() {
           value={price}
           onChangeText={setPrice}
         />
-        <Text style={styles.priceTip}>{i18n.t('host.listProperty.suggestedPrice')}</Text>
+        <Text style={styles.priceTip}>{i18n.t('host.listProperty.suggestedPrice') || 'Recommended price range based on similar homes.'}</Text>
 
         {/* AMENITIES */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.amenities')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.amenities') || 'AMENITIES'}</Text>
         <View style={styles.amenitiesGrid}>
           {amenities.map((item) => {
             const isSelected = selectedAmenities.includes(item.id);
@@ -216,10 +229,10 @@ export default function ListStep2Screen() {
         </View>
 
         {/* HONEST NOTES */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.honestNotes')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.honestNotes') || 'HONEST NOTES'}</Text>
         <TextInput
           style={styles.multilineInput}
-          placeholder={i18n.t('host.listProperty.notesPlaceholder')}
+          placeholder={i18n.t('host.listProperty.notesPlaceholder') || 'Any caveats or important rules...'}
           placeholderTextColor="#6B7370"
           multiline
           value={honestNotes}
@@ -228,10 +241,9 @@ export default function ListStep2Screen() {
 
         {/* CONTINUE BUTTON */}
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
-          <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue')}</Text>
+          <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
-  </View>
-);
+    </View>
+  );
 }

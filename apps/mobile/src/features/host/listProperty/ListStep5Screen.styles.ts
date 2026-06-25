@@ -3,50 +3,70 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#0F1714',
+    backgroundColor: '#FAF8F4',
   },
   container: {
     flex: 1,
+    backgroundColor: '#FAF8F4',
+  },
+  // Shared Header Styles
+  headerWrapper: {
+    height: 240,
+    borderBottomLeftRadius: 100, // swoop curve
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
-  // Top Bar
-  topBar: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#0F1714',
+  headerBgImage: {
+    width: '100%',
+    height: '100%',
   },
-  topBarRow: {
-    flexDirection: 'row',
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  headerContent: {
+    flex: 1,
     justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  backBtn: {
-    padding: 4,
+  backBtnCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  stepIndicator: {
-    fontSize: 10,
+  stepText: {
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#FFFFFF',
     letterSpacing: 1,
   },
   percentText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#D4704A',
+    color: '#E67E52',
   },
   progressBarContainer: {
     height: 4,
-    backgroundColor: '#E8E2D9',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
-    flexDirection: 'row',
     overflow: 'hidden',
   },
   progressBarFilled: {
     height: '100%',
-    backgroundColor: '#D4704A',
+    backgroundColor: '#E67E52',
   },
   scrollContent: {
     padding: 24,
@@ -87,11 +107,16 @@ export default StyleSheet.create({
   // Custom Month Calendar
   calendarContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E8E2D9',
     marginBottom: 20,
+    shadowColor: '#1A1F1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -237,7 +262,7 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8E2D9',
-    borderRadius: 12,
+    borderRadius: 22,
     padding: 16,
     marginBottom: 10,
   },

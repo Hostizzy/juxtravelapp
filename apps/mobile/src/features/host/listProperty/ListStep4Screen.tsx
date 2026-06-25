@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -64,29 +65,41 @@ export default function ListStep4Screen() {
     Alert.alert('Voice Storyteller', 'Voice recording module initialized! Speak into your microphone...');
   };
 
+  const stepNumber = 4;
+  const totalSteps = 5;
+  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Progress Header */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.stepIndicator}>STEP 4 OF 5</Text>
-            <Text style={styles.percentText}>80% COMPLETE</Text>
-          </View>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBarFilled, { width: '80%' }]} />
-        </View>
+      {/* Dark Image Background Header */}
+      <View style={styles.headerWrapper}>
+        <ImageBackground
+          source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800' }}
+          style={styles.headerBgImage}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay} />
+          <SafeAreaView style={styles.headerContent} edges={['top']}>
+            <View style={styles.headerTopRow}>
+              <TouchableOpacity style={styles.backBtnCircle} onPress={handleBack} activeOpacity={0.7}>
+                <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <Text style={styles.stepText}>STEP {stepNumber} OF {totalSteps}</Text>
+              <Text style={styles.percentText}>{percentComplete}% COMPLETE</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarFilled, { width: `${percentComplete}%` }]} />
+            </View>
+          </SafeAreaView>
+        </ImageBackground>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>{i18n.t('host.listProperty.experiencesTitle')}</Text>
-        <Text style={styles.subtitle}>{i18n.t('host.listProperty.experiencesSub')}</Text>
+        <Text style={styles.title}>{i18n.t('host.listProperty.experiencesTitle') || 'Highlight the guest experience'}</Text>
+        <Text style={styles.subtitle}>{i18n.t('host.listProperty.experiencesSub') || 'Add local activities and details to welcome your guests.'}</Text>
 
         {/* ACTIVITIES */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.activities')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.activities') || 'ACTIVITIES'}</Text>
         <View style={styles.chipsWrap}>
           {activities.map((act) => (
             <TouchableOpacity
@@ -112,7 +125,7 @@ export default function ListStep4Screen() {
         </View>
 
         {/* A DAY HERE */}
-        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.dayHere')}</Text>
+        <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.dayHere') || 'A DAY HERE'}</Text>
         
         <View style={styles.timelineContainer}>
           {/* Timeline Item 1 */}
@@ -136,7 +149,7 @@ export default function ListStep4Screen() {
             </View>
             <View style={styles.timelineLineCol}>
               <View style={styles.timelineDot} />
-              <View style={[styles.timelineVerticalLine, { opacity: 0 }]} /> {/* hidden line for last item */}
+              <View style={[styles.timelineVerticalLine, { opacity: 0 }]} />
             </View>
             <View style={styles.descCol}>
               <Text style={styles.descText}>Guided forest walk to the hidden waterfall viewpoint</Text>
@@ -144,13 +157,13 @@ export default function ListStep4Screen() {
           </View>
 
           <TouchableOpacity style={styles.addTimeSlotBtn} onPress={handleUpdateTimeSlot} activeOpacity={0.8}>
-            <Text style={styles.addTimeSlotText}>+ {i18n.t('host.listProperty.addTimeSlot')}</Text>
+            <Text style={styles.addTimeSlotText}>+ {i18n.t('host.listProperty.addTimeSlot') || 'Add Time Slot'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* HOST STORY WITH AI */}
         <View style={styles.aiStoryHeader}>
-          <Text style={styles.aiLabel}>{i18n.t('host.listProperty.aiStory')}</Text>
+          <Text style={styles.aiLabel}>{i18n.t('host.listProperty.aiStory') || 'HOST STORY'}</Text>
           <MaterialCommunityIcons name="creation" size={14} color="#D4704A" />
         </View>
 
@@ -159,15 +172,15 @@ export default function ListStep4Screen() {
         </View>
 
         <TouchableOpacity style={styles.updateStoryBtn} onPress={handleGenerateStory} activeOpacity={0.8}>
-          <Text style={styles.updateStoryText}>{i18n.t('host.listProperty.updateStory')}</Text>
+          <Text style={styles.updateStoryText}>{i18n.t('host.listProperty.updateStory') || 'Update Story'}</Text>
         </TouchableOpacity>
 
         {/* VOICE STORYTELLER */}
-        <Text style={styles.voiceLabel}>{i18n.t('host.listProperty.voiceStoryteller')}</Text>
-        <Text style={styles.voiceSub}>{i18n.t('host.listProperty.voiceStorySubtitle')}</Text>
+        <Text style={styles.voiceLabel}>{i18n.t('host.listProperty.voiceStoryteller') || 'Voice Storyteller'}</Text>
+        <Text style={styles.voiceSub}>{i18n.t('host.listProperty.voiceStorySubtitle') || 'Tell your story and let AI write a beautiful description for your home.'}</Text>
 
         <TouchableOpacity style={styles.startWritingBtn} onPress={handleVoiceRecord} activeOpacity={0.8}>
-          <Text style={styles.startWritingText}>🎙️ {i18n.t('host.listProperty.startWriting')}</Text>
+          <Text style={styles.startWritingText}>🎙️ {i18n.t('host.listProperty.startWriting') || 'Record voice'}</Text>
         </TouchableOpacity>
 
         <View style={styles.previewPlaceholder}>
@@ -177,15 +190,14 @@ export default function ListStep4Screen() {
         {/* BOTTOM NAV ROWS */}
         <View style={styles.bottomRow}>
           <TouchableOpacity style={styles.outlineBtn} onPress={handleBack} activeOpacity={0.8}>
-            <Text style={styles.outlineBtnText}>{i18n.t('host.listProperty.back')}</Text>
+            <Text style={styles.outlineBtnText}>{i18n.t('host.listProperty.back') || 'Back'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.8}>
-            <Text style={styles.continueBtnText}>{i18n.t('host.listProperty.continue')}</Text>
+            <Text style={styles.continueBtnText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
-  </View>
-);
+    </View>
+  );
 }

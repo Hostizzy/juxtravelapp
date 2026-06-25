@@ -38,6 +38,27 @@ export class BookingsController {
     return this.bookingsService.getMyBookings(payload.sub);
   }
 
+  @Get('host-bookings')
+  async getHostBookings(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.bookingsService.getHostBookings(payload.sub);
+  }
+
+  @Get('earnings')
+  async getEarnings(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.bookingsService.getHostEarnings(payload.sub);
+  }
+
+  @Get('host-stats')
+  async getHostStats(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.bookingsService.getHostStats(payload.sub);
+  }
+
   @Get(':id')
   async getBookingById(
     @CurrentUser() payload: JwtPayload,
@@ -48,3 +69,4 @@ export class BookingsController {
     );
   }
 }
+

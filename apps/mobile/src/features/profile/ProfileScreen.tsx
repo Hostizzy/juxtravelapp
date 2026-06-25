@@ -27,6 +27,7 @@ import { apiService } from '../../services/api';
 import { Property } from '../discover/DiscoverScreen';
 import i18n from '../../locales/i18n';
 import styles from './ProfileScreen.styles';
+import { messageCache } from '../../services/messageCache';
 
 type ProfileScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<GuestTabParamList, 'Profile'>,
@@ -183,6 +184,7 @@ export default function ProfileScreen() {
     } catch (err) {
       console.log('Error deleting token on sign out:', err);
     }
+    messageCache.clearAll();
     useAuthStore.getState().clearAuth();
     navigation.replace('Auth');
   };

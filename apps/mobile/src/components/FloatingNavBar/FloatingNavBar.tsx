@@ -16,10 +16,12 @@ interface TabConfig {
   icon: keyof typeof Feather.glyphMap;
   isCenter?: boolean;
   badge?: number;
+  label?: string;
 }
 
 interface FloatingNavBarProps extends BottomTabBarProps {
   tabs: TabConfig[];
+  isHost?: boolean;
 }
 
 function TabIcon({
@@ -68,6 +70,7 @@ export default function FloatingNavBar({
   state,
   navigation,
   tabs,
+  isHost,
 }: FloatingNavBarProps) {
 
   const handlePress = (
@@ -145,6 +148,68 @@ export default function FloatingNavBar({
       </TouchableOpacity>
     );
   };
+
+  const renderHostTab = (tab: TabConfig) => {
+    const route = state.routes.find((r) => r.name === tab.name);
+    const isActive = route ? state.index === state.routes.indexOf(route) : false;
+    const activeColor = '#1A6B5A';
+    const inactiveColor = '#6B7370';
+
+    return (
+      <TouchableOpacity
+        key={tab.name}
+        style={styles.hostTabItem}
+        onPress={() => handlePress(tab.name, false)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.hostIconContainer}>
+          <Feather
+            name={tab.icon}
+            size={22}
+            color={isActive ? activeColor : inactiveColor}
+          />
+          {tab.badge && tab.badge > 0 ? (
+            <View style={styles.hostBadge}>
+              <Text style={styles.hostBadgeText}>
+                {tab.badge > 9 ? '9+' : tab.badge}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={[styles.hostTabLabel, { color: isActive ? activeColor : inactiveColor }]}>
+          {tab.label || tab.name.replace('Host', '')}
+        </Text>
+        {isActive && <View style={styles.hostDot} />}
+      </TouchableOpacity>
+    );
+  };
+
+  if (isHost) {
+    return (
+      <View style={styles.hostContainer}>
+        <View style={styles.hostSideGroup}>
+          {leftTabs.map((tab) => renderHostTab(tab))}
+        </View>
+        
+        {/* Center Floating Button */}
+        {centerTab && (
+          <TouchableOpacity
+            style={styles.hostCenterWrapper}
+            onPress={() => handlePress(centerTab.name, true)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.hostCenterButton}>
+              <Feather name={centerTab.icon} size={24} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.hostSideGroup}>
+          {rightTabs.map((tab) => renderHostTab(tab))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

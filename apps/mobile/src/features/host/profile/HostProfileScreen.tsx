@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { supabase } from '../../../services/supabase';
@@ -28,27 +28,32 @@ interface Property {
   name: string;
   status: string;
   photos: string[];
+  reels?: string[];
   price_per_night: number;
-  location: { city: string; state: string };
+  location: { city: string; state: string; address?: string };
   capacity: { maxGuests: number };
-}
-
-interface ReviewItem {
-  id: string;
-  rating: string;
-  date: string;
-  text: string;
 }
 
 export default function HostProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
+  const isVerified = (user as any)?.host_profile?.verified ?? true; // Default to true for host flow unless specified
+
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
   const [properties, setProperties] = useState<Property[]>([]);
   const [loadingProps, setLoadingProps] = useState(true);
+  const [earnings, setEarnings] = useState({ totalEarnings: 0, thisMonth: 0, pendingPayout: 0 });
+  const [loadingEarnings, setLoadingEarnings] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const tabs: TabType[] = ['PROFILE', 'PROPERTIES', 'REVIEWS', 'SETTINGS'];
+  const tabs: { key: TabType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+    { key: 'PROFILE', label: 'Profile', icon: 'user' },
+    { key: 'PROPERTIES', label: 'Properties', icon: 'home' },
+    { key: 'REVIEWS', label: 'Reviews', icon: 'star' },
+    { key: 'SETTINGS', label: 'Settings', icon: 'settings' },
+  ];
 
   const fetchProperties = async () => {
     try {
@@ -56,11 +61,7 @@ export default function HostProfileScreen() {
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
       
-      console.log('Fetching host properties...');
-      const props = await apiService.get<Property[]>(
-        '/properties/my',
-        token
-      );
+      const props = await apiService.get<Property[]>('/properties/my', token);
       if (props) {
         setProperties(props);
       }
@@ -71,55 +72,48 @@ export default function HostProfileScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  const fetchEarnings = async () => {
+    try {
+      setLoadingEarnings(true);
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      const data = await apiService.get<any>('/bookings/earnings', token);
+      if (data) {
+        setEarnings(data);
+      }
+
+      // Fetch unread count for notifications
+      const conversations = await apiService.get<{ unreadCount: number }[]>(
+        '/conversations?role=host',
+        token
+      );
+      const total = (conversations ?? []).reduce(
+        (sum, c) => sum + (c.unreadCount ?? 0),
+        0
+      );
+      setUnreadCount(total);
+    } catch (err) {
+      console.error('Failed to fetch earnings:', err);
+    } finally {
+      setLoadingEarnings(false);
+    }
+  };
 
   useEffect(() => {
-    if (activeTab === 'PROPERTIES') {
+    if (isFocused) {
       fetchProperties();
+      fetchEarnings();
     }
-  }, [activeTab]);
-
-  const formatLocation = (loc: any) => {
-    if (!loc) return '';
-    if (typeof loc === 'string') return loc;
-    const parts = [];
-    if (loc.city) parts.push(loc.city);
-    if (loc.state) parts.push(loc.state);
-    return parts.join(', ');
-  };
-
-  const getStatusStyles = (status: string) => {
-    const s = status?.toLowerCase();
-    if (s === 'active') {
-      return {
-        text: 'ACTIVE',
-        bg: '#E6F2EF',
-        color: '#1A6B5A',
-      };
-    }
-    if (s === 'under_review') {
-      return {
-        text: 'UNDER REVIEW',
-        bg: '#F5E6D0',
-        color: '#D4704A',
-      };
-    }
-    return {
-      text: 'DRAFT',
-      bg: '#F0EDE8',
-      color: '#6B7370',
-    };
-  };
-
-  const reviews: ReviewItem[] = [
-    { id: '1', rating: '5.0 ⭐', date: 'Oct 10, 2026', text: 'Loved the hospitality! The local farm breakfast was incredible, and the host was very kind.' },
-    { id: '2', rating: '4.5 ⭐', date: 'Sep 24, 2026', text: 'Stunning fireplace cabin. Highly recommend for peace seekers.' },
-  ];
+  }, [isFocused]);
 
   const getInitials = (name: string) => {
-    return name.split(' ').map((n) => n[0]).join('');
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
   };
 
   const handleEdit = (section: string) => {
@@ -127,7 +121,6 @@ export default function HostProfileScreen() {
   };
 
   const handleSwitchToGuest = () => {
-    // Navigate back to the GuestNavigator
     navigation.navigate('Guest');
   };
 
@@ -143,99 +136,213 @@ export default function HostProfileScreen() {
     }
   };
 
+  const propertiesWithReels = properties.filter((p) => p.reels && p.reels.length > 0);
+
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Header */}
-        <View style={styles.topBar}>
-          <MaterialCommunityIcons name="leaf" size={18} color="#84C9BA" />
-          <Text style={styles.topBarText}>{i18n.t('host.profile.title')}</Text>
-        </View>
+        
+        {/* HERO HEADER */}
+        <View style={styles.heroHeader}>
+          {/* Subtle Dimmed Background image */}
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800' }}
+            style={styles.heroBgImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroOverlay} />
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{getInitials(userName)}</Text>
+          {/* Logo & Notification Bell */}
+          <View style={styles.topRow}>
+            <View style={styles.logoRow}>
+              <MaterialCommunityIcons name="leaf" size={18} color="#1A6B5A" />
+              <Text style={styles.logoText}>JuxTravel Host</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.bellBtn} 
+              onPress={() => Alert.alert('Notifications', `You have ${unreadCount} unread messages.`)} 
+              activeOpacity={0.7}
+            >
+              <Feather name="bell" size={20} color="#1A1F1E" />
+              {unreadCount > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Avatar and Verification */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{getInitials(userName)}</Text>
+              </View>
+              <View style={styles.checkBadge}>
+                <Feather name="check" size={12} color="#FFFFFF" />
+              </View>
             </View>
             <Text style={styles.profileName}>{userName}</Text>
-            <View style={styles.verifiedChip}>
-              <Feather name="check-circle" size={12} color="#FFFFFF" />
-              <Text style={styles.verifiedChipText}>{i18n.t('host.profile.verifiedHost')}</Text>
-            </View>
+            
+            {isVerified ? (
+              <View style={[styles.verifiedPill, styles.verifiedActive]}>
+                <Feather name="check" size={10} color="#1A6B5A" style={{ marginRight: 4 }} />
+                <Text style={styles.verifiedText}>VERIFIED HOST</Text>
+              </View>
+            ) : (
+              <View style={[styles.verifiedPill, styles.verifiedPending]}>
+                <Text style={styles.verifiedTextPending}>Pending Verification</Text>
+              </View>
+            )}
           </View>
+        </View>
 
-          {/* Tab Row */}
-          <View style={styles.tabBar}>
-            {tabs.map((tab) => (
+        {/* Tab Row */}
+        <View style={styles.tabBar}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
               <TouchableOpacity
-                key={tab}
-                style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
-                onPress={() => setActiveTab(tab)}
+                key={tab.key}
+                style={[styles.tabButton, isActive && styles.activeTabButton]}
+                onPress={() => setActiveTab(tab.key)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabButtonText, activeTab === tab && styles.activeTabButtonText]}>
-                  {i18n.t(`host.profile.tab${tab.charAt(0) + tab.slice(1).toLowerCase()}`)}
+                <Feather 
+                  name={tab.icon} 
+                  size={16} 
+                  color={isActive ? '#1A6B5A' : '#6B7370'} 
+                  style={{ marginBottom: 4 }}
+                />
+                <Text style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}>
+                  {tab.label}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            );
+          })}
+        </View>
 
-          {/* Tab Content Area */}
+        {/* Tab Content Area */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.tabContent}>
+            
             {/* PROFILE TAB */}
             {activeTab === 'PROFILE' && (
               <View>
-                {/* Bio */}
+                {/* Host Bio */}
                 <View style={styles.sectionLabelRow}>
-                  <Text style={styles.sectionLabel}>{i18n.t('host.profile.hostBio')}</Text>
+                  <Text style={styles.sectionLabel}>HOST BIO</Text>
                   <TouchableOpacity onPress={() => handleEdit('Bio')}>
-                    <Text style={styles.sectionAction}>{i18n.t('host.profile.edit')}</Text>
+                    <Text style={styles.sectionAction}>Edit</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.bioText}>
-                  Welcome to my humble escapes! I love introducing travellers to Indian hospitality, organic cooking, and local trails.
-                </Text>
+                <View style={styles.bioCard}>
+                  <Text style={styles.bioText}>
+                    Welcome to my humble escapes! I love introducing travellers to Indian hospitality, organic cooking, and local trails.
+                  </Text>
+                  <MaterialCommunityIcons name="leaf" size={48} color="#E6F2EF" style={styles.bioLeafIcon} />
+                </View>
 
-                {/* Story */}
+                {/* Reels Section */}
                 <View style={styles.sectionLabelRow}>
-                  <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyReels')}</Text>
+                  <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyReels') || 'PROPERTY REELS'}</Text>
                   <TouchableOpacity onPress={() => handleEdit('Reels')}>
-                    <Text style={styles.sectionAction}>{i18n.t('host.profile.edit')}</Text>
+                    <Text style={styles.sectionAction}>Edit</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.storyBox}>
-                  <TouchableOpacity style={styles.storyPlayBtn} onPress={() => Alert.alert('Play Video', 'Playing host reels...')} activeOpacity={0.8}>
-                    <Feather name="play" size={24} color="#FFFFFF" style={styles.playIcon} />
-                  </TouchableOpacity>
-                </View>
+
+                {propertiesWithReels.length > 0 ? (
+                  <View style={styles.reelsContainer}>
+                    <Text style={styles.reelsCaption}>See your property in action</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {propertiesWithReels.map((p) => (
+                        <TouchableOpacity 
+                          key={p.id} 
+                          style={styles.storyBox} 
+                          onPress={() => Alert.alert('Play Video', `Playing reels for ${p.name}...`)} 
+                          activeOpacity={0.8}
+                        >
+                          <Image 
+                            source={{ uri: p.photos[0] || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800' }} 
+                            style={styles.storyImage} 
+                          />
+                          <View style={styles.storyOverlay}>
+                            <TouchableOpacity style={styles.storyPlayBtn} activeOpacity={0.8}>
+                              <Feather name="play" size={20} color="#FFFFFF" style={styles.playIcon} />
+                            </TouchableOpacity>
+                          </View>
+                          <Text style={styles.storyTitle} numberOfLines={1}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : (
+                  <View style={styles.storyBoxLargeContainer}>
+                    <TouchableOpacity 
+                      style={styles.storyBoxLarge} 
+                      onPress={() => Alert.alert('Play Video', 'Playing reels...')}
+                      activeOpacity={0.85}
+                    >
+                      <Image 
+                        source={{ uri: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800' }} 
+                        style={styles.storyImageLarge} 
+                        resizeMode="cover"
+                      />
+                      <View style={styles.storyOverlayLarge}>
+                        <View style={styles.storyPlayBtnLarge}>
+                          <Feather name="play" size={24} color="#1A6B5A" style={{ marginLeft: 2 }} />
+                        </View>
+                        <Text style={styles.storyTitleLarge}>See your property in action</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
 
                 {/* Payout Details */}
                 <View style={styles.sectionLabelRow}>
-                  <Text style={styles.sectionLabel}>{i18n.t('host.profile.payoutDetails')}</Text>
+                  <Text style={styles.sectionLabel}>{i18n.t('host.profile.payoutDetails') || 'PAYOUT DETAILS'}</Text>
                   <TouchableOpacity onPress={() => handleEdit('Payout')}>
-                    <Text style={styles.sectionAction}>{i18n.t('host.profile.edit')}</Text>
+                    <Text style={styles.sectionAction}>Edit</Text>
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.payoutRow} onPress={() => handleEdit('Bank')} activeOpacity={0.8}>
-                  <View style={styles.payoutLeft}>
-                    <Feather name="credit-card" size={20} color="#6B7370" />
-                    <Text style={styles.payoutLabel}>UniCredit SPA</Text>
+                {loadingEarnings ? (
+                  <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 12 }} />
+                ) : (
+                  <View style={styles.earningsCard}>
+                    <View style={styles.earningsCol}>
+                      <MaterialCommunityIcons name="wallet-outline" size={20} color="#1A6B5A" style={{ marginBottom: 6 }} />
+                      <Text style={styles.earningsLbl}>Total Earnings</Text>
+                      <Text style={styles.earningsVal}>₹{earnings.totalEarnings.toLocaleString('en-IN')}</Text>
+                    </View>
+                    <View style={styles.earningsDivider} />
+                    <View style={styles.earningsCol}>
+                      <Feather name="calendar" size={20} color="#1A6B5A" style={{ marginBottom: 6 }} />
+                      <Text style={styles.earningsLbl}>This Month</Text>
+                      <Text style={styles.earningsVal}>₹{earnings.thisMonth.toLocaleString('en-IN')}</Text>
+                    </View>
+                    <View style={styles.earningsDivider} />
+                    <View style={styles.earningsCol}>
+                      <Feather name="credit-card" size={20} color="#1A6B5A" style={{ marginBottom: 6 }} />
+                      <Text style={styles.earningsLbl}>Pending Payout</Text>
+                      <Text style={styles.earningsVal}>₹{earnings.pendingPayout.toLocaleString('en-IN')}</Text>
+                    </View>
                   </View>
-                  <Feather name="chevron-right" size={16} color="#6B7370" />
-                </TouchableOpacity>
+                )}
 
-                <TouchableOpacity style={styles.payoutRow} onPress={() => handleEdit('UPI')} activeOpacity={0.8}>
-                  <View style={styles.payoutLeft}>
-                    <Feather name="dollar-sign" size={20} color="#6B7370" />
-                    <Text style={styles.payoutLabel}>UPI ID</Text>
+                {/* Complete your profile CTA */}
+                <View style={styles.ctaCard}>
+                  <View style={styles.ctaIconCircle}>
+                    <Feather name="shield" size={20} color="#1A6B5A" />
                   </View>
-                  <View style={styles.rowCentered}>
-                    <Text style={styles.payoutVal}>@lakshaynagda</Text>
-                    <Feather name="chevron-right" size={16} color="#6B7370" style={styles.chevronRight} />
+                  <View style={styles.ctaMeta}>
+                    <Text style={styles.ctaTitle}>Complete your profile</Text>
+                    <Text style={styles.ctaSubtitle}>Add more details to build trust with travellers and get more bookings.</Text>
                   </View>
-                </TouchableOpacity>
+                  <TouchableOpacity style={styles.ctaButton} onPress={() => handleEdit('CompleteProfile')} activeOpacity={0.8}>
+                    <Text style={styles.ctaButtonText}>Complete Now</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -243,35 +350,22 @@ export default function HostProfileScreen() {
             {activeTab === 'PROPERTIES' && (
               <View>
                 {loadingProps ? (
-                  <ActivityIndicator 
-                    color="#84C9BA" 
-                    size="small"
-                  />
+                  <ActivityIndicator color="#1A6B5A" size="small" />
                 ) : properties.length === 0 ? (
                   <View style={styles.emptyProperties}>
-                    <Feather name="home" 
-                      size={32} color="#6B7370" />
-                    <Text style={styles.emptyText}>
-                      No properties yet
-                    </Text>
-                    <Text style={styles.emptySubText}>
-                      Tap + to list your first property
-                    </Text>
+                    <Feather name="home" size={32} color="#6B7370" />
+                    <Text style={styles.emptyText}>No properties yet</Text>
+                    <Text style={styles.emptySubText}>Tap + to list your first property</Text>
                   </View>
                 ) : (
                   properties.map((property) => (
                     <TouchableOpacity
                       key={property.id}
                       style={styles.propertyCard}
-                      onPress={() => navigation.navigate(
-                        'HostPropertyDetail',
-                        { propertyId: property.id }
-                      )}
+                      onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
                       activeOpacity={0.8}
                     >
-                      {/* Cover Photo */}
-                      {property.photos && 
-                       property.photos.length > 0 ? (
+                      {property.photos && property.photos.length > 0 ? (
                         <Image
                           source={{ uri: property.photos[0] }}
                           style={styles.propertyCardImage}
@@ -279,12 +373,10 @@ export default function HostProfileScreen() {
                         />
                       ) : (
                         <View style={styles.propertyCardImagePlaceholder}>
-                          <Feather name="home" 
-                            size={32} color="#84C9BA" />
+                          <Feather name="home" size={32} color="#1A6B5A" />
                         </View>
                       )}
                       
-                      {/* Status Badge */}
                       <View style={[
                         styles.statusBadge,
                         property.status === 'active' 
@@ -309,18 +401,12 @@ export default function HostProfileScreen() {
                         </Text>
                       </View>
 
-                      {/* Property Info */}
-                      <Text style={styles.propertyCardName}
-                        numberOfLines={1}>
-                        {property.name}
-                      </Text>
-                      <Text style={styles.propertyCardLocation}
-                        numberOfLines={1}>
+                      <Text style={styles.propertyCardName} numberOfLines={1}>{property.name}</Text>
+                      <Text style={styles.propertyCardLocation} numberOfLines={1}>
                         {property.location?.city}, {property.location?.state}
                       </Text>
                       <Text style={styles.propertyCardPrice}>
-                        ₹{property.price_per_night
-                          .toLocaleString('en-IN')}/night
+                        ₹{property.price_per_night.toLocaleString('en-IN')}/night
                       </Text>
                     </TouchableOpacity>
                   ))
@@ -330,65 +416,33 @@ export default function HostProfileScreen() {
 
             {/* REVIEWS TAB */}
             {activeTab === 'REVIEWS' && (
-              <View>
-                {reviews.map((rev) => (
-                  <View key={rev.id} style={styles.reviewCard}>
-                    <View style={styles.reviewHeader}>
-                      <Text style={styles.reviewRating}>{rev.rating}</Text>
-                      <Text style={styles.reviewDate}>{rev.date}</Text>
-                    </View>
-                    <Text style={styles.reviewText}>"{rev.text}"</Text>
-                  </View>
-                ))}
+              <View style={styles.emptyReviewsContainer}>
+                <Feather name="star" size={32} color="#6B7370" />
+                <Text style={styles.emptyReviewsText}>No reviews yet</Text>
               </View>
             )}
 
             {/* SETTINGS TAB */}
             {activeTab === 'SETTINGS' && (
-              <View>
-                <View style={styles.settingsList}>
-                  <TouchableOpacity style={styles.settingsRow} onPress={() => Alert.alert('Edit Profile', 'Edit Profile coming soon!')} activeOpacity={0.7}>
-                    <Text style={styles.settingsLabel}>Edit Profile</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
+              <View style={styles.settingsList}>
+                <TouchableOpacity style={styles.settingsRow} onPress={handleSwitchToGuest} activeOpacity={0.7}>
+                  <View style={styles.settingsLeft}>
+                    <Feather name="repeat" size={18} color="#1A1F1E" style={{ marginRight: 12 }} />
+                    <Text style={styles.settingsLabel}>Switch to Guest Mode</Text>
+                  </View>
+                  <Feather name="chevron-right" size={16} color="#6B7370" />
+                </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.settingsRow} onPress={() => Alert.alert('Notifications', 'Settings notifications coming soon!')} activeOpacity={0.7}>
-                    <Text style={styles.settingsLabel}>Notifications</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.settingsRow} onPress={() => Alert.alert('Payout Settings', 'Payout configuration coming soon!')} activeOpacity={0.7}>
-                    <Text style={styles.settingsLabel}>Payout Settings</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.settingsRow} onPress={() => Alert.alert('Help & Support', 'Help modules coming soon!')} activeOpacity={0.7}>
-                    <Text style={styles.settingsLabel}>Help & Support</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.settingsRow} onPress={handleSwitchToGuest} activeOpacity={0.7}>
-                    <Text style={styles.settingsLabel}>{i18n.t('host.profile.switchGuest')}</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.settingsRow} onPress={handleSignOut} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.settingsRow} onPress={handleSignOut} activeOpacity={0.7}>
+                  <View style={styles.settingsLeft}>
+                    <Feather name="log-out" size={18} color="#D4704A" style={{ marginRight: 12 }} />
                     <Text style={styles.signOutLabel}>Sign Out</Text>
-                    <Text style={styles.chevron}>&gt;</Text>
-                  </TouchableOpacity>
-                </View>
+                  </View>
+                  <Feather name="chevron-right" size={16} color="#6B7370" />
+                </TouchableOpacity>
               </View>
             )}
           </View>
-
-          {/* Guest Mode Switcher Banner (Tabs PROFILE, PROPERTIES, REVIEWS only) */}
-          {activeTab !== 'SETTINGS' && (
-            <View style={styles.switchModeContainer}>
-              <TouchableOpacity style={styles.switchBtn} onPress={handleSwitchToGuest} activeOpacity={0.8}>
-                <Text style={styles.switchBtnText}>{i18n.t('host.profile.switchGuest')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </ScrollView>
       </SafeAreaView>
     </View>

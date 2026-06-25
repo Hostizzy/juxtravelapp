@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -96,6 +96,89 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#FFFFFF',
     fontSize: 9,
+    fontWeight: '700',
+  },
+  // Host Bottom Tab Bar styles (non-floating, full-width, white background with labels)
+  hostContainer: {
+    height: Platform.OS === 'ios' ? 88 : 72,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E8E2D9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+  },
+  hostSideGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    flex: 1,
+  },
+  hostTabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingTop: 6,
+    position: 'relative',
+  },
+  hostIconContainer: {
+    position: 'relative',
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hostTabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  hostDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1A6B5A',
+    marginTop: 2,
+  },
+  hostCenterWrapper: {
+    width: 68,
+    height: 68,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -28, // float up
+    zIndex: 10,
+  },
+  hostCenterButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#D4704A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D4704A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  hostBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#D4704A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  hostBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
     fontWeight: '700',
   },
 });

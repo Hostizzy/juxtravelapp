@@ -111,12 +111,12 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    // Verify this booking belongs to the requesting user
-    if (booking.guest_id !== userId) {
+    // Verify this booking belongs to the requesting user (guest OR host)
+    if (booking.guest_id !== userId && booking.host_id !== userId) {
       throw new UnauthorizedException('Not your booking');
     }
 
-    const [{ data: property }, { data: host }] = await Promise.all([
+    const [{ data: property }, { data: host }, { data: guest }] = await Promise.all([
       this.supabaseService.admin
         .from('properties')
         .select('name, photos, location, host_id')
@@ -124,16 +124,120 @@ export class BookingsService {
         .single(),
       this.supabaseService.admin
         .from('users')
-        .select('name, phone')
+        .select('name')
         .eq('id', booking.host_id)
+        .single(),
+      this.supabaseService.admin
+        .from('users')
+        .select('name')
+        .eq('id', booking.guest_id)
         .single(),
     ]);
 
     return {
       ...booking,
       property: property ?? null,
-      host: host ?? null,
+      host: host ? { name: host.name, phone: null } : null,
+      guest: guest ? { name: guest.name, phone: null } : null,
+    };
+  }
+
+  async getHostBookings(hostId: string) {
+    const { data: bookings, error } = await this.supabaseService.admin
+        .from('bookings')
+        .select('*')
+        .eq('host_id', hostId)
+        .order('created_at', { ascending: false });
+
+    if (error || !bookings) return [];
+    if (bookings.length === 0) return [];
+
+    const guestIds = [...new Set(bookings.map((b) => b.guest_id))];
+    const propertyIds = [...new Set(bookings.map((b) => b.property_id))];
+
+    const [{ data: guests }, { data: properties }] = await Promise.all([
+      this.supabaseService.admin
+        .from('users')
+        .select('id, name')
+        .in('id', guestIds),
+      this.supabaseService.admin
+        .from('properties')
+        .select('id, name, location')
+        .in('id', propertyIds),
+    ]);
+
+    const guestMap = new Map((guests ?? []).map((g) => [g.id, g]));
+    const propertyMap = new Map((properties ?? []).map((p) => [p.id, p]));
+
+    return bookings.map((b) => ({
+      ...b,
+      guest: guestMap.get(b.guest_id) ?? null,
+      property: propertyMap.get(b.property_id) ?? null,
+    }));
+  }
+
+  async getHostEarnings(hostId: string) {
+    const { data: bookings } = await this.supabaseService.admin
+        .from('bookings')
+        .select('host_payout, status, created_at')
+        .eq('host_id', hostId)
+        .in('status', ['confirmed', 'completed']);
+
+    const total = (bookings ?? []).reduce(
+      (sum, b) => sum + (b.host_payout ?? 0), 0
+    );
+
+    const now = new Date();
+    const thisMonth = (bookings ?? [])
+      .filter((b) => {
+        const d = new Date(b.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    const pending = (bookings ?? [])
+      .filter((b) => b.status === 'confirmed')
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    return { 
+      totalEarnings: total, 
+      thisMonth, 
+      pendingPayout: pending 
+    };
+  }
+
+  async getHostStats(hostId: string) {
+    const { data: bookings } = await this.supabaseService.admin
+        .from('bookings')
+        .select('check_in, host_payout, status, created_at')
+        .eq('host_id', hostId);
+
+    const allTimeBookings = (bookings ?? []).length;
+
+    const now = new Date();
+    const checkInsThisMonth = (bookings ?? [])
+      .filter((b) => {
+        const d = new Date(b.check_in);
+        return d.getMonth() === now.getMonth() && 
+          d.getFullYear() === now.getFullYear() &&
+          ['confirmed','completed'].includes(b.status);
+      }).length;
+
+    const earningsThisMonth = (bookings ?? [])
+      .filter((b) => {
+        const d = new Date(b.created_at);
+        return d.getMonth() === now.getMonth() && 
+          d.getFullYear() === now.getFullYear() &&
+          ['confirmed','completed'].includes(b.status);
+      })
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    return { 
+      allTimeBookings, 
+      checkInsThisMonth, 
+      earningsThisMonth 
     };
   }
 }
+
 

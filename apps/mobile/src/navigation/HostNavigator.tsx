@@ -67,12 +67,13 @@ export default function HostNavigator() {
       tabBar={(props) => (
         <FloatingNavBar
           {...props}
+          isHost={true}
           tabs={[
-            { name: 'HostDashboard', icon: 'home' },
-            { name: 'HostBookings', icon: 'calendar' },
+            { name: 'HostDashboard', icon: 'home', label: 'Home' },
+            { name: 'HostBookings', icon: 'calendar', label: 'Bookings' },
             { name: 'HostListProperty', icon: 'plus', isCenter: true },
-            { name: 'HostMessages', icon: 'message-circle', badge: unreadCount },
-            { name: 'HostProfile', icon: 'user' },
+            { name: 'HostMessages', icon: 'message-circle', badge: unreadCount, label: 'Messages' },
+            { name: 'HostProfile', icon: 'user', label: 'Profile' },
           ]}
         />
       )}
