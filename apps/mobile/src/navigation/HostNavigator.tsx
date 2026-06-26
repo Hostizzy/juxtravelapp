@@ -37,7 +37,7 @@ function useUnreadCount(role: 'guest' | 'host') {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) return;
         const conversations = await apiService.get<{ unreadCount: number }[]>(
-          `/conversations?role=${role}`,
+          `/conversations/my?role=${role}`,
           token
         );
         const total = (conversations ?? []).reduce(

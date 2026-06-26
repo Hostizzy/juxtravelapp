@@ -8,6 +8,8 @@ import {
   Alert,
   ImageBackground,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -17,8 +19,10 @@ import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { pickImage } from '../../../services/propertyService';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep1Screen.styles';
+import { SelectModal } from '../../../components/SelectModal/SelectModal';
+import { INDIAN_STATES, INDIAN_STATES_CITIES } from './data/indianStatesAndCities';
 
-type PropertyType = 'Homestay' | 'Farmstay' | 'Villa';
+type PropertyType = string;
 
 export default function ListStep1Screen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -31,11 +35,25 @@ export default function ListStep1Screen() {
   const [selectedType, setSelectedType] = useState<PropertyType>('Homestay');
   const [city, setCity] = useState<string>('');
   const [state, setState] = useState<string>('');
+  const [pincode, setPincode] = useState<string>('');
+  const [stateModalVisible, setStateModalVisible] = useState<boolean>(false);
+  const [cityModalVisible, setCityModalVisible] = useState<boolean>(false);
 
-  const propertyTypes: { type: PropertyType; icon: keyof typeof Feather.glyphMap; iconType: 'feather' | 'mci'; iconMci?: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  const propertyTypes: { type: string; icon: string; iconType: 'feather' | 'mci'; iconMci?: string }[] = [
     { type: 'Homestay', icon: 'home', iconType: 'feather' },
     { type: 'Farmstay', icon: 'home', iconType: 'mci', iconMci: 'sprout' },
     { type: 'Villa', icon: 'home', iconType: 'mci', iconMci: 'office-building' },
+    { type: 'Cottage', icon: 'home', iconType: 'mci', iconMci: 'home-variant' },
+    { type: 'Eco-Lodge', icon: 'home', iconType: 'mci', iconMci: 'leaf' },
+    { type: 'Boutique Hotel', icon: 'home', iconType: 'mci', iconMci: 'domain' },
+    { type: 'Heritage Property', icon: 'home', iconType: 'mci', iconMci: 'castle' },
+    { type: 'Houseboat', icon: 'home', iconType: 'mci', iconMci: 'sail-boat' },
+    { type: 'Treehouse', icon: 'home', iconType: 'mci', iconMci: 'tree' },
+    { type: 'Cabin', icon: 'home', iconType: 'mci', iconMci: 'home-variant-outline' },
+    { type: 'Resort', icon: 'home', iconType: 'mci', iconMci: 'pool' },
+    { type: 'Bungalow', icon: 'home', iconType: 'mci', iconMci: 'home-outline' },
+    { type: 'Apartment', icon: 'home', iconType: 'mci', iconMci: 'apartment' },
+    { type: 'Glamping/Camp', icon: 'home', iconType: 'mci', iconMci: 'tent' },
   ];
 
   const handleBack = () => {
@@ -56,8 +74,12 @@ export default function ListStep1Screen() {
   };
 
   const handleContinue = () => {
-    if (!propertyName || !city || !state) {
-      Alert.alert('Required Fields', 'Please fill in the Property Name, City, and State.');
+    if (!propertyName || !city || !state || !pincode) {
+      Alert.alert('Required Fields', 'Please fill in the Property Name, City, State, and Pincode.');
+      return;
+    }
+    if (pincode.length !== 6) {
+      Alert.alert('Invalid Pincode', 'Pincode must be exactly 6 digits.');
       return;
     }
     navigation.navigate('HostList2', {
@@ -66,13 +88,16 @@ export default function ListStep1Screen() {
       type: selectedType,
       city,
       state,
+      pincode,
       coverPhoto,
     });
   };
 
   const stepNumber = 1;
   const totalSteps = 5;
-  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+  const percentComplete = Math.round(
+    ((stepNumber - 1) / totalSteps) * 100
+  );
 
   return (
     <View style={styles.root}>
@@ -99,7 +124,15 @@ export default function ListStep1Screen() {
         </ImageBackground>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={styles.title}>Tell us about your property</Text>
         <Text style={styles.subtitle}>Start with the basics to help guests find you</Text>
 
@@ -162,7 +195,11 @@ export default function ListStep1Screen() {
 
         {/* PROPERTY TYPE CHIPS */}
         <Text style={styles.sectionLabel}>PROPERTY TYPE</Text>
-        <View style={styles.chipsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContainer}
+        >
           {propertyTypes.map((item) => {
             const isActive = selectedType === item.type;
             return (
@@ -173,9 +210,9 @@ export default function ListStep1Screen() {
                 activeOpacity={0.8}
               >
                 {item.iconType === 'feather' ? (
-                  <Feather name={item.icon} size={16} color={isActive ? '#1A6B5A' : '#6B7370'} />
+                  <Feather name={item.icon as any} size={16} color={isActive ? '#1A6B5A' : '#6B7370'} />
                 ) : (
-                  <MaterialCommunityIcons name={item.iconMci!} size={16} color={isActive ? '#1A6B5A' : '#6B7370'} />
+                  <MaterialCommunityIcons name={item.iconMci as any} size={16} color={isActive ? '#1A6B5A' : '#6B7370'} />
                 )}
                 <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                   {item.type}
@@ -183,30 +220,57 @@ export default function ListStep1Screen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* CITY & STATE */}
         <View style={styles.rowInputs}>
           <View style={styles.halfInputContainer}>
-            <Text style={styles.sectionLabel}>CITY</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="eg. Manali"
-              placeholderTextColor="#6B7370"
-              value={city}
-              onChangeText={setCity}
-            />
+            <Text style={styles.sectionLabel}>STATE</Text>
+            <TouchableOpacity
+              style={styles.inputTouchable}
+              onPress={() => setStateModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.touchableText, !state && styles.placeholderText]}>
+                {state || 'Select State'}
+              </Text>
+              <Feather name="chevron-down" size={16} color="#6B7370" />
+            </TouchableOpacity>
           </View>
           <View style={styles.halfInputContainer}>
-            <Text style={styles.sectionLabel}>STATE</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="eg. HP"
-              placeholderTextColor="#6B7370"
-              value={state}
-              onChangeText={setState}
-            />
+            <Text style={styles.sectionLabel}>CITY</Text>
+            <TouchableOpacity
+              style={styles.inputTouchable}
+              onPress={() => {
+                if (!state) {
+                  Alert.alert('Select State', 'Please select a state first.');
+                  return;
+                }
+                setCityModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.touchableText, !city && styles.placeholderText]}>
+                {city || 'Select City'}
+              </Text>
+              <Feather name="chevron-down" size={16} color="#6B7370" />
+            </TouchableOpacity>
           </View>
+        </View>
+
+        {/* PINCODE */}
+        <Text style={styles.sectionLabel}>PINCODE</Text>
+        <View style={styles.inputContainer}>
+          <Feather name="map-pin" size={20} color="#1A6B5A" style={styles.inputIcon} />
+          <TextInput
+            style={styles.inputField}
+            placeholder="e.g. 110001"
+            placeholderTextColor="#6B7370"
+            keyboardType="numeric"
+            maxLength={6}
+            value={pincode}
+            onChangeText={setPincode}
+          />
         </View>
 
         {/* CONTINUE BUTTON */}
@@ -217,6 +281,28 @@ export default function ListStep1Screen() {
           </View>
         </TouchableOpacity>
       </ScrollView>
+
+      <SelectModal
+        visible={stateModalVisible}
+        title="Select State"
+        options={INDIAN_STATES}
+        selectedOption={state}
+        onSelect={(val) => {
+          setState(val);
+          setCity(''); // Reset city when state changes
+        }}
+        onClose={() => setStateModalVisible(false)}
+      />
+
+      <SelectModal
+        visible={cityModalVisible}
+        title="Select City"
+        options={state ? INDIAN_STATES_CITIES[state] || [] : []}
+        selectedOption={city}
+        onSelect={setCity}
+        onClose={() => setCityModalVisible(false)}
+      />
+      </KeyboardAvoidingView>
     </View>
   );
 }

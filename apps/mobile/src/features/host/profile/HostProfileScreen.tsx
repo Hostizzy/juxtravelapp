@@ -14,10 +14,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../stores/authStore';
 import { apiService } from '../../../services/api';
+import { hostDataCache } from '../../../services/hostDataCache';
 import i18n from '../../../locales/i18n';
 import styles from './HostProfileScreen.styles';
 
@@ -42,10 +44,19 @@ export default function HostProfileScreen() {
   const isVerified = (user as any)?.host_profile?.verified ?? true; // Default to true for host flow unless specified
 
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loadingProps, setLoadingProps] = useState(true);
-  const [earnings, setEarnings] = useState({ totalEarnings: 0, thisMonth: 0, pendingPayout: 0 });
-  const [loadingEarnings, setLoadingEarnings] = useState(true);
+  const [properties, setProperties] = useState<Property[]>(() =>
+    hostDataCache.get<Property[]>('host_profile_properties') ?? []
+  );
+  const [loadingProps, setLoadingProps] = useState(() =>
+    hostDataCache.get<Property[]>('host_profile_properties') === null
+  );
+  const [earnings, setEarnings] = useState<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>(() =>
+    hostDataCache.get<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>('host_earnings') ?? 
+    { totalEarnings: 0, thisMonth: 0, pendingPayout: 0 }
+  );
+  const [loadingEarnings, setLoadingEarnings] = useState(() =>
+    hostDataCache.get<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>('host_earnings') === null
+  );
   const [unreadCount, setUnreadCount] = useState(0);
 
   const tabs: { key: TabType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
@@ -55,15 +66,16 @@ export default function HostProfileScreen() {
     { key: 'SETTINGS', label: 'Settings', icon: 'settings' },
   ];
 
-  const fetchProperties = async () => {
+  const fetchProperties = async (silent = false) => {
     try {
-      setLoadingProps(true);
+      if (!silent) setLoadingProps(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
       
       const props = await apiService.get<Property[]>('/properties/my', token);
       if (props) {
         setProperties(props);
+        hostDataCache.set('host_profile_properties', props);
       }
     } catch (err) {
       console.error('Failed to fetch properties:', err);
@@ -72,20 +84,21 @@ export default function HostProfileScreen() {
     }
   };
 
-  const fetchEarnings = async () => {
+  const fetchEarnings = async (silent = false) => {
     try {
-      setLoadingEarnings(true);
+      if (!silent) setLoadingEarnings(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
 
       const data = await apiService.get<any>('/bookings/earnings', token);
       if (data) {
         setEarnings(data);
+        hostDataCache.set('host_earnings', data);
       }
 
       // Fetch unread count for notifications
       const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations?role=host',
+        '/conversations/my?role=host',
         token
       );
       const total = (conversations ?? []).reduce(
@@ -102,8 +115,11 @@ export default function HostProfileScreen() {
 
   useEffect(() => {
     if (isFocused) {
-      fetchProperties();
-      fetchEarnings();
+      const cachedProps = hostDataCache.get('host_profile_properties');
+      const cachedEarnings = hostDataCache.get('host_earnings');
+
+      fetchProperties(cachedProps !== null);
+      fetchEarnings(cachedEarnings !== null);
     }
   }, [isFocused]);
 
@@ -129,6 +145,7 @@ export default function HostProfileScreen() {
       await supabase.auth.signOut();
       await AsyncStorage.removeItem('user_full_name');
       await AsyncStorage.removeItem('user_phone_number');
+      hostDataCache.clearAll();
       useAuthStore.getState().clearAuth();
       navigation.replace('Auth');
     } catch (e) {
@@ -140,7 +157,8 @@ export default function HostProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
         
         {/* HERO HEADER */}
         <View style={styles.heroHeader}>
@@ -152,49 +170,51 @@ export default function HostProfileScreen() {
           />
           <View style={styles.heroOverlay} />
 
-          {/* Logo & Notification Bell */}
-          <View style={styles.topRow}>
-            <View style={styles.logoRow}>
-              <MaterialCommunityIcons name="leaf" size={18} color="#1A6B5A" />
-              <Text style={styles.logoText}>JuxTravel Host</Text>
+          <SafeAreaView edges={['top']} style={styles.safeHeader}>
+            {/* Logo & Notification Bell */}
+            <View style={styles.topRow}>
+              <View style={styles.logoRow}>
+                <MaterialCommunityIcons name="leaf" size={18} color="#1A6B5A" />
+                <Text style={styles.logoText}>JuxTravel Host</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.bellBtn} 
+                onPress={() => Alert.alert('Notifications', `You have ${unreadCount} unread messages.`)} 
+                activeOpacity={0.7}
+              >
+                <Feather name="bell" size={20} color="#1A1F1E" />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={styles.bellBtn} 
-              onPress={() => Alert.alert('Notifications', `You have ${unreadCount} unread messages.`)} 
-              activeOpacity={0.7}
-            >
-              <Feather name="bell" size={20} color="#1A1F1E" />
-              {unreadCount > 0 && (
-                <View style={styles.bellBadge}>
-                  <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+
+            {/* Avatar and Verification */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>{getInitials(userName)}</Text>
+                </View>
+                <View style={styles.checkBadge}>
+                  <Feather name="check" size={12} color="#FFFFFF" />
+                </View>
+              </View>
+              <Text style={styles.profileName}>{userName}</Text>
+              
+              {isVerified ? (
+                <View style={[styles.verifiedPill, styles.verifiedActive]}>
+                  <Feather name="check" size={10} color="#1A6B5A" style={{ marginRight: 4 }} />
+                  <Text style={styles.verifiedText}>VERIFIED HOST</Text>
+                </View>
+              ) : (
+                <View style={[styles.verifiedPill, styles.verifiedPending]}>
+                  <Text style={styles.verifiedTextPending}>Pending Verification</Text>
                 </View>
               )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Avatar and Verification */}
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>{getInitials(userName)}</Text>
-              </View>
-              <View style={styles.checkBadge}>
-                <Feather name="check" size={12} color="#FFFFFF" />
-              </View>
             </View>
-            <Text style={styles.profileName}>{userName}</Text>
-            
-            {isVerified ? (
-              <View style={[styles.verifiedPill, styles.verifiedActive]}>
-                <Feather name="check" size={10} color="#1A6B5A" style={{ marginRight: 4 }} />
-                <Text style={styles.verifiedText}>VERIFIED HOST</Text>
-              </View>
-            ) : (
-              <View style={[styles.verifiedPill, styles.verifiedPending]}>
-                <Text style={styles.verifiedTextPending}>Pending Verification</Text>
-              </View>
-            )}
-          </View>
+          </SafeAreaView>
         </View>
 
         {/* Tab Row */}
@@ -444,7 +464,7 @@ export default function HostProfileScreen() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

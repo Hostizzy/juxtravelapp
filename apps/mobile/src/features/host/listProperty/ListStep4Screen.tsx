@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Alert,
   ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -15,7 +17,7 @@ import { RootStackParamList } from '../../../navigation/RootNavigator';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep4Screen.styles';
 
-type ActivityType = 'Cooking Class' | 'Surfing' | 'Farm Visit' | 'Yoga Retreat';
+type ActivityType = string;
 
 type ListStep4RouteProp = RouteProp<RootStackParamList, 'HostList4'>;
 
@@ -25,12 +27,20 @@ export default function ListStep4Screen() {
   const step3Data = route.params;
 
   // States
-  const [selectedActivities, setSelectedActivities] = useState<ActivityType[]>(['Cooking Class', 'Farm Visit']);
+  const [selectedActivities, setSelectedActivities] = useState<ActivityType[]>(['Cooking Classes', 'Farm Activities']);
   const [generatedStory, setGeneratedStory] = useState<string>(
     'Wake up to the sounds of nature. As your host, I will curate an organic farm breakfast for you, followed by a quiet forest walk through our private woods. Spend your afternoon reading by the stone fireplace...'
   );
+  const [showAllActivities, setShowAllActivities] = useState<boolean>(false);
 
-  const activities: ActivityType[] = ['Cooking Class', 'Surfing', 'Farm Visit', 'Yoga Retreat'];
+  const allActivities: ActivityType[] = [
+    'Trekking', 'Bonfire', 'Bird Watching', 'Nature Walks', 'Stargazing', 
+    'Cycling', 'Fishing', 'Boating', 'Swimming', 'Yoga Sessions', 
+    'Cooking Classes', 'Farm Activities', 'Organic Farming Tour', 'Horse Riding', 'Wildlife Safari', 
+    'Local Sightseeing Tours', 'Cultural Programs', 'Photography Tours', 'Campfire Stories', 'Outdoor Games', 
+    'Indoor Board Games', 'Spa/Wellness', 'River Rafting', 'Paragliding', 'Rock Climbing', 
+    'Village Walks', 'Heritage Walks', 'Food Tours', 'Wine/Local Brew Tasting', 'Meditation Sessions'
+  ];
 
   const handleBack = () => {
     navigation.goBack();
@@ -61,13 +71,13 @@ export default function ListStep4Screen() {
     );
   };
 
-  const handleVoiceRecord = () => {
-    Alert.alert('Voice Storyteller', 'Voice recording module initialized! Speak into your microphone...');
-  };
-
   const stepNumber = 4;
   const totalSteps = 5;
-  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+  const percentComplete = Math.round(
+    ((stepNumber - 1) / totalSteps) * 100
+  );
+  
+  const visibleActivities = showAllActivities ? allActivities : allActivities.slice(0, 8);
 
   return (
     <View style={styles.root}>
@@ -94,14 +104,22 @@ export default function ListStep4Screen() {
         </ImageBackground>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={styles.title}>{i18n.t('host.listProperty.experiencesTitle') || 'Highlight the guest experience'}</Text>
         <Text style={styles.subtitle}>{i18n.t('host.listProperty.experiencesSub') || 'Add local activities and details to welcome your guests.'}</Text>
 
         {/* ACTIVITIES */}
         <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.activities') || 'ACTIVITIES'}</Text>
         <View style={styles.chipsWrap}>
-          {activities.map((act) => (
+          {visibleActivities.map((act) => (
             <TouchableOpacity
               key={act}
               style={[
@@ -122,6 +140,17 @@ export default function ListStep4Screen() {
               </Text>
             </TouchableOpacity>
           ))}
+          
+          {/* Toggle More / Less chip */}
+          <TouchableOpacity
+            style={[styles.chip, styles.chipUnselected]}
+            onPress={() => setShowAllActivities(!showAllActivities)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.chipTextUnselected}>
+              {showAllActivities ? 'Show Less' : '+ More'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* A DAY HERE */}
@@ -175,18 +204,6 @@ export default function ListStep4Screen() {
           <Text style={styles.updateStoryText}>{i18n.t('host.listProperty.updateStory') || 'Update Story'}</Text>
         </TouchableOpacity>
 
-        {/* VOICE STORYTELLER */}
-        <Text style={styles.voiceLabel}>{i18n.t('host.listProperty.voiceStoryteller') || 'Voice Storyteller'}</Text>
-        <Text style={styles.voiceSub}>{i18n.t('host.listProperty.voiceStorySubtitle') || 'Tell your story and let AI write a beautiful description for your home.'}</Text>
-
-        <TouchableOpacity style={styles.startWritingBtn} onPress={handleVoiceRecord} activeOpacity={0.8}>
-          <Text style={styles.startWritingText}>🎙️ {i18n.t('host.listProperty.startWriting') || 'Record voice'}</Text>
-        </TouchableOpacity>
-
-        <View style={styles.previewPlaceholder}>
-          <Feather name="image" size={32} color="#84C9BA" />
-        </View>
-
         {/* BOTTOM NAV ROWS */}
         <View style={styles.bottomRow}>
           <TouchableOpacity style={styles.outlineBtn} onPress={handleBack} activeOpacity={0.8}>
@@ -198,6 +215,7 @@ export default function ListStep4Screen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

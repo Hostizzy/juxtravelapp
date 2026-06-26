@@ -8,15 +8,19 @@ import {
   ActivityIndicator,
   Platform,
   ToastAndroid,
+  ImageBackground,
+  StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { apiService } from '../../../services/api';
+import { hostDataCache } from '../../../services/hostDataCache';
 import i18n from '../../../locales/i18n';
 import styles from './HostBookingsScreen.styles';
 
@@ -51,22 +55,29 @@ export default function HostBookingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
   const [activeTab, setActiveTab] = useState<TabType>('all');
-  const [bookings, setBookings] = useState<BookingItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<BookingItem[]>(() =>
+    hostDataCache.get('host_bookings_list') ?? []
+  );
+  const [loading, setLoading] = useState(() =>
+    hostDataCache.get('host_bookings_list') === null
+  );
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
 
       const data = await apiService.get<BookingItem[]>('/bookings/host-bookings', token);
-      setBookings(data ?? []);
+      if (data) {
+        setBookings(data);
+        hostDataCache.set('host_bookings_list', data);
+      }
 
       // Fetch unread messages count
       const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations?role=host',
+        '/conversations/my?role=host',
         token
       );
       const total = (conversations ?? []).reduce(
@@ -83,7 +94,12 @@ export default function HostBookingsScreen() {
 
   useEffect(() => {
     if (isFocused) {
-      fetchBookings();
+      const cached = hostDataCache.get('host_bookings_list');
+      if (cached !== null) {
+        fetchBookings(true);
+      } else {
+        fetchBookings(false);
+      }
     }
   }, [isFocused]);
 
@@ -190,25 +206,52 @@ export default function HostBookingsScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Top Header */}
-        <View style={styles.topBar}>
-          <View>
-            <Text style={styles.topBarTitle}>Bookings</Text>
-            <Text style={styles.topBarSubtitle}>Manage and track all your bookings</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.bellButton} 
-            onPress={() => Alert.alert('Notifications', `You have ${unreadCount} unread messages.`)} 
-            activeOpacity={0.7}
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerWrapper}>
+          <ImageBackground
+            source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800' }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
           >
-            <Feather name="bell" size={22} color="#1A1F1E" />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount}</Text>
+            <LinearGradient
+              colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.65)']}
+              style={StyleSheet.absoluteFillObject}
+            >
+              <View style={styles.headerTopRow}>
+                {navigation.canGoBack() ? (
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="arrow-left" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ width: 40 }} />
+                )}
+                
+                <View style={styles.headerTitleContainer}>
+                  <Text style={styles.headerTitle}>Bookings</Text>
+                  <Text style={styles.headerSubtitle} numberOfLines={1}>Manage and track all your bookings</Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.bellButton} 
+                  onPress={() => Alert.alert('Notifications', `You have ${unreadCount} unread messages.`)} 
+                  activeOpacity={0.7}
+                >
+                  <Feather name="bell" size={20} color="#FFFFFF" />
+                  {unreadCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
               </View>
-            )}
-          </TouchableOpacity>
+            </LinearGradient>
+          </ImageBackground>
         </View>
 
         {/* Tabs */}
@@ -315,25 +358,22 @@ export default function HostBookingsScreen() {
 
                   {/* Bottom row */}
                   <View style={styles.cardFooter}>
-                    <View style={styles.footerLeft}>
-                      <TouchableOpacity
-                        style={styles.messageBtn}
-                        onPress={() => handleMessageGuest(booking.id, guestName, propertyName)}
-                        activeOpacity={0.7}
-                      >
-                        <MaterialCommunityIcons name="whatsapp" size={16} color="#1A6B5A" style={{ marginRight: 4 }} />
-                        <Text style={styles.messageBtnText}>WhatsApp Guest</Text>
-                      </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.messageIconBtn}
+                      onPress={() => handleMessageGuest(booking.id, guestName, propertyName)}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="message-circle" size={20} color="#1A6B5A" />
+                    </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={styles.detailsBtn}
-                        onPress={() => handleViewDetails(booking.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.detailsBtnText}>View Details</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.amountText}>₹{booking.total_amount.toLocaleString('en-IN')}</Text>
+                    <TouchableOpacity
+                      style={styles.detailsBtn}
+                      onPress={() => handleViewDetails(booking.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.detailsBtnText}>View Details</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.amountText} numberOfLines={1}>₹{booking.total_amount.toLocaleString('en-IN')}</Text>
                   </View>
                 </View>
               );
@@ -345,7 +385,7 @@ export default function HostBookingsScreen() {
         <TouchableOpacity style={styles.fab} onPress={handleAddNew} activeOpacity={0.8}>
           <Feather name="plus" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

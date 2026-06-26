@@ -11,9 +11,7 @@ export default StyleSheet.create({
   },
   // Shared Header Styles
   headerWrapper: {
-    height: 240,
-    borderBottomLeftRadius: 100, // swoop curve
-    borderBottomRightRadius: 0,
+    height: 120,
     overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
@@ -28,7 +26,7 @@ export default StyleSheet.create({
   headerContent: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 56,
+    paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
@@ -60,6 +58,7 @@ export default StyleSheet.create({
   },
   progressBarContainer: {
     height: 4,
+    marginTop: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     overflow: 'hidden',
@@ -92,15 +91,15 @@ export default StyleSheet.create({
     fontFamily: 'monospace',
     color: '#6B7370',
     letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 12,
+    marginTop: 24,
   },
   // Chips
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -4,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   chip: {
     paddingHorizontal: 16,
@@ -127,7 +126,7 @@ export default StyleSheet.create({
   },
   // Timeline Scheduler
   timelineContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   timelineRow: {
     flexDirection: 'row',
@@ -187,8 +186,8 @@ export default StyleSheet.create({
   aiStoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 24,
+    marginBottom: 12,
   },
   aiLabel: {
     fontSize: 9,
@@ -204,7 +203,7 @@ export default StyleSheet.create({
     borderColor: '#E8E2D9',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 24,
   },
   storyText: {
     fontSize: 14,
@@ -225,45 +224,6 @@ export default StyleSheet.create({
     color: '#D4704A',
     fontSize: 11,
     fontWeight: '700',
-  },
-  // Voice Storyteller
-  voiceLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1F1E',
-    marginBottom: 4,
-    marginTop: 16,
-  },
-  voiceSub: {
-    fontSize: 12,
-    color: '#6B7370',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  startWritingBtn: {
-    backgroundColor: '#1E2B25',
-    borderRadius: 100,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 20,
-  },
-  startWritingText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  previewPlaceholder: {
-    height: 160,
-    backgroundColor: '#FAF8F4',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
   },
   // Bottom Buttons Row
   bottomRow: {

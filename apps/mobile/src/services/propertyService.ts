@@ -10,12 +10,15 @@ export interface PropertyFormData {
   type: string;
   city: string;
   state: string;
+  pincode?: string;
   coverPhoto?: string;
   // Step 2
   address: string;
   maxGuests: number;
   rooms: number;
   comfortableGuests: number;
+  bathrooms?: number;
+  beds?: number;
   pricePerNight: number;
   amenities: string[];
   honestNotes: string;
@@ -50,54 +53,68 @@ export const pickImage = async (): Promise<string | null> => {
 
 export const uploadPhoto = async (
   uri: string,
-  bucket: string = 'property-photos'
+  bucket: string = 'property-photos',
+  maxRetries: number = 3
 ): Promise<string | null> => {
-  try {
-    const token = await SecureStore.getItemAsync('access_token');
-    
-    if (!token) return null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return null;
 
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://10.0.2.2:3000/api/v1';
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://10.0.2.2:3000/api/v1';
 
-    // Create form data
-    const formData = new FormData();
-    formData.append('photo', {
-      uri,
-      type: 'image/jpeg',
-      name: `photo_${Date.now()}.jpg`,
-    } as unknown as Blob);
+      // Create form data
+      const formData = new FormData();
+      formData.append('photo', {
+        uri,
+        type: 'image/jpeg',
+        name: `photo_${Date.now()}.jpg`,
+      } as unknown as Blob);
 
-    const response = await fetch(
-      `${backendUrl}/properties/upload-photo`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
+      const response = await fetch(
+        `${backendUrl}/properties/upload-photo`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (attempt === maxRetries) {
+          console.error(`❌ Upload FAILED after ${maxRetries} attempts:`, data);
+          return null;
+        }
+        console.warn(`⚠️ Upload attempt ${attempt}/${maxRetries} failed, retrying...`);
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        continue;
       }
-    );
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('Upload error:', data);
-      return null;
+      console.log(
+        `✅ Upload succeeded${attempt > 1 ? ` (on attempt ${attempt}/${maxRetries})` : ''}:`,
+        data.data.url
+      );
+      return data.data.url;
+
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`❌ Upload FAILED after ${maxRetries} attempts (network error):`, error);
+        return null;
+      }
+      console.warn(`⚠️ Upload attempt ${attempt}/${maxRetries} hit a network blip, retrying in ${attempt}s...`);
+      await new Promise(r => setTimeout(r, 1000 * attempt));
     }
-
-    console.log('Upload success:', data.data.url);
-    return data.data.url;
-    
-  } catch (error) {
-    console.error('Photo upload failed:', error);
-    return null;
   }
+  return null;
 };
 
 export const submitProperty = async (
   formData: PropertyFormData
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; id?: string; error?: string }> => {
   try {
     const token = await SecureStore.getItemAsync('access_token');
     
@@ -108,7 +125,7 @@ export const submitProperty = async (
       };
     }
 
-    await apiService.post(
+    const result = await apiService.post<{ id: string }>(
       '/properties',
       {
         name: formData.name,
@@ -118,11 +135,14 @@ export const submitProperty = async (
           address: formData.address,
           city: formData.city,
           state: formData.state,
+          pincode: formData.pincode,
         },
         capacity: {
           rooms: formData.rooms,
           maxGuests: formData.maxGuests,
           comfortableGuests: formData.comfortableGuests,
+          bathrooms: formData.bathrooms,
+          beds: formData.beds,
         },
         pricePerNight: formData.pricePerNight,
         weekendPrice: formData.weekendPrice,
@@ -138,12 +158,12 @@ export const submitProperty = async (
       token
     );
 
-    return { success: true };
+    return { success: true, id: result.id };
   } catch (error) {
     console.error('Submit property error:', error);
     return { 
       success: false, 
-      error: 'Failed to submit property' 
+      error: (error as Error).message || 'Failed to submit property'
     };
   }
 };

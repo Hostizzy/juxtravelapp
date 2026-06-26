@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -112,55 +114,27 @@ export default function ListStep5Screen() {
     navigation.replace('HostApp');
   };
 
-  const handleSubmitReview = async () => {
-    if (loading) return;
+  const proceedWithSubmission = async (urls: string[], coverUrl: string) => {
     setLoading(true);
     try {
-      // 1. Upload cover photo if present
-      let uploadedCoverUrl = '';
-      if (allData.coverPhoto) {
-        console.log('Uploading cover photo:', allData.coverPhoto);
-        const url = await uploadPhoto(allData.coverPhoto);
-        if (!url) {
-          Alert.alert('Upload Failed', 'Failed to upload cover photo. Please try again.');
-          setLoading(false);
-          return;
-        }
-        uploadedCoverUrl = url;
-      }
-
-      // 2. Upload other photos
-      const uploadedUrls: string[] = [];
-      if (allData.photos && allData.photos.length > 0) {
-        console.log(`Uploading ${allData.photos.length} photos...`);
-        for (const photoUri of allData.photos) {
-          const url = await uploadPhoto(photoUri);
-          if (url) {
-            uploadedUrls.push(url);
-          } else {
-            Alert.alert('Upload Failed', 'Failed to upload one of the property photos. Please try again.');
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      // 3. Submit to backend
       const result = await submitProperty({
         name: allData.name,
         tagline: allData.tagline,
         type: allData.type,
         city: allData.city,
         state: allData.state,
-        coverPhoto: uploadedCoverUrl || undefined,
+        pincode: allData.pincode,
+        coverPhoto: coverUrl || undefined,
         address: allData.address,
         maxGuests: allData.maxGuests,
         rooms: allData.rooms,
         comfortableGuests: allData.comfortableGuests,
+        bathrooms: allData.bathrooms,
+        beds: allData.beds,
         pricePerNight: parseFloat(basePrice) || 0,
         amenities: allData.amenities,
         honestNotes: allData.honestNotes,
-        photos: uploadedUrls,
+        photos: urls,
         activities: allData.activities,
         hostStory: allData.hostStory,
         minimumStay: minStay,
@@ -169,7 +143,13 @@ export default function ListStep5Screen() {
       });
 
       if (result.success) {
-        navigation.navigate('HostReviewPending');
+        navigation.navigate('HostReviewPending', {
+          propertyId: result.id ?? '',
+          propertyName: allData.name,
+          propertyPhoto: coverUrl || urls[0] || '',
+          propertyType: allData.type,
+          propertyCity: allData.city,
+        });
       } else {
         Alert.alert('Error', result.error || 'Failed to submit property.');
       }
@@ -181,9 +161,83 @@ export default function ListStep5Screen() {
     }
   };
 
+  const handleSubmitReview = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      // 1. Upload cover photo if present
+      let uploadedCoverUrl = '';
+      if (allData.coverPhoto) {
+        console.log('Uploading cover photo:', allData.coverPhoto);
+        const url = await uploadPhoto(allData.coverPhoto);
+        if (!url) {
+          // Don't block - show warning, let user decide
+          const proceed = await new Promise<boolean>((resolve) => {
+            Alert.alert(
+              'Cover Photo Upload Failed',
+              'We could not upload your cover photo due to a network issue. You can submit without it for now and add it later from your property settings, or go back and check your connection.',
+              [
+                { text: 'Go Back', onPress: () => resolve(false), style: 'cancel' },
+                { text: 'Submit Without Cover Photo', onPress: () => resolve(true) },
+              ]
+            );
+          });
+          if (!proceed) {
+            setLoading(false);
+            return;
+          }
+          // uploadedCoverUrl stays empty string, submission continues
+        } else {
+          uploadedCoverUrl = url;
+        }
+      }
+
+      // 2. Upload other photos
+      const uploadedUrls: string[] = [];
+      const failedUploads: number[] = [];
+
+      if (allData.photos && allData.photos.length > 0) {
+        console.log(`Uploading ${allData.photos.length} photos...`);
+        for (let i = 0; i < allData.photos.length; i++) {
+          const url = await uploadPhoto(allData.photos[i]);
+          if (url) {
+            uploadedUrls.push(url);
+          } else {
+            failedUploads.push(i + 1);
+          }
+        }
+      }
+
+      if (failedUploads.length > 0) {
+        Alert.alert(
+          'Some photos failed',
+          `Photo(s) ${failedUploads.join(', ')} could not be uploaded due to a network issue. You can continue without them or go back and retry.`,
+          [
+            { text: 'Go Back', style: 'cancel' },
+            { 
+              text: 'Continue Anyway', 
+              onPress: () => proceedWithSubmission(uploadedUrls, uploadedCoverUrl) 
+            },
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+
+      // If no failures, proceed normally
+      await proceedWithSubmission(uploadedUrls, uploadedCoverUrl);
+    } catch (error) {
+      console.error('Submission failed:', error);
+      Alert.alert('Error', 'Failed to submit. Try again.');
+      setLoading(false);
+    }
+  };
+
   const stepNumber = 5;
   const totalSteps = 5;
-  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+  const percentComplete = Math.round(
+    ((stepNumber - 1) / totalSteps) * 100
+  );
 
   return (
     <View style={styles.root}>
@@ -215,15 +269,23 @@ export default function ListStep5Screen() {
         </ImageBackground>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={styles.title}>{i18n.t('host.listProperty.availabilityTitle') || 'Set availability and rules'}</Text>
 
         {/* AVAILABLE UNITS TOGGLE */}
         <View style={styles.toggleRow}>
           <Text style={styles.toggleText}>{i18n.t('host.listProperty.availableUnits') || 'Available Units'}</Text>
           <Switch
-            trackColor={{ false: '#E8E2D9', true: '#FAF8F4' }}
-            thumbColor={availableUnits ? '#D4704A' : '#6B7370'}
+            trackColor={{ false: '#E8E2D9', true: '#1A6B5A' }}
+            thumbColor="#FFFFFF"
             ios_backgroundColor="#E8E2D9"
             onValueChange={setAvailableUnits}
             value={availableUnits}
@@ -286,7 +348,7 @@ export default function ListStep5Screen() {
         <View style={styles.counterRow}>
           <View>
             <Text style={styles.counterTitle}>{i18n.t('host.listProperty.minimumStay') || 'Minimum Stay'}</Text>
-            <Text style={styles.requiredNights}>required nights</Text>
+            <Text style={styles.requiredNights}>{i18n.t('host.listProperty.minimumStaySubtext') || 'required nights'}</Text>
           </View>
           <View style={styles.counterContainer}>
             <TouchableOpacity onPress={() => setMinStay((s) => Math.max(1, s - 1))}>
@@ -307,8 +369,8 @@ export default function ListStep5Screen() {
         <View style={styles.toggleRow}>
           <Text style={styles.toggleText}>{i18n.t('host.listProperty.weekendPricing') || 'Weekend Pricing'}</Text>
           <Switch
-            trackColor={{ false: '#E8E2D9', true: '#FAF8F4' }}
-            thumbColor={weekendEnabled ? '#D4704A' : '#6B7370'}
+            trackColor={{ false: '#E8E2D9', true: '#1A6B5A' }}
+            thumbColor="#FFFFFF"
             ios_backgroundColor="#E8E2D9"
             onValueChange={setWeekendEnabled}
             value={weekendEnabled}
@@ -402,6 +464,7 @@ export default function ListStep5Screen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

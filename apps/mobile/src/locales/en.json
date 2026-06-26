@@ -287,6 +287,8 @@
       "availabilityTitle": "Availability & Pricing",
       "availableUnits": "AVAILABLE UNITS",
       "minStay": "MINIMUM STAY",
+      "minimumStay": "Minimum Stay",
+      "minimumStaySubtext": "Required nights for booking",
       "requiredNights": "Required nights",
       "weekendPricing": "Weekend pricing",
       "cancellationPolicy": "CANCELLATION POLICY",

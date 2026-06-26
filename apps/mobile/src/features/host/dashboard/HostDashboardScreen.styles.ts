@@ -6,7 +6,7 @@ export default StyleSheet.create({
     backgroundColor: '#FAF8F4',
   },
   headerContainer: {
-    height: 290,
+    height: 250,
     backgroundColor: '#0F1714',
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
@@ -24,7 +24,7 @@ export default StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 15,
     paddingHorizontal: 24,
   },
   headerTopRow: {
@@ -71,8 +71,8 @@ export default StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 16,
+    gap: 5,
+    marginTop: 5,
   },
   statCard: {
     flex: 1,
@@ -80,8 +80,8 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2D5A42',
     borderRadius: 16,
-    padding: 16,
-    height: 110,
+    padding: 12,
+    minHeight: 110,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },

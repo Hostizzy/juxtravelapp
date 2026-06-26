@@ -295,6 +295,8 @@
       "availabilityTitle": "उपलब्धता और मूल्य निर्धारण",
       "availableUnits": "उपलब्ध इकाइयां",
       "minStay": "न्यूनतम प्रवास",
+      "minimumStay": "न्यूनतम ठहराव",
+      "minimumStaySubtext": "बुकिंग के लिए आवश्यक रातें",
       "requiredNights": "Required nights",
       "weekendPricing": "सप्ताहांत मूल्य निर्धारण",
       "cancellationPolicy": "रद्द करने की नीति",

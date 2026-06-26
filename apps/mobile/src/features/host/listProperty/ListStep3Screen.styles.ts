@@ -13,9 +13,7 @@ export default StyleSheet.create({
   },
   // Shared Header Styles
   headerWrapper: {
-    height: 240,
-    borderBottomLeftRadius: 100, // swoop curve
-    borderBottomRightRadius: 0,
+    height: 120,
     overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
@@ -30,7 +28,7 @@ export default StyleSheet.create({
   headerContent: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 56,
+    paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
@@ -62,6 +60,7 @@ export default StyleSheet.create({
   },
   progressBarContainer: {
     height: 4,
+    marginTop: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     overflow: 'hidden',
@@ -92,7 +91,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 12,
   },
   sectionLabel: {
@@ -108,24 +107,40 @@ export default StyleSheet.create({
     color: '#6B7370',
   },
   // Photos Grid
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+  gridTip: {
+    fontSize: 12,
+    color: '#6B7370',
+    marginBottom: 24,
+    marginTop: 8,
   },
-  photoSquare: {
-    width: (screenWidth - 48 - 16) / 3,
-    aspectRatio: 1.0,
+  // Photos Horizontal Scroll and Upload Tile
+  horizontalScrollPhotos: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingBottom: 8,
+    marginBottom: 24,
+  },
+  photoSquareLarge: {
+    width: 140,
+    height: 140,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8E2D9',
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
     position: 'relative',
   },
-  removeBtn: {
+  photoSquareLargeDashed: {
+    width: 140,
+    height: 140,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeBtnLarge: {
     position: 'absolute',
     top: -5,
     right: -5,
@@ -137,29 +152,6 @@ export default StyleSheet.create({
     justifyContent: 'center',
     elevation: 3,
     zIndex: 10,
-  },
-  gridTip: {
-    fontSize: 12,
-    color: '#6B7370',
-    marginBottom: 24,
-  },
-  // Reels Grid
-  reelsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  reelSquare: {
-    width: (screenWidth - 48 - 12) / 2,
-    height: 120,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
   },
   // Instagram Sync Card
   instaCard: {
@@ -216,7 +208,7 @@ export default StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   infoIcon: {
     marginRight: 8,

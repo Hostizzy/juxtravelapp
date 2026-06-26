@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#0F1714',
   },
   container: {
     flex: 1,
@@ -11,32 +11,27 @@ export default StyleSheet.create({
   },
   heroHeader: {
     height: 240,
-    backgroundColor: '#FAF8F4',
-    justifyContent: 'flex-end',
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
     overflow: 'hidden',
     position: 'relative',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E2D9',
   },
   heroBgImage: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.12,
+    opacity: 0.6,
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FAF8F4',
     opacity: 0.6,
   },
+  safeHeader: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   topRow: {
-    position: 'absolute',
-    top: 16,
-    left: 24,
-    right: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 16,
     zIndex: 10,
   },
   logoRow: {
@@ -78,7 +73,7 @@ export default StyleSheet.create({
   },
   avatarSection: {
     alignItems: 'center',
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
   avatarWrapper: {
     position: 'relative',

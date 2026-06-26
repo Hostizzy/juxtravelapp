@@ -11,9 +11,7 @@ export default StyleSheet.create({
   },
   // Shared Header Styles
   headerWrapper: {
-    height: 240,
-    borderBottomLeftRadius: 100, // swoop curve
-    borderBottomRightRadius: 0,
+    height: 120,
     overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
@@ -28,7 +26,7 @@ export default StyleSheet.create({
   headerContent: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 56,
+    paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
@@ -60,6 +58,7 @@ export default StyleSheet.create({
   },
   progressBarContainer: {
     height: 4,
+    marginTop: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     overflow: 'hidden',
@@ -78,7 +77,7 @@ export default StyleSheet.create({
     fontWeight: '800',
     fontFamily: 'serif',
     color: '#1A1F1E',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   sectionLabel: {
     fontSize: 9,
@@ -86,8 +85,8 @@ export default StyleSheet.create({
     fontFamily: 'monospace',
     color: '#6B7370',
     letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 12,
+    marginTop: 24,
   },
   // Toggle row
   toggleRow: {
@@ -97,7 +96,7 @@ export default StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E2D9',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   toggleText: {
     fontSize: 16,
@@ -111,7 +110,7 @@ export default StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E8E2D9',
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: '#1A1F1E',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -186,7 +185,7 @@ export default StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E2D9',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   counterTitle: {
     fontSize: 15,
@@ -242,7 +241,7 @@ export default StyleSheet.create({
     borderRadius: 12,
     height: 48,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputCurrency: {
     fontSize: 15,
@@ -264,7 +263,7 @@ export default StyleSheet.create({
     borderColor: '#E8E2D9',
     borderRadius: 22,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 24,
   },
   radioSelected: {
     borderColor: '#D4704A',

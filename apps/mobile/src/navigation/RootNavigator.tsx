@@ -130,6 +130,7 @@ export type RootStackParamList = {
     type: string;
     city: string;
     state: string;
+    pincode?: string;
     coverPhoto?: string;
   };
   HostList3: {
@@ -138,11 +139,14 @@ export type RootStackParamList = {
     type: string;
     city: string;
     state: string;
+    pincode?: string;
     coverPhoto?: string;
     address: string;
     rooms: number;
     maxGuests: number;
     comfortableGuests: number;
+    bathrooms?: number;
+    beds?: number;
     pricePerNight: number;
     amenities: string[];
     honestNotes: string;
@@ -153,11 +157,14 @@ export type RootStackParamList = {
     type: string;
     city: string;
     state: string;
+    pincode?: string;
     coverPhoto?: string;
     address: string;
     rooms: number;
     maxGuests: number;
     comfortableGuests: number;
+    bathrooms?: number;
+    beds?: number;
     pricePerNight: number;
     amenities: string[];
     honestNotes: string;
@@ -170,11 +177,14 @@ export type RootStackParamList = {
     type: string;
     city: string;
     state: string;
+    pincode?: string;
     coverPhoto?: string;
     address: string;
     rooms: number;
     maxGuests: number;
     comfortableGuests: number;
+    bathrooms?: number;
+    beds?: number;
     pricePerNight: number;
     amenities: string[];
     honestNotes: string;
@@ -183,7 +193,13 @@ export type RootStackParamList = {
     activities: string[];
     hostStory: string;
   };
-  HostReviewPending: undefined;
+  HostReviewPending: {
+    propertyId: string;
+    propertyName: string;
+    propertyPhoto: string;
+    propertyType: string;
+    propertyCity: string;
+  };
   HostApp: undefined;
   MatchResults: {
     destination: string;

@@ -2,7 +2,8 @@ import {
   Injectable, 
   Logger,
   NotFoundException,
-  UnauthorizedException
+  UnauthorizedException,
+  BadRequestException
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -19,6 +20,11 @@ export class PropertiesService {
   async uploadPhoto(
     file: Express.Multer.File
   ): Promise<{ url: string }> {
+    if (!file) {
+      this.logger.error('No file uploaded in request');
+      throw new BadRequestException('No file uploaded');
+    }
+
     const fileName = `${Date.now()}_${Math.random()
       .toString(36).substring(7)}.jpg`;
 

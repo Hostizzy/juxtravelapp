@@ -11,9 +11,7 @@ export default StyleSheet.create({
   },
   // Shared Header Styles
   headerWrapper: {
-    height: 240,
-    borderBottomLeftRadius: 100, // swoop curve
-    borderBottomRightRadius: 0,
+    height: 120,
     overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
@@ -28,7 +26,7 @@ export default StyleSheet.create({
   headerContent: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 56,
+    paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
@@ -60,6 +58,7 @@ export default StyleSheet.create({
   },
   progressBarContainer: {
     height: 4,
+    marginTop: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     overflow: 'hidden',
@@ -92,8 +91,8 @@ export default StyleSheet.create({
     fontFamily: 'monospace',
     color: '#6B7370',
     letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 12,
+    marginTop: 24,
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -104,7 +103,7 @@ export default StyleSheet.create({
     paddingHorizontal: 16,
     color: '#1A1F1E',
     fontSize: 15,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   multilineInput: {
     backgroundColor: '#FFFFFF',
@@ -116,7 +115,7 @@ export default StyleSheet.create({
     paddingTop: 12,
     color: '#1A1F1E',
     fontSize: 15,
-    marginBottom: 20,
+    marginBottom: 24,
     textAlignVertical: 'top',
   },
   // Capacity row
@@ -127,6 +126,7 @@ export default StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E2D9',
+    marginBottom: 24,
   },
   capacityRowTitle: {
     fontSize: 15,
@@ -177,14 +177,14 @@ export default StyleSheet.create({
     fontSize: 12,
     color: '#6B7370',
     marginTop: -14,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   // Amenities grid 3 cols
   amenitiesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -4,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   amenityCard: {
     width: '31%',

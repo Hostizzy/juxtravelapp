@@ -11,9 +11,7 @@ export default StyleSheet.create({
   },
   // Shared Header Styles
   headerWrapper: {
-    height: 240,
-    borderBottomLeftRadius: 100, // swoop curve
-    borderBottomRightRadius: 0,
+    height: 120,
     overflow: 'hidden',
     backgroundColor: '#0F1714',
   },
@@ -28,7 +26,7 @@ export default StyleSheet.create({
   headerContent: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 56,
+    paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
@@ -60,6 +58,7 @@ export default StyleSheet.create({
   },
   progressBarContainer: {
     height: 4,
+    marginTop: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     overflow: 'hidden',
@@ -93,8 +92,8 @@ export default StyleSheet.create({
     fontFamily: 'monospace',
     color: '#6B7370',
     letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 12,
+    marginTop: 24,
   },
   uploadBox: {
     height: 180,
@@ -124,7 +123,7 @@ export default StyleSheet.create({
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputIcon: {
     marginRight: 12,
@@ -145,7 +144,7 @@ export default StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 28,
-    marginBottom: 20,
+    marginBottom: 24,
     position: 'relative',
   },
   multilineIcon: {
@@ -169,12 +168,11 @@ export default StyleSheet.create({
   // Chips
   chipsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 24,
     gap: 8,
+    paddingRight: 24,
   },
   chipButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -183,6 +181,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8E2D9',
     backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
   },
   chipButtonActive: {
     borderColor: '#1A6B5A',
@@ -207,7 +206,7 @@ export default StyleSheet.create({
     paddingHorizontal: 16,
     color: '#1A1F1E',
     fontSize: 15,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   // City/State side-by-side row
   rowInputs: {
@@ -245,5 +244,26 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  // Dropdown Modal/Touchable Styles
+  inputTouchable: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+    borderRadius: 12,
+    height: 48,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  touchableText: {
+    fontSize: 15,
+    color: '#1A1F1E',
+    fontWeight: '600',
+  },
+  placeholderText: {
+    color: '#6B7370',
+    fontWeight: 'normal',
   },
 });

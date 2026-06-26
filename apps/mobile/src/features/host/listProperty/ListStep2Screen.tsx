@@ -7,6 +7,8 @@ import {
   TextInput,
   Alert,
   ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -35,11 +37,14 @@ export default function ListStep2Screen() {
   const [rooms, setRooms] = useState<number>(2);
   const [maxGuests, setMaxGuests] = useState<number>(4);
   const [comfortGuests, setComfortGuests] = useState<number>(2);
+  const [bathrooms, setBathrooms] = useState<number>(1);
+  const [beds, setBeds] = useState<number>(2);
   const [price, setPrice] = useState<string>('');
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(['wifi', 'kitchen']);
   const [honestNotes, setHonestNotes] = useState<string>('');
+  const [showAllAmenities, setShowAllAmenities] = useState<boolean>(false);
 
-  const amenities: AmenityType[] = [
+  const allAmenities: AmenityType[] = [
     { id: 'wifi', label: 'WiFi', iconType: 'feather', iconName: 'wifi' },
     { id: 'kitchen', label: 'Kitchen', iconType: 'feather', iconName: 'coffee' },
     { id: 'parking', label: 'Parking', iconType: 'mci', iconName: 'car' },
@@ -49,6 +54,34 @@ export default function ListStep2Screen() {
     { id: 'hotwater', label: 'Hot Water', iconType: 'feather', iconName: 'droplet' },
     { id: 'tv', label: 'TV', iconType: 'feather', iconName: 'tv' },
     { id: 'garden', label: 'Garden', iconType: 'mci', iconName: 'flower' },
+    { id: 'jacuzzi', label: 'Jacuzzi', iconType: 'mci', iconName: 'hot-tub' },
+    { id: 'geyser', label: 'Geyser', iconType: 'mci', iconName: 'water' },
+    { id: 'heater', label: 'Heater', iconType: 'mci', iconName: 'radiator' },
+    { id: 'bonfire', label: 'Bonfire', iconType: 'mci', iconName: 'campfire' },
+    { id: 'lawn', label: 'Lawn', iconType: 'mci', iconName: 'grass' },
+    { id: 'balcony', label: 'Balcony', iconType: 'mci', iconName: 'balcony' },
+    { id: 'mountain_view', label: 'Mountain View', iconType: 'mci', iconName: 'image-filter-hdr' },
+    { id: 'valley_view', label: 'Valley View', iconType: 'mci', iconName: 'terrain' },
+    { id: 'pet_friendly', label: 'Pet Friendly', iconType: 'mci', iconName: 'dog' },
+    { id: 'refrigerator', label: 'Refrigerator', iconType: 'mci', iconName: 'fridge' },
+    { id: 'microwave', label: 'Microwave', iconType: 'mci', iconName: 'microwave' },
+    { id: 'power_backup', label: 'Power Backup', iconType: 'mci', iconName: 'flash' },
+    { id: 'cctv', label: 'CCTV Security', iconType: 'mci', iconName: 'cctv' },
+    { id: 'housekeeping', label: 'Housekeeping', iconType: 'mci', iconName: 'broom' },
+    { id: 'breakfast', label: 'Breakfast Included', iconType: 'mci', iconName: 'egg-fried' },
+    { id: 'bbq', label: 'BBQ/Grill', iconType: 'mci', iconName: 'food' },
+    { id: 'game_room', label: 'Game Room', iconType: 'mci', iconName: 'gamepad-variant' },
+    { id: 'cricket', label: 'Cricket Pitch', iconType: 'mci', iconName: 'cricket' },
+    { id: 'badminton', label: 'Badminton Court', iconType: 'mci', iconName: 'tennis' },
+    { id: 'football', label: 'Football Ground', iconType: 'mci', iconName: 'soccer' },
+    { id: 'indoor_games', label: 'Indoor Games', iconType: 'mci', iconName: 'dice-5' },
+    { id: 'outdoor_seating', label: 'Outdoor Seating', iconType: 'mci', iconName: 'table-chair' },
+    { id: 'fireplace', label: 'Fireplace', iconType: 'mci', iconName: 'fireplace' },
+    { id: 'room_service', label: 'Room Service', iconType: 'mci', iconName: 'room-service' },
+    { id: 'caretaker', label: 'Caretaker', iconType: 'mci', iconName: 'account' },
+    { id: 'first_aid', label: 'First Aid Kit', iconType: 'mci', iconName: 'medical-bag' },
+    { id: 'smoke_detector', label: 'Smoke Detector', iconType: 'mci', iconName: 'bell' },
+    { id: 'fire_extinguisher', label: 'Fire Extinguisher', iconType: 'mci', iconName: 'fire-extinguisher' },
   ];
 
   const handleBack = () => {
@@ -66,6 +99,8 @@ export default function ListStep2Screen() {
       rooms,
       maxGuests,
       comfortableGuests: comfortGuests,
+      bathrooms,
+      beds,
       pricePerNight: parseFloat(price) || 0,
       amenities: selectedAmenities,
       honestNotes,
@@ -89,7 +124,11 @@ export default function ListStep2Screen() {
 
   const stepNumber = 2;
   const totalSteps = 5;
-  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+  const percentComplete = Math.round(
+    ((stepNumber - 1) / totalSteps) * 100
+  );
+  
+  const visibleAmenities = showAllAmenities ? allAmenities : allAmenities.slice(0, 9);
 
   return (
     <View style={styles.root}>
@@ -116,7 +155,15 @@ export default function ListStep2Screen() {
         </ImageBackground>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={styles.title}>{i18n.t('host.listProperty.titleDetails') || 'Provide details about your property'}</Text>
         <Text style={styles.subtitle}>Provide technical details about your listing, capacity, pricing, and rules.</Text>
 
@@ -137,13 +184,31 @@ export default function ListStep2Screen() {
         <View style={styles.capacityRow}>
           <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.rooms') || 'Rooms'}</Text>
           <View style={styles.counterContainer}>
-            <TouchableOpacity onPress={() => setRooms((r) => Math.max(1, r - 1))}>
+            <TouchableOpacity onPress={() => setRooms((r) => Math.max(1, r - 1))} activeOpacity={0.7}>
               <View style={styles.counterBtnMinus}>
                 <Text style={styles.counterBtnTextMinus}>−</Text>
               </View>
             </TouchableOpacity>
             <Text style={styles.counterValue}>{rooms}</Text>
-            <TouchableOpacity onPress={() => setRooms((r) => r + 1)}>
+            <TouchableOpacity onPress={() => setRooms((r) => r + 1)} activeOpacity={0.7}>
+              <View style={styles.counterBtnPlus}>
+                <Text style={styles.counterBtnTextPlus}>+</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bathrooms Counter */}
+        <View style={styles.capacityRow}>
+          <Text style={styles.capacityRowTitle}>Bathrooms</Text>
+          <View style={styles.counterContainer}>
+            <TouchableOpacity onPress={() => setBathrooms((b) => Math.max(1, b - 1))} activeOpacity={0.7}>
+              <View style={styles.counterBtnMinus}>
+                <Text style={styles.counterBtnTextMinus}>−</Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.counterValue}>{bathrooms}</Text>
+            <TouchableOpacity onPress={() => setBathrooms((b) => b + 1)} activeOpacity={0.7}>
               <View style={styles.counterBtnPlus}>
                 <Text style={styles.counterBtnTextPlus}>+</Text>
               </View>
@@ -155,13 +220,31 @@ export default function ListStep2Screen() {
         <View style={styles.capacityRow}>
           <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.maxGuests') || 'Max Guests'}</Text>
           <View style={styles.counterContainer}>
-            <TouchableOpacity onPress={() => setMaxGuests((g) => Math.max(1, g - 1))}>
+            <TouchableOpacity onPress={() => setMaxGuests((g) => Math.max(1, g - 1))} activeOpacity={0.7}>
               <View style={styles.counterBtnMinus}>
                 <Text style={styles.counterBtnTextMinus}>−</Text>
               </View>
             </TouchableOpacity>
             <Text style={styles.counterValue}>{maxGuests}</Text>
-            <TouchableOpacity onPress={() => setMaxGuests((g) => g + 1)}>
+            <TouchableOpacity onPress={() => setMaxGuests((g) => g + 1)} activeOpacity={0.7}>
+              <View style={styles.counterBtnPlus}>
+                <Text style={styles.counterBtnTextPlus}>+</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Beds Counter */}
+        <View style={styles.capacityRow}>
+          <Text style={styles.capacityRowTitle}>Beds</Text>
+          <View style={styles.counterContainer}>
+            <TouchableOpacity onPress={() => setBeds((b) => Math.max(1, b - 1))} activeOpacity={0.7}>
+              <View style={styles.counterBtnMinus}>
+                <Text style={styles.counterBtnTextMinus}>−</Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.counterValue}>{beds}</Text>
+            <TouchableOpacity onPress={() => setBeds((b) => b + 1)} activeOpacity={0.7}>
               <View style={styles.counterBtnPlus}>
                 <Text style={styles.counterBtnTextPlus}>+</Text>
               </View>
@@ -173,13 +256,13 @@ export default function ListStep2Screen() {
         <View style={styles.capacityRow}>
           <Text style={styles.capacityRowTitle}>{i18n.t('host.listProperty.comfortable') || 'Comfortable Guests'}</Text>
           <View style={styles.counterContainer}>
-            <TouchableOpacity onPress={() => setComfortGuests((g) => Math.max(1, g - 1))}>
+            <TouchableOpacity onPress={() => setComfortGuests((g) => Math.max(1, g - 1))} activeOpacity={0.7}>
               <View style={styles.counterBtnMinus}>
                 <Text style={styles.counterBtnTextMinus}>−</Text>
               </View>
             </TouchableOpacity>
             <Text style={styles.counterValue}>{comfortGuests}</Text>
-            <TouchableOpacity onPress={() => setComfortGuests((g) => g + 1)}>
+            <TouchableOpacity onPress={() => setComfortGuests((g) => g + 1)} activeOpacity={0.7}>
               <View style={styles.counterBtnPlus}>
                 <Text style={styles.counterBtnTextPlus}>+</Text>
               </View>
@@ -202,7 +285,7 @@ export default function ListStep2Screen() {
         {/* AMENITIES */}
         <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.amenities') || 'AMENITIES'}</Text>
         <View style={styles.amenitiesGrid}>
-          {amenities.map((item) => {
+          {visibleAmenities.map((item) => {
             const isSelected = selectedAmenities.includes(item.id);
             return (
               <TouchableOpacity
@@ -226,6 +309,18 @@ export default function ListStep2Screen() {
               </TouchableOpacity>
             );
           })}
+
+          {/* More / Less Toggle Chip */}
+          <TouchableOpacity
+            style={[styles.amenityCard, styles.amenityUnselected]}
+            onPress={() => setShowAllAmenities(!showAllAmenities)}
+            activeOpacity={0.8}
+          >
+            <Feather name={showAllAmenities ? "minus" : "plus"} size={20} color="#1A1F1E" />
+            <Text style={[styles.amenityText, styles.amenityTextUnselected]}>
+              {showAllAmenities ? 'Show Less' : '+ More'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* HONEST NOTES */}
@@ -244,6 +339,7 @@ export default function ListStep2Screen() {
           <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

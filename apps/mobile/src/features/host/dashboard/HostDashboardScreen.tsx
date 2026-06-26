@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { apiService } from '../../../services/api';
 import { useAuthStore } from '../../../stores/authStore';
+import { hostDataCache } from '../../../services/hostDataCache';
 import i18n from '../../../locales/i18n';
 import styles from './HostDashboardScreen.styles';
 
@@ -52,42 +53,50 @@ export default function HostDashboardScreen() {
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
 
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loadingProps, setLoadingProps] = useState(true);
-  const [recentBookings, setRecentBookings] = useState<BookingItem[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  const [stats, setStats] = useState({ allTimeBookings: 0, checkInsThisMonth: 0, earningsThisMonth: 0 });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [properties, setProperties] = useState<Property[]>(() =>
+    hostDataCache.get<Property[]>('host_properties') ?? []
+  );
+  const [recentBookings, setRecentBookings] = useState<BookingItem[]>(() =>
+    hostDataCache.get<BookingItem[]>('host_recent_bookings') ?? []
+  );
+  const [stats, setStats] = useState<{ allTimeBookings: number; checkInsThisMonth: number; earningsThisMonth: number }>(() =>
+    hostDataCache.get<{ allTimeBookings: number; checkInsThisMonth: number; earningsThisMonth: number }>('host_stats') ?? 
+    { allTimeBookings: 0, checkInsThisMonth: 0, earningsThisMonth: 0 }
+  );
+  const [isInitialLoad, setIsInitialLoad] = useState(() =>
+    hostDataCache.get('host_properties') === null
+  );
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (silent = false) => {
     try {
+      if (!silent) setIsInitialLoad(true);
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
 
-      // Fetch properties
-      setLoadingProps(true);
-      const props = await apiService.get<Property[]>('/properties/my', token);
-      setProperties(props ?? []);
-      setLoadingProps(false);
+      const [props, statsData, bookingsData] = await Promise.all([
+        apiService.get<Property[]>('/properties/my', token),
+        apiService.get<any>('/bookings/host-stats', token),
+        apiService.get<BookingItem[]>('/bookings/host-bookings', token),
+      ]);
 
-      // Fetch stats
-      setLoadingStats(true);
-      const statsData = await apiService.get<any>('/bookings/host-stats', token);
-      if (statsData) setStats(statsData);
-      setLoadingStats(false);
-
-      // Fetch host bookings (recent 3)
-      setLoadingBookings(true);
-      const bookingsData = await apiService.get<BookingItem[]>('/bookings/host-bookings', token);
-      if (bookingsData) {
-        setRecentBookings(bookingsData.slice(0, 3));
+      if (props) {
+        setProperties(props);
+        hostDataCache.set('host_properties', props);
       }
-      setLoadingBookings(false);
+      if (statsData) {
+        setStats(statsData);
+        hostDataCache.set('host_stats', statsData);
+      }
+      if (bookingsData) {
+        const recent = bookingsData.slice(0, 3);
+        setRecentBookings(recent);
+        hostDataCache.set('host_recent_bookings', recent);
+      }
 
       // Fetch unread count for notifications
       const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations?role=host',
+        '/conversations/my?role=host',
         token
       );
       const total = (conversations ?? []).reduce(
@@ -97,15 +106,19 @@ export default function HostDashboardScreen() {
       setUnreadCount(total);
     } catch (error) {
       console.error('Fetch dashboard data error:', error);
-      setLoadingProps(false);
-      setLoadingStats(false);
-      setLoadingBookings(false);
+    } finally {
+      setIsInitialLoad(false);
     }
   };
 
   useEffect(() => {
     if (isFocused) {
-      fetchDashboardData();
+      const cached = hostDataCache.get('host_properties');
+      if (cached !== null) {
+        fetchDashboardData(true);
+      } else {
+        fetchDashboardData(false);
+      }
     }
   }, [isFocused]);
 
@@ -145,8 +158,7 @@ export default function HostDashboardScreen() {
   };
 
   const handleViewAllBookings = () => {
-    navigation.navigate('HostApp'); // Tab Navigator will open default or bookings tab if triggered
-    // Specifically navigate to HostBookings tab
+    navigation.navigate('HostApp');
     (navigation as any).navigate('HostBookings');
   };
 
@@ -188,7 +200,7 @@ export default function HostDashboardScreen() {
             </View>
 
             {/* Overlay Stat Cards on the header bottom */}
-            {loadingStats ? (
+            {isInitialLoad && stats.earningsThisMonth === 0 ? (
               <ActivityIndicator color="#FFFFFF" size="small" style={{ marginVertical: 20 }} />
             ) : (
               <View style={styles.statsRow}>
@@ -206,13 +218,24 @@ export default function HostDashboardScreen() {
                 </View>
                 {/* Stat 3 */}
                 <View style={styles.statCard}>
-                  <MaterialCommunityIcons name="currency-inr" size={16} color="#84C9BA" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <MaterialCommunityIcons name="currency-inr" size={16} color="#84C9BA" />
+                    <TouchableOpacity
+                      onPress={() => Alert.alert('Earnings Calculation', 'Earnings shown are after the platform service fee is deducted from the total booking amount paid by the guest.')}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="info" size={12} color="#84C9BA" />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.statValue}>
                     {stats.earningsThisMonth >= 100000 
                       ? `₹${(stats.earningsThisMonth / 100000).toFixed(1)}L` 
                       : `₹${(stats.earningsThisMonth / 1000).toFixed(0)}k`}
                   </Text>
-                  <Text style={styles.statLabel}>Earnings this month</Text>
+                  <View style={{ alignSelf: 'stretch' }}>
+                    <Text style={styles.statLabel} numberOfLines={1}>Your earnings this month</Text>
+                    <Text style={{ fontSize: 8, color: '#84C9BA', marginTop: 1, fontFamily: 'monospace' }}>(after service fee)</Text>
+                  </View>
                 </View>
               </View>
             )}
@@ -230,7 +253,7 @@ export default function HostDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {loadingProps ? (
+        {isInitialLoad && properties.length === 0 ? (
           <ActivityIndicator 
             color="#1A6B5A" 
             size="small"
@@ -317,7 +340,7 @@ export default function HostDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {loadingBookings ? (
+        {isInitialLoad && recentBookings.length === 0 ? (
           <ActivityIndicator color="#1A6B5A" size="small" style={{ marginVertical: 20 }} />
         ) : recentBookings.length === 0 ? (
           <View style={styles.emptyBookingsBox}>

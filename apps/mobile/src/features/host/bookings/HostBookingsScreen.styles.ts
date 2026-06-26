@@ -1,42 +1,61 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 export default StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FAF8F4',
+    backgroundColor: '#021412',
   },
   container: {
     flex: 1,
     backgroundColor: '#FAF8F4',
   },
-  topBar: {
-    paddingVertical: 16,
+  headerWrapper: {
+    height: Platform.OS === 'ios' ? 110 : 95,
+    overflow: 'hidden',
+    backgroundColor: '#021412',
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF8F4',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 44 : 28,
   },
-  topBarTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
     fontFamily: 'serif',
-    color: '#1A1F1E',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  topBarSubtitle: {
-    fontSize: 14,
-    color: '#6B7370',
-    marginTop: 4,
+  headerSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 2,
+    textAlign: 'center',
   },
   bellButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
   },
   badge: {
     position: 'absolute',
@@ -213,48 +232,42 @@ export default StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: '#E8E2D9',
     paddingTop: 16,
-  },
-  footerLeft: {
-    flexDirection: 'row',
+    marginTop: 16,
     gap: 8,
   },
-  messageBtn: {
-    flexDirection: 'row',
+  messageIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E6F2EF',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1A6B5A',
-    borderRadius: 100,
-    paddingHorizontal: 12,
-    height: 36,
-  },
-  messageBtnText: {
-    color: '#1A6B5A',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
+    justifyContent: 'center',
   },
   detailsBtn: {
+    flex: 1,
     backgroundColor: '#1A6B5A',
     borderRadius: 100,
-    paddingHorizontal: 12,
-    height: 36,
-    justifyContent: 'center',
+    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   detailsBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
   amountText: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '800',
     color: '#1A1F1E',
+    minWidth: 70,
+    textAlign: 'right',
   },
   // FAB
   fab: {

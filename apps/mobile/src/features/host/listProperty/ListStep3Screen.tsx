@@ -7,6 +7,8 @@ import {
   Alert,
   Image,
   ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -108,79 +110,11 @@ export default function ListStep3Screen() {
     });
   };
 
-  const renderPhotoSlots = () => {
-    const slots = [];
-    for (let i = 0; i < 10; i++) {
-      if (i < photos.length) {
-        const uri = photos[i];
-        slots.push(
-          <View key={i} style={styles.photoSquare}>
-            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
-            <TouchableOpacity
-              style={styles.removeBtn}
-              onPress={() => handleRemovePhoto(i)}
-              activeOpacity={0.7}
-            >
-              <Feather name="x" size={12} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        );
-      } else {
-        slots.push(
-          <TouchableOpacity
-            key={i}
-            style={styles.photoSquare}
-            onPress={handleAddPhoto}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={24} color="#6B7370" />
-          </TouchableOpacity>
-        );
-      }
-    }
-    return slots;
-  };
-
-  const renderReelSlots = () => {
-    const slots = [];
-    for (let i = 0; i < 4; i++) {
-      if (i < reels.length) {
-        const uri = reels[i];
-        slots.push(
-          <View key={i} style={styles.reelSquare}>
-            <View style={{ width: '100%', height: '100%', borderRadius: 12, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
-              <Feather name="video" size={32} color="#84C9BA" />
-              <Text style={{ color: '#84C9BA', fontSize: 10, marginTop: 4 }}>Reel {i + 1}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.removeBtn}
-              onPress={() => handleRemoveReel(i)}
-              activeOpacity={0.7}
-            >
-              <Feather name="x" size={12} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        );
-      } else {
-        slots.push(
-          <TouchableOpacity
-            key={i}
-            style={styles.reelSquare}
-            onPress={handleAddReel}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={24} color="#6B7370" />
-            <Text style={{ color: '#6B7370', fontSize: 10, marginTop: 4 }}>Add Reel</Text>
-          </TouchableOpacity>
-        );
-      }
-    }
-    return slots;
-  };
-
   const stepNumber = 3;
   const totalSteps = 5;
-  const percentComplete = Math.round((stepNumber / totalSteps) * 100);
+  const percentComplete = Math.round(
+    ((stepNumber - 1) / totalSteps) * 100
+  );
 
   return (
     <View style={styles.root}>
@@ -207,7 +141,15 @@ export default function ListStep3Screen() {
         </ImageBackground>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={styles.title}>{i18n.t('host.listProperty.photosTitle') || 'Photos and video reels of your property'}</Text>
         <Text style={styles.subtitle}>{i18n.t('host.listProperty.photosSub') || 'Upload pictures and reels to showcase your stay.'}</Text>
 
@@ -219,9 +161,34 @@ export default function ListStep3Screen() {
           </Text>
         </View>
 
-        <View style={styles.photoGrid}>
-          {renderPhotoSlots()}
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScrollPhotos}
+        >
+          {photos.map((uri, idx) => (
+            <View key={idx} style={styles.photoSquareLarge}>
+              <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
+              <TouchableOpacity
+                style={styles.removeBtnLarge}
+                onPress={() => handleRemovePhoto(idx)}
+                activeOpacity={0.7}
+              >
+                <Feather name="x" size={12} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {photos.length < 10 && (
+            <TouchableOpacity
+              style={styles.photoSquareLargeDashed}
+              onPress={handleAddPhoto}
+              activeOpacity={0.8}
+            >
+              <Feather name="plus" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
+              <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Photos</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
         <Text style={styles.gridTip}>{i18n.t('host.listProperty.tipNaturalLight') || 'Use natural light and capture wide angles.'}</Text>
 
         {/* PROPERTY REELS */}
@@ -232,9 +199,37 @@ export default function ListStep3Screen() {
           </Text>
         </View>
 
-        <View style={styles.reelsGrid}>
-          {renderReelSlots()}
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScrollPhotos}
+        >
+          {reels.map((uri, idx) => (
+            <View key={idx} style={styles.photoSquareLarge}>
+              <View style={{ width: '100%', height: '100%', borderRadius: 12, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
+                <Feather name="video" size={32} color="#84C9BA" />
+                <Text style={{ color: '#84C9BA', fontSize: 10, marginTop: 4 }}>Reel {idx + 1}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.removeBtnLarge}
+                onPress={() => handleRemoveReel(idx)}
+                activeOpacity={0.7}
+              >
+                <Feather name="x" size={12} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {reels.length < 4 && (
+            <TouchableOpacity
+              style={styles.photoSquareLargeDashed}
+              onPress={handleAddReel}
+              activeOpacity={0.8}
+            >
+              <Feather name="video" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
+              <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Reel</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
 
         {/* IMPORT FROM INSTAGRAM */}
         <View style={[styles.instaCard, isInstaConnected && { borderColor: '#1A6B5A' }]}>
@@ -271,6 +266,7 @@ export default function ListStep3Screen() {
           <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

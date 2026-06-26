@@ -17,6 +17,10 @@ class LocationDto {
   @IsString()
   @IsNotEmpty()
   state: string;
+
+  @IsString()
+  @IsOptional()
+  pincode?: string;
 }
 
 class CapacityDto {
@@ -31,6 +35,16 @@ class CapacityDto {
   @IsNumber()
   @Min(1)
   comfortableGuests: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  bathrooms?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  beds?: number;
 }
 
 export class CreatePropertyDto {
