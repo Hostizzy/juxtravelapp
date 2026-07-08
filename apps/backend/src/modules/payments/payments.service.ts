@@ -139,6 +139,9 @@ export class PaymentsService {
     this.logger.log(`Webhook received: ${event}`);
 
     switch (event) {
+      case 'payment.authorized':
+        await this.handlePaymentAuthorized(payload);
+        break;
       case 'payment.captured':
         await this.handlePaymentCaptured(payload);
         break;
@@ -245,5 +248,67 @@ export class PaymentsService {
       .eq('payment_id', paymentId);
 
     this.logger.log(`Refund created for payment: ${paymentId}`);
+  }
+
+  private async handlePaymentAuthorized(
+    payload: Record<string, unknown>
+  ): Promise<void> {
+    const payment = payload.payment as Record<string, unknown> | undefined;
+    const entity = payment?.entity as Record<string, unknown> | undefined;
+    const notes = entity?.notes as Record<string, string> | undefined;
+    const bookingId = notes?.bookingId;
+
+    if (!bookingId) {
+      this.logger.warn('payment.authorized: No bookingId in notes');
+      return;
+    }
+
+    // Just log for now — actual confirmation happens on payment.captured
+    // (authorized doesn't mean money received yet)
+    this.logger.log(
+      `Payment authorized for booking: ${bookingId}, ` +
+        `payment ID: ${entity?.id} — waiting for capture`
+    );
+
+    // If auto-capture is disabled/OFF, capture the payment manually
+    const autoCaptureEnabled =
+      this.configService.get<string>('razorpay.autoCapture') !== 'false';
+    if (!autoCaptureEnabled) {
+      this.logger.log(
+        `Auto-capture is disabled. Capturing payment manually for booking: ${bookingId}`
+      );
+      const paymentId = entity?.id as string | undefined;
+      const amount = entity?.amount as number | undefined;
+      if (paymentId && amount !== undefined) {
+        await this.capturePayment(paymentId, amount / 100);
+      } else {
+        this.logger.error(
+          'payment.authorized: Cannot capture payment manually due to missing payment ID or amount'
+        );
+      }
+    }
+  }
+
+  private async capturePayment(
+    paymentId: string,
+    amount: number
+  ): Promise<void> {
+    if (!this.razorpay) {
+      this.logger.error('Razorpay is not configured, cannot capture payment');
+      return;
+    }
+    try {
+      await this.razorpay.payments.capture(
+        paymentId,
+        amount * 100, // paise
+        'INR'
+      );
+      this.logger.log(`Payment captured manually: ${paymentId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to capture payment: ${paymentId}`,
+        error
+      );
+    }
   }
 }
