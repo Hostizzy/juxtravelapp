@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Image,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +15,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './BookingSuccessScreen.styles';
+import { apiGet } from '../../lib/api';
+import { queryClient } from '../../lib/queryClient';
 
 type BookingSuccessScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -29,7 +32,8 @@ export default function BookingSuccessScreen() {
   const navigation = useNavigation<BookingSuccessScreenNavigationProp>();
   const route = useRoute<BookingSuccessScreenRouteProp>();
 
-  const { propertyName, checkIn, checkOut } = route.params;
+  const { bookingId, propertyName, checkIn, checkOut } = route.params;
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const formatDate = (dateStr: string): string => {
     try {
@@ -47,7 +51,7 @@ export default function BookingSuccessScreen() {
 
   const handleViewTrips = () => {
     navigation.navigate('BookingDetail', {
-      bookingId: route.params.bookingId,
+      bookingId: bookingId,
     });
   };
 
@@ -56,6 +60,52 @@ export default function BookingSuccessScreen() {
       screen: 'Home',
     } as any);
   };
+
+  useEffect(() => {
+    if (!bookingId) return;
+    
+    let attempts = 0;
+    const maxAttempts = 10;
+    let isMounted = true;
+    
+    const checkStatus = async () => {
+      try {
+        const booking = await apiGet<{
+          status: string;
+        }>(`/bookings/${bookingId}`);
+        
+        if (!isMounted) return;
+        
+        if (booking.status === 'confirmed') {
+          setIsConfirmed(true);
+          // Invalidate cache
+          queryClient.invalidateQueries({ 
+            queryKey: ['bookings'] 
+          });
+          return; // Stop polling
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 2000);
+        }
+      } catch {
+        // Silent fail
+        attempts++;
+        if (attempts < maxAttempts && isMounted) {
+          setTimeout(checkStatus, 2000);
+        }
+      }
+    };
+    
+    // Start polling after 2 seconds (give webhook time to process)
+    const timeoutId = setTimeout(checkStatus, 2000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [bookingId]);
 
   return (
     <View style={styles.root}>
@@ -98,15 +148,23 @@ export default function BookingSuccessScreen() {
         </View>
 
         <View style={styles.content}>
-          {/* Animated/Beautiful Sage Green Checkmark Circle */}
+          {/* Animated/Beautiful Sage Green Circle */}
           <View style={styles.successCircle}>
-            <Feather name="check" size={60} color="#FFFFFF" />
+            {isConfirmed ? (
+              <Feather name="check" size={60} color="#FFFFFF" />
+            ) : (
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            )}
           </View>
 
           {/* Success Message */}
-          <Text style={styles.title}>Booking Confirmed! 🎉</Text>
+          <Text style={styles.title}>
+            {isConfirmed ? 'Booking Confirmed! ✅' : 'Processing Payment...'}
+          </Text>
           <Text style={styles.subtitle}>
-            Your stay has been booked successfully. Prepare for an unforgettable experience!
+            {isConfirmed
+              ? 'Your stay has been booked successfully. Prepare for an unforgettable experience!'
+              : 'Payment received, confirming booking...'}
           </Text>
 
           {/* Summary Card */}
@@ -133,9 +191,10 @@ export default function BookingSuccessScreen() {
           {/* Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={styles.primaryButton}
               onPress={handleViewTrips}
               activeOpacity={0.8}
+              disabled={!isConfirmed}
+              style={[styles.primaryButton, !isConfirmed && { opacity: 0.5 }]}
             >
               <Text style={styles.primaryButtonText}>View My Trips</Text>
             </TouchableOpacity>

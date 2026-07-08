@@ -46,10 +46,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.use('/api/v1/health', (req: express.Request, res: express.Response) => {
-    res.json({
+    res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),
-      service: 'JuxTravel API',
     });
   });
 

@@ -19,7 +19,7 @@ export class BookingsService {
       checkOut: string;
       guests: number;
       totalAmount: number;
-      status?: 'pending' | 'confirmed';
+      status?: string;
       paymentId?: string;
     }
   ) {
