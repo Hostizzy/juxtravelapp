@@ -15,7 +15,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../services/api';
+import { apiPost } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
+import RazorpayCheckout from 'react-native-razorpay';
 
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
 type PaymentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
@@ -33,6 +35,7 @@ export default function PaymentScreen() {
     totalAmount,
   } = route.params;
 
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'upi' | 'card' | 'netbanking'>('upi');
@@ -41,11 +44,13 @@ export default function PaymentScreen() {
     setLoading(true);
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
+      if (!token) {
+        Alert.alert('Error', 'You must be logged in to book.');
+        return;
+      }
 
-      const bookingResult = await apiService.post<{
-        id: string;
-      }>(
+      // Step 1: Create booking first (pending status)
+      const booking = await apiPost<{ id: string }>(
         '/bookings/create-direct',
         {
           propertyId,
@@ -53,23 +58,86 @@ export default function PaymentScreen() {
           checkOut,
           guests,
           totalAmount,
-        },
-        token
+          status: 'pending', // pending until payment
+        }
       );
+
+      // Step 2: Create Razorpay order
+      const order = await apiPost<{
+        orderId: string;
+        amount: number;
+        currency: string;
+        keyId: string;
+        isMock?: boolean;
+      }>(
+        '/payments/create-order',
+        {
+          amount: totalAmount,
+          bookingId: booking.id,
+          propertyName: propertyName,
+        }
+      );
+
+      // If Razorpay keys are not configured, handle mock checkout/fallback flow
+      if (order.isMock) {
+        Alert.alert(
+          'Demo Mode',
+          'Razorpay keys not configured. Processing mock payment.'
+        );
+        navigation.navigate('BookingSuccess', {
+          bookingId: booking.id,
+          propertyName: propertyName,
+          checkIn: checkIn,
+          checkOut: checkOut,
+        });
+        return;
+      }
+
+      // Step 3: Open Razorpay checkout
+      const options = {
+        description: `Booking for ${propertyName}`,
+        image: 'https://juxtravel.com/logo.png',
+        currency: order.currency,
+        key: order.keyId,
+        amount: order.amount,
+        order_id: order.orderId,
+        name: 'JuxTravel',
+        prefill: {
+          name: user?.name ?? '',
+          contact: user?.phone ?? '',
+          email: user?.email ?? '',
+        },
+        theme: { color: '#1A6B5A' },
+      };
+
+      const data = await RazorpayCheckout.open(options);
+
+      // Payment success (webhook will confirm booking)
+      console.log('Payment success:', data);
 
       navigation.navigate('BookingSuccess', {
-        bookingId: bookingResult.id,
-        propertyName,
-        checkIn,
-        checkOut,
+        bookingId: booking.id,
+        propertyName: propertyName,
+        checkIn: checkIn,
+        checkOut: checkOut,
       });
 
-    } catch (error) {
-      console.log('Booking creation error:', error);
-      Alert.alert(
-        'Error', 
-        'Failed to confirm booking. Please try again.'
-      );
+    } catch (error: unknown) {
+      const err = error as { code?: number; description?: string };
+      
+      if (err?.code === 2) {
+        // User cancelled payment
+        Alert.alert(
+          'Payment Cancelled',
+          'You cancelled the payment.'
+        );
+      } else {
+        Alert.alert(
+          'Payment Failed',
+          err?.description ?? 
+            'Payment failed. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }

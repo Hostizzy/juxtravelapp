@@ -10,98 +10,33 @@ import {
   ToastAndroid,
   ImageBackground,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
-import { hostDataCache } from '../../../services/hostDataCache';
+import { useHostBookings } from '../../../hooks/useBookings';
+import { useConversations } from '../../../hooks/useConversations';
+import { apiGet } from '../../../lib/api';
 import i18n from '../../../locales/i18n';
 import styles from './HostBookingsScreen.styles';
 
 type TabType = 'all' | 'upcoming' | 'completed' | 'cancelled';
 
-interface BookingItem {
-  id: string;
-  guest_id: string;
-  host_id: string;
-  property_id: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  total_amount: number;
-  service_fee: number;
-  host_payout: number;
-  status: string;
-  created_at: string;
-  special_requests?: string;
-  guest: {
-    id: string;
-    name: string;
-  } | null;
-  property: {
-    id: string;
-    name: string;
-    location: any;
-  } | null;
-}
-
 export default function HostBookingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const isFocused = useIsFocused();
   const [activeTab, setActiveTab] = useState<TabType>('all');
-  const [bookings, setBookings] = useState<BookingItem[]>(() =>
-    hostDataCache.get('host_bookings_list') ?? []
+  
+  const { data: bookings = [], isLoading: loading, refetch } = useHostBookings();
+  const { data: conversations = [] } = useConversations('host');
+  const unreadCount = conversations.reduce(
+    (sum, c) => sum + (c.unreadCount ?? 0),
+    0
   );
-  const [loading, setLoading] = useState(() =>
-    hostDataCache.get('host_bookings_list') === null
-  );
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchBookings = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-
-      const data = await apiService.get<BookingItem[]>('/bookings/host-bookings', token);
-      if (data) {
-        setBookings(data);
-        hostDataCache.set('host_bookings_list', data);
-      }
-
-      // Fetch unread messages count
-      const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations/my?role=host',
-        token
-      );
-      const total = (conversations ?? []).reduce(
-        (sum, c) => sum + (c.unreadCount ?? 0),
-        0
-      );
-      setUnreadCount(total);
-    } catch (err) {
-      console.error('Failed to fetch host bookings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isFocused) {
-      const cached = hostDataCache.get('host_bookings_list');
-      if (cached !== null) {
-        fetchBookings(true);
-      } else {
-        fetchBookings(false);
-      }
-    }
-  }, [isFocused]);
 
   const tabs: { key: TabType; label: string }[] = [
     { key: 'all', label: i18n.t('host.bookings.tabAll') || 'All' },
@@ -167,9 +102,7 @@ export default function HostBookingsScreen() {
 
   const handleMessageGuest = async (bookingId: string, guestName: string, propertyName: string) => {
     try {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      const conv = await apiService.get<any>(`/conversations/by-booking/${bookingId}?role=host`, token);
+      const conv = await apiGet<any>(`/conversations/by-booking/${bookingId}?role=host`);
       if (conv && conv.id) {
         navigation.navigate('ChatDetail', {
           conversationId: conv.id,
@@ -281,7 +214,13 @@ export default function HostBookingsScreen() {
             <Text style={styles.emptyText}>No bookings found</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#1A6B5A" />
+            }
+          >
             {filteredBookings.map((booking) => {
               const guestName = booking.guest?.name ?? 'Guest';
               const propertyName = booking.property?.name ?? 'Property';

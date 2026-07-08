@@ -23,6 +23,8 @@ import { updateProperty } from '../../../services/propertyService';
 import { useAuthStore } from '../../../stores/authStore';
 import i18n from '../../../locales/i18n';
 import styles from './HostPropertyDetailScreen.styles';
+import { usePropertyStats } from '../../../hooks/usePropertyStats';
+import { apiPost } from '../../../lib/api';
 
 type DetailScreenRouteProp = RouteProp<
   RootStackParamList & {
@@ -93,6 +95,15 @@ export default function HostPropertyDetailScreen() {
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
 
   const isOwner = user?.id === property?.host_id;
+
+  const { data: stats, isLoading: statsLoading } = usePropertyStats(property?.id ?? '', isOwner);
+
+  useEffect(() => {
+    if (!isOwner && property?.id) {
+      apiPost(`/properties/${property.id}/view`, {})
+        .catch(() => {}); // Silent fail, non-blocking
+    }
+  }, [property?.id, isOwner]);
 
   const calculateNights = (inStr?: string, outStr?: string) => {
     if (!inStr || !outStr) return 1;
@@ -731,6 +742,14 @@ export default function HostPropertyDetailScreen() {
             <View>
               <Text style={styles.propertyName}>{property.name}</Text>
               
+              {isOwner && stats?.ranking && stats.ranking <= 10 ? (
+                <View style={styles.rankingBadge}>
+                  <Text style={styles.rankingText}>
+                    🏆 #{stats.ranking} on JuxTravel
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.typeRow}>
                 <View style={styles.typeChip}>
                   <Text style={styles.typeChipText}>
@@ -751,19 +770,35 @@ export default function HostPropertyDetailScreen() {
               {isOwner && (
                 <View style={styles.statsRow}>
                   <View style={styles.statCard}>
-                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statValue}>
+                      {statsLoading ? '—' : (stats?.views ?? 0).toLocaleString('en-IN')}
+                    </Text>
                     <Text style={styles.statLabel}>VIEWS</Text>
                   </View>
+
                   <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{property.bookings ?? 0}</Text>
+                    <Text style={styles.statValue}>
+                      {statsLoading ? '—' : stats?.bookings ?? 0}
+                    </Text>
                     <Text style={styles.statLabel}>BOOKINGS</Text>
                   </View>
+
                   <View style={styles.statCard}>
-                    <Text style={styles.statValue}>N/A</Text>
+                    <Text style={[styles.statValue, { color: '#D4704A' }]}>
+                      {statsLoading ? '—' : stats?.rating ? `${stats.rating}★` : 'N/A'}
+                    </Text>
                     <Text style={styles.statLabel}>RATING</Text>
+                    {stats?.totalReviews ? (
+                      <Text style={styles.statSubLabel}>
+                        {stats.totalReviews} reviews
+                      </Text>
+                    ) : null}
                   </View>
+
                   <View style={styles.statCard}>
-                    <Text style={styles.statValue}>₹0</Text>
+                    <Text style={[styles.statValue, { color: '#1A6B5A' }]}>
+                      {statsLoading ? '—' : stats?.revenue ? `₹${(stats.revenue / 1000).toFixed(0)}k` : '₹0'}
+                    </Text>
                     <Text style={styles.statLabel}>REVENUE</Text>
                   </View>
                 </View>

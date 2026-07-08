@@ -12,52 +12,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../stores/authStore';
-import { apiService } from '../../../services/api';
-import { hostDataCache } from '../../../services/hostDataCache';
+import { useMyProperties } from '../../../hooks/useProperties';
+import { useHostEarnings } from '../../../hooks/useBookings';
+import { useConversations } from '../../../hooks/useConversations';
+import { queryClient } from '../../../lib/queryClient';
 import i18n from '../../../locales/i18n';
 import styles from './HostProfileScreen.styles';
 
 type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'SETTINGS';
 
-interface Property {
-  id: string;
-  name: string;
-  status: string;
-  photos: string[];
-  reels?: string[];
-  price_per_night: number;
-  location: { city: string; state: string; address?: string };
-  capacity: { maxGuests: number };
-}
-
 export default function HostProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
-  const isVerified = (user as any)?.host_profile?.verified ?? true; // Default to true for host flow unless specified
+  const isVerified = (user as any)?.host_profile?.verified ?? true;
 
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
-  const [properties, setProperties] = useState<Property[]>(() =>
-    hostDataCache.get<Property[]>('host_profile_properties') ?? []
+  const { data: properties = [], isLoading: loadingProps } = useMyProperties();
+  const { data: earningsData, isLoading: loadingEarnings } = useHostEarnings();
+  const earnings = earningsData ?? { totalEarnings: 0, thisMonth: 0, pendingPayout: 0 };
+  const { data: conversations = [] } = useConversations('host');
+  const unreadCount = conversations.reduce(
+    (sum, c) => sum + (c.unreadCount ?? 0),
+    0
   );
-  const [loadingProps, setLoadingProps] = useState(() =>
-    hostDataCache.get<Property[]>('host_profile_properties') === null
-  );
-  const [earnings, setEarnings] = useState<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>(() =>
-    hostDataCache.get<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>('host_earnings') ?? 
-    { totalEarnings: 0, thisMonth: 0, pendingPayout: 0 }
-  );
-  const [loadingEarnings, setLoadingEarnings] = useState(() =>
-    hostDataCache.get<{ totalEarnings: number; thisMonth: number; pendingPayout: number }>('host_earnings') === null
-  );
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const tabs: { key: TabType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
     { key: 'PROFILE', label: 'Profile', icon: 'user' },
@@ -65,63 +49,6 @@ export default function HostProfileScreen() {
     { key: 'REVIEWS', label: 'Reviews', icon: 'star' },
     { key: 'SETTINGS', label: 'Settings', icon: 'settings' },
   ];
-
-  const fetchProperties = async (silent = false) => {
-    try {
-      if (!silent) setLoadingProps(true);
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      
-      const props = await apiService.get<Property[]>('/properties/my', token);
-      if (props) {
-        setProperties(props);
-        hostDataCache.set('host_profile_properties', props);
-      }
-    } catch (err) {
-      console.error('Failed to fetch properties:', err);
-    } finally {
-      setLoadingProps(false);
-    }
-  };
-
-  const fetchEarnings = async (silent = false) => {
-    try {
-      if (!silent) setLoadingEarnings(true);
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-
-      const data = await apiService.get<any>('/bookings/earnings', token);
-      if (data) {
-        setEarnings(data);
-        hostDataCache.set('host_earnings', data);
-      }
-
-      // Fetch unread count for notifications
-      const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations/my?role=host',
-        token
-      );
-      const total = (conversations ?? []).reduce(
-        (sum, c) => sum + (c.unreadCount ?? 0),
-        0
-      );
-      setUnreadCount(total);
-    } catch (err) {
-      console.error('Failed to fetch earnings:', err);
-    } finally {
-      setLoadingEarnings(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isFocused) {
-      const cachedProps = hostDataCache.get('host_profile_properties');
-      const cachedEarnings = hostDataCache.get('host_earnings');
-
-      fetchProperties(cachedProps !== null);
-      fetchEarnings(cachedEarnings !== null);
-    }
-  }, [isFocused]);
 
   const getInitials = (name: string) => {
     return name
@@ -142,10 +69,12 @@ export default function HostProfileScreen() {
 
   const handleSignOut = async () => {
     try {
+      queryClient.clear();
       await supabase.auth.signOut();
+      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('user_id');
       await AsyncStorage.removeItem('user_full_name');
       await AsyncStorage.removeItem('user_phone_number');
-      hostDataCache.clearAll();
       useAuthStore.getState().clearAuth();
       navigation.replace('Auth');
     } catch (e) {

@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../features/home/HomeScreen';
 import DiscoverScreen from '../features/discover/DiscoverScreen';
 import MessagesScreen from '../features/messages/MessagesScreen';
 import ProfileScreen from '../features/profile/ProfileScreen';
 import FloatingNavBar from '../components/FloatingNavBar/FloatingNavBar';
-import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../services/api';
+import { useConversations } from '../hooks/useConversations';
 
 export type GuestTabParamList = {
   Home: undefined;
@@ -17,38 +16,12 @@ export type GuestTabParamList = {
 
 const Tab = createBottomTabNavigator<GuestTabParamList>();
 
-function useUnreadCount(role: 'guest' | 'host') {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('access_token');
-        if (!token) return;
-        const conversations = await apiService.get<{ unreadCount: number }[]>(
-          `/conversations/my?role=${role}`,
-          token
-        );
-        const total = (conversations ?? []).reduce(
-          (sum, c) => sum + (c.unreadCount ?? 0),
-          0
-        );
-        setCount(total);
-      } catch {
-        // silent fail, keep previous count
-      }
-    };
-
-    fetchCount();
-    const interval = setInterval(fetchCount, 10000);
-    return () => clearInterval(interval);
-  }, [role]);
-
-  return count;
-}
-
 export default function GuestNavigator() {
-  const unreadCount = useUnreadCount('guest');
+  const { data: conversations = [] } = useConversations('guest');
+  const unreadCount = conversations.reduce(
+    (sum, c) => sum + (c.unreadCount ?? 0),
+    0
+  );
 
   return (
     <Tab.Navigator

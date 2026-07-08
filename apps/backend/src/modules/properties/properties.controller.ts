@@ -63,6 +63,24 @@ export class PropertiesController {
     return this.propertiesService.findBySlug(slug);
   }
 
+  @Get(':id/stats')
+  @UseGuards(JwtAuthGuard)
+  async getPropertyStats(
+    @CurrentUser() payload: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.propertiesService.getPropertyStats(
+      id, payload.sub
+    );
+  }
+
+  @Post(':id/view')
+  async trackView(
+    @Param('id') id: string,
+  ) {
+    return this.propertiesService.trackView(id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getProperty(

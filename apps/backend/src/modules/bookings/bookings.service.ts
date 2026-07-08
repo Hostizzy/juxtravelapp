@@ -19,6 +19,8 @@ export class BookingsService {
       checkOut: string;
       guests: number;
       totalAmount: number;
+      status?: 'pending' | 'confirmed';
+      paymentId?: string;
     }
   ) {
     const { data: property, error: propError } = await this.supabaseService.admin
@@ -33,6 +35,8 @@ export class BookingsService {
     }
 
     const serviceFee = Math.round(body.totalAmount * 0.1);
+    const status = body.status ?? 'confirmed';
+    const paymentId = status === 'pending' ? null : (body.paymentId ?? 'TEST_DIRECT_' + Date.now());
 
     const { data, error } = await this.supabaseService.admin
         .from('bookings')
@@ -46,8 +50,8 @@ export class BookingsService {
           total_amount: body.totalAmount,
           service_fee: serviceFee,
           host_payout: body.totalAmount - serviceFee,
-          status: 'confirmed', // skip pending/payment for now
-          payment_id: 'TEST_DIRECT_' + Date.now(),
+          status,
+          payment_id: paymentId,
         })
         .select()
         .single();
@@ -57,18 +61,20 @@ export class BookingsService {
       throw new Error('Failed to create booking');
     }
 
-    // Auto-create a conversation thread between guest and host
-    this.conversationsService
-      .createForBooking(
-        data.id,
-        guestId,
-        property.host_id,
-        body.propertyId,
-        property.name ?? 'your property',
-      )
-      .catch((err: unknown) => {
-        this.logger.error('Failed to auto-create conversation', err);
-      });
+    // Auto-create a conversation thread between guest and host only if confirmed
+    if (status === 'confirmed') {
+      this.conversationsService
+        .createForBooking(
+          data.id,
+          guestId,
+          property.host_id,
+          body.propertyId,
+          property.name ?? 'your property',
+        )
+        .catch((err: unknown) => {
+          this.logger.error('Failed to auto-create conversation', err);
+        });
+    }
 
     // FUTURE: persist points to a loyalty_points table
     // or a points column on users when that system is

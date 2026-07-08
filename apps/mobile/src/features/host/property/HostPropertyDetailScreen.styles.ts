@@ -796,4 +796,27 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rankingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDF2E9',
+    borderRadius: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    marginBottom: 8,
+    marginLeft: 16,
+  },
+  rankingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D4704A',
+  },
+  statSubLabel: {
+    fontSize: 9,
+    color: '#6B7370',
+    marginTop: 2,
+    textAlign: 'center',
+  },
 });

@@ -227,4 +227,70 @@ export class PropertiesService {
 
     return data;
   }
+
+  async getPropertyStats(
+    propertyId: string,
+    hostId: string
+  ): Promise<{
+    views: number;
+    bookings: number;
+    rating: number;
+    totalReviews: number;
+    revenue: number;
+    ranking: number;
+  }> {
+    // Verify ownership
+    const { data: property } = await this.supabaseService.admin
+      .from('properties')
+      .select('host_id, rating, total_reviews, view_count')
+      .eq('id', propertyId)
+      .single();
+
+    if (!property || property.host_id !== hostId) {
+      throw new UnauthorizedException(
+        'Not your property'
+      );
+    }
+
+    // Real bookings count + revenue for this property
+    const { data: bookings } = await this.supabaseService.admin
+      .from('bookings')
+      .select('host_payout, status, created_at')
+      .eq('property_id', propertyId)
+      .in('status', ['confirmed', 'completed']);
+
+    const bookingsCount = (bookings ?? []).length;
+    const revenue = (bookings ?? []).reduce(
+      (sum, b) => sum + (b.host_payout ?? 0), 0
+    );
+
+    // Property ranking among all active properties
+    // (based on rating + bookings count)
+    const { data: allProps } = await this.supabaseService.admin
+      .from('properties')
+      .select('id, rating, total_reviews')
+      .eq('status', 'active')
+      .order('rating', { ascending: false });
+
+    const ranking = (allProps ?? []).findIndex(
+      p => p.id === propertyId
+    ) + 1;
+
+    return {
+      views: property.view_count ?? 0,
+      bookings: bookingsCount,
+      rating: property.rating ?? 0,
+      totalReviews: property.total_reviews ?? 0,
+      revenue,
+      ranking: ranking || 0,
+    };
+  }
+
+  async trackView(propertyId: string) {
+    await this.supabaseService.admin.rpc(
+      'increment_property_views',
+      { property_id: propertyId }
+    );
+    return { success: true };
+  }
 }

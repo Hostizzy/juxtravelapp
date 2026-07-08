@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../../navigation/RootNavigator';
 import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../../../services/api';
 import { useAuthStore, UserData } from '../../../stores/authStore';
+import { queryClient } from '../../../lib/queryClient';
 import styles from './SplashScreen.styles';
 
 type Props = {
@@ -60,9 +61,11 @@ export default function SplashScreen({ navigation }: Props) {
       } catch (error) {
         console.log('Auto login failed:', error);
         
-        // Clear expired token
+        // Clear expired token and query cache
+        queryClient.clear();
         await SecureStore.deleteItemAsync('access_token');
         await SecureStore.deleteItemAsync('user_id');
+        useAuthStore.getState().clearAuth();
         
         navigation.replace('Auth');
       }

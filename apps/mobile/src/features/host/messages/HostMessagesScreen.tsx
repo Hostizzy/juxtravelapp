@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,72 +10,28 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useAuthStore } from '../../../stores/authStore';
-import {
-  conversationService,
-  ConversationSummary,
-} from '../../../services/conversationService';
+import { useConversations, Conversation } from '../../../hooks/useConversations';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { messageCache } from '../../../services/messageCache';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HostMessagesScreen() {
   const navigation = useNavigation<NavProp>();
-  const { getAccessToken } = useAuthStore();
-  const [conversations, setConversations] = useState<ConversationSummary[]>(() =>
-    (messageCache.getConversations('host') as ConversationSummary[]) ?? []
-  );
-  const [isInitialLoading, setIsInitialLoading] = useState(
-    messageCache.getConversations('host') === null
-  );
+  const { data: conversations = [], isLoading: isInitialLoading, refetch } = useConversations('host');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchConversations = useCallback(async (silent = false) => {
-    if (!silent) setIsInitialLoading(true);
-    try {
-      const token = await getAccessToken();
-      if (!token) return;
-      const data = await conversationService.getMyConversations(token, 'host');
-      setConversations(data ?? []);
-      messageCache.setConversations('host', data ?? []);
-    } catch (error) {
-      console.log('Fetch conversations error:', error);
-    } finally {
-      setIsInitialLoading(false);
-      setRefreshing(false);
-    }
-  }, [getAccessToken]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const cached = messageCache.getConversations('host');
-      if (cached) {
-        setConversations(cached as ConversationSummary[]);
-        void fetchConversations(true);
-      } else {
-        void fetchConversations(false);
-      }
-
-      const interval = setInterval(() => {
-        void fetchConversations(true);
-      }, 8000);
-
-      return () => clearInterval(interval);
-    }, [fetchConversations])
-  );
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    void fetchConversations(true);
+    await refetch();
+    setRefreshing(false);
   };
 
-  const openChat = (conv: ConversationSummary) => {
+  const openChat = (conv: Conversation) => {
     const otherParty = conv.guest?.name ?? 'Guest';
     navigation.navigate('ChatDetail', {
       conversationId: conv.id,
@@ -84,7 +40,7 @@ export default function HostMessagesScreen() {
     });
   };
 
-  const renderItem = ({ item }: { item: ConversationSummary }) => {
+  const renderItem = ({ item }: { item: Conversation }) => {
     const otherName = item.guest?.name ?? 'Guest';
     const propertyName = item.property?.name ?? '';
     const initials = otherName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();

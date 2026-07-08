@@ -10,8 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../services/api';
+import { useMyBookings } from '../../hooks/useBookings';
 import i18n from '../../locales/i18n';
 import styles from './HomeScreen.styles';
 
@@ -19,29 +18,6 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<GuestTabParamList, 'Home'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
-
-interface Booking {
-  id: string;
-  guest_id: string;
-  host_id: string;
-  property_id: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  total_amount: number;
-  status: string;
-  payment_id: string;
-  created_at: string;
-  property: {
-    name: string;
-    photos: string[];
-    location: {
-      city: string;
-      state: string;
-    };
-    price_per_night: number;
-  };
-}
 
 interface TripItem {
   id: string;
@@ -71,24 +47,8 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Lakshay';
-  const [myTrips, setMyTrips] = useState<Booking[]>([]);
+  const { data: myTrips = [] } = useMyBookings();
 
-  useEffect(() => {
-    const fetchTrips = async () => {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      try {
-        const data = await apiService.get<Booking[]>(
-          '/bookings/my-bookings',
-          token
-        );
-        setMyTrips(data ?? []);
-      } catch (error) {
-        console.log('Fetch trips error:', error);
-      }
-    };
-    fetchTrips();
-  }, []);
 
   const handleNextStep = () => {
     navigation.navigate('PlanStep1');

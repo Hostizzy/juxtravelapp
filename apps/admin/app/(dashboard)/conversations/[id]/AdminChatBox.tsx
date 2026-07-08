@@ -1,35 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAdminReply } from '../../../../hooks/useAdminConversation';
 
 export default function AdminChatBox({
   conversationId,
 }: { conversationId: string }) {
-  const router = useRouter();
   const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
+  const replyMutation = useAdminReply(conversationId);
 
   const handleSend = async () => {
-    if (!text.trim() || sending) return;
-    setSending(true);
-    try {
-      const res = await fetch(
-        `/api/conversations/${conversationId}/reply`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json' 
-          },
-          body: JSON.stringify({ message: text.trim() }),
-        }
-      );
-      if (res.ok) {
-        setText('');
-        router.refresh();
-      }
-    } finally {
-      setSending(false);
-    }
+    if (!text.trim() || replyMutation.isPending) return;
+    const msg = text.trim();
+    setText('');
+    await replyMutation.mutateAsync(msg);
   };
 
   return (
@@ -46,13 +29,13 @@ export default function AdminChatBox({
       />
       <button
         onClick={handleSend}
-        disabled={sending || !text.trim()}
+        disabled={replyMutation.isPending || !text.trim()}
         style={{ background: '#1A6B5A', color: 'white',
           border: 'none', borderRadius: 8, 
           padding: '0 20px', fontWeight: 600,
           cursor: 'pointer' }}
       >
-        Send
+        {replyMutation.isPending ? 'Sending...' : 'Send'}
       </button>
     </div>
   );

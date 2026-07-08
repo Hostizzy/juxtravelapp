@@ -23,11 +23,11 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  conversationService,
+  useMessages,
+  useSendMessage,
   Message,
-} from '../../services/conversationService';
+} from '../../hooks/useConversations';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { messageCache } from '../../services/messageCache';
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetail'>;
 
@@ -41,49 +41,14 @@ export default function ChatDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<ChatDetailRouteProp>();
   const { conversationId, otherPartyName, propertyName } = route.params;
-  const { getAccessToken, user } = useAuthStore();
+  const { user } = useAuthStore();
+  const role = (user?.role === 'host' || user?.role === 'both') ? 'host' : 'guest';
 
-  const [messages, setMessages] = useState<Message[]>(() =>
-    (messageCache.getMessages(conversationId) as Message[]) ?? []
-  );
-  const [isInitialLoading, setIsInitialLoading] = useState(
-    messageCache.getMessages(conversationId) === null
-  );
-  const [sending, setSending] = useState(false);
+  const { data: messages = [], isLoading: isInitialLoading } = useMessages(conversationId, role);
+  const sendMessageMutation = useSendMessage(conversationId, role);
+  const sending = sendMessageMutation.isPending;
   const [draft, setDraft] = useState('');
   const flatListRef = useRef<FlatList>(null);
-
-  const fetchMessages = useCallback(async (silent = false) => {
-    if (!silent) setIsInitialLoading(true);
-    try {
-      const token = await getAccessToken();
-      if (!token) return;
-      const detail = await conversationService.getConversation(conversationId, token);
-      const messagesData = detail.messages ?? [];
-      setMessages(messagesData);
-      messageCache.setMessages(conversationId, messagesData);
-    } catch (err) {
-      console.error('Failed to load conversation', err);
-    } finally {
-      setIsInitialLoading(false);
-    }
-  }, [conversationId, getAccessToken]);
-
-  useEffect(() => {
-    const cached = messageCache.getMessages(conversationId);
-    if (cached) {
-      setMessages(cached as Message[]);
-      void fetchMessages(true);
-    } else {
-      void fetchMessages(false);
-    }
-
-    const interval = setInterval(() => {
-      void fetchMessages(true);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [conversationId, fetchMessages]);
 
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {
@@ -101,23 +66,13 @@ export default function ChatDetailScreen() {
     const text = draft.trim();
     if (!text || sending) return;
     setDraft('');
-    setSending(true);
     try {
-      const token = await getAccessToken();
-      if (!token) throw new Error('No token');
-      const msg = await conversationService.sendMessage(conversationId, text, token);
-      setMessages(prev => {
-        const updated = [...prev, msg];
-        messageCache.setMessages(conversationId, updated);
-        return updated;
-      });
+      await sendMessageMutation.mutateAsync(text);
       setTimeout(scrollToBottom, 100);
     } catch (err) {
       console.error('Failed to send message', err);
       Alert.alert('Error', 'Could not send message. Please try again.');
       setDraft(text);
-    } finally {
-      setSending(false);
     }
   };
 

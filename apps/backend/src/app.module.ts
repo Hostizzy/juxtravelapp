@@ -12,6 +12,7 @@ import { InstagramModule } from './modules/instagram/instagram.module';
 import { MatchesModule } from './modules/matches/matches.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -40,6 +41,7 @@ import configuration from './config/configuration';
     MatchesModule,
     BookingsModule,
     ConversationsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

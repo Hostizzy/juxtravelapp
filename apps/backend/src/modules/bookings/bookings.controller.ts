@@ -24,6 +24,8 @@ export class BookingsController {
       checkOut: string;
       guests: number;
       totalAmount: number;
+      status?: 'pending' | 'confirmed';
+      paymentId?: string;
     },
   ) {
     return this.bookingsService.createDirect(

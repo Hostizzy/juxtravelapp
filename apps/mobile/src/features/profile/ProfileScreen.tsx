@@ -23,11 +23,12 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../stores/authStore';
-import { apiService } from '../../services/api';
+import { useSavedProperties } from '../../hooks/useSavedProperties';
+import { useMyBookings } from '../../hooks/useBookings';
+import { queryClient } from '../../lib/queryClient';
 import { Property } from '../discover/DiscoverScreen';
 import i18n from '../../locales/i18n';
 import styles from './ProfileScreen.styles';
-import { messageCache } from '../../services/messageCache';
 
 type ProfileScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<GuestTabParamList, 'Profile'>,
@@ -98,16 +99,15 @@ type ProfileRouteProp = RouteProp<
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const route = useRoute<ProfileRouteProp>();
-  const { user, session } = useAuthStore();
+  const { user } = useAuthStore();
   const userName = user?.name ?? 'Traveller';
   const isAlreadyHost = user?.role === 'host' || user?.role === 'both';
   const [activeTab, setActiveTab] = useState<TabType>('trips');
-  const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([]);
-  const [trips, setTrips] = useState<Booking[]>([]);
-  const [savedLoaded, setSavedLoaded] = useState(false);
-  const [tripsLoaded, setTripsLoaded] = useState(false);
-  const [savedLoading, setSavedLoading] = useState(false);
-  const [tripsLoading, setTripsLoading] = useState(false);
+
+  const { data: savedPropsData = [], isLoading: savedLoading, refetch: refetchSaved } = useSavedProperties();
+  const savedProperties = savedPropsData as SavedProperty[];
+  const { data: tripsData = [], isLoading: tripsLoading, refetch: refetchTrips } = useMyBookings();
+  const trips = tripsData as unknown as Booking[];
 
   const tripsCount = trips.length;
   const savedCount = savedProperties.length;
@@ -115,63 +115,11 @@ export default function ProfileScreen() {
     (t) => t.status === 'confirmed' || t.status === 'completed'
   ).length * 100;
 
-  const fetchSaved = async (force = false) => {
-    if (savedLoaded && !force) return;
-    setSavedLoading(true);
-    try {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        console.log('No token for saved fetch');
-        return;
-      }
-
-      console.log('Fetching saved properties...');
-      const data = await apiService.get<SavedProperty[]>(
-        '/users/saved-properties',
-        token
-      );
-      console.log('Saved properties received:', data?.length);
-      setSavedProperties(data ?? []);
-      setSavedLoaded(true);
-    } catch (error) {
-      console.log('Fetch saved error:', error);
-    } finally {
-      setSavedLoading(false);
-    }
-  };
-
-  const fetchTrips = async (force = false) => {
-    if (tripsLoaded && !force) return;
-    setTripsLoading(true);
-    try {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-
-      const data = await apiService.get<Booking[]>(
-        '/bookings/my-bookings',
-        token
-      );
-      setTrips(data ?? []);
-      setTripsLoaded(true);
-    } catch (err) {
-      console.error('Failed to fetch trips:', err);
-    } finally {
-      setTripsLoading(false);
-    }
-  };
-
   React.useEffect(() => {
     if (route.params?.activeTab) {
       setActiveTab(route.params.activeTab);
     }
   }, [route.params?.activeTab]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchSaved();
-      fetchTrips();
-    }, [savedLoaded, tripsLoaded])
-  );
 
   const handleBecomeHost = () => {
     navigation.navigate('HostOnboarding');
@@ -179,12 +127,12 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     try {
+      queryClient.clear();
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_id');
     } catch (err) {
       console.log('Error deleting token on sign out:', err);
     }
-    messageCache.clearAll();
     useAuthStore.getState().clearAuth();
     navigation.replace('Auth');
   };
@@ -282,8 +230,8 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={activeTab === 'saved' ? savedLoading : activeTab === 'trips' ? tripsLoading : false}
               onRefresh={() => {
-                if (activeTab === 'saved') fetchSaved(true);
-                if (activeTab === 'trips') fetchTrips(true);
+                if (activeTab === 'saved') refetchSaved();
+                if (activeTab === 'trips') refetchTrips();
               }}
             />
           }
@@ -428,7 +376,7 @@ export default function ProfileScreen() {
             {/* TAB 1: TRIPS */}
             {activeTab === 'trips' && (
               <View>
-                {(tripsLoading && !tripsLoaded) ? (
+                {(tripsLoading && trips.length === 0) ? (
                   <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
                 ) : trips.length === 0 ? (
                   <View style={styles.emptySavedContainer}>
@@ -512,7 +460,7 @@ export default function ProfileScreen() {
             {/* TAB 2: SAVED */}
             {activeTab === 'saved' && (
               <View>
-                {(savedLoading && !savedLoaded) ? (
+                {(savedLoading && savedProperties.length === 0) ? (
                   <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
                 ) : savedProperties.length === 0 ? (
                   <View style={styles.emptySavedContainer}>

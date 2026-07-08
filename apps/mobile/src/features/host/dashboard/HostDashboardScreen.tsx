@@ -12,115 +12,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import * as SecureStore from 'expo-secure-store';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
 import { useAuthStore } from '../../../stores/authStore';
-import { hostDataCache } from '../../../services/hostDataCache';
+import { useMyProperties } from '../../../hooks/useProperties';
+import { useHostStats, useHostBookings } from '../../../hooks/useBookings';
+import { useConversations } from '../../../hooks/useConversations';
 import i18n from '../../../locales/i18n';
 import styles from './HostDashboardScreen.styles';
 
-interface Property {
-  id: string;
-  name: string;
-  status: string;
-  photos: string[];
-  price_per_night: number;
-  location: { city: string; state: string };
-  capacity: { maxGuests: number };
-}
-
-interface BookingItem {
-  id: string;
-  status: string;
-  check_in: string;
-  check_out: string;
-  total_amount: number;
-  guests: number;
-  guest: {
-    name: string;
-  } | null;
-  property: {
-    name: string;
-  } | null;
-}
-
 export default function HostDashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
 
-  const [properties, setProperties] = useState<Property[]>(() =>
-    hostDataCache.get<Property[]>('host_properties') ?? []
+  const { data: properties = [], isLoading: propsLoading } = useMyProperties();
+  const { data: statsData } = useHostStats();
+  const stats = statsData ?? { allTimeBookings: 0, checkInsThisMonth: 0, earningsThisMonth: 0 };
+  const { data: allBookings = [] } = useHostBookings();
+  const recentBookings = allBookings.slice(0, 3);
+  const isInitialLoad = propsLoading;
+
+  const { data: conversations = [] } = useConversations('host');
+  const unreadCount = conversations.reduce(
+    (sum, c) => sum + (c.unreadCount ?? 0),
+    0
   );
-  const [recentBookings, setRecentBookings] = useState<BookingItem[]>(() =>
-    hostDataCache.get<BookingItem[]>('host_recent_bookings') ?? []
-  );
-  const [stats, setStats] = useState<{ allTimeBookings: number; checkInsThisMonth: number; earningsThisMonth: number }>(() =>
-    hostDataCache.get<{ allTimeBookings: number; checkInsThisMonth: number; earningsThisMonth: number }>('host_stats') ?? 
-    { allTimeBookings: 0, checkInsThisMonth: 0, earningsThisMonth: 0 }
-  );
-  const [isInitialLoad, setIsInitialLoad] = useState(() =>
-    hostDataCache.get('host_properties') === null
-  );
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchDashboardData = async (silent = false) => {
-    try {
-      if (!silent) setIsInitialLoad(true);
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-
-      const [props, statsData, bookingsData] = await Promise.all([
-        apiService.get<Property[]>('/properties/my', token),
-        apiService.get<any>('/bookings/host-stats', token),
-        apiService.get<BookingItem[]>('/bookings/host-bookings', token),
-      ]);
-
-      if (props) {
-        setProperties(props);
-        hostDataCache.set('host_properties', props);
-      }
-      if (statsData) {
-        setStats(statsData);
-        hostDataCache.set('host_stats', statsData);
-      }
-      if (bookingsData) {
-        const recent = bookingsData.slice(0, 3);
-        setRecentBookings(recent);
-        hostDataCache.set('host_recent_bookings', recent);
-      }
-
-      // Fetch unread count for notifications
-      const conversations = await apiService.get<{ unreadCount: number }[]>(
-        '/conversations/my?role=host',
-        token
-      );
-      const total = (conversations ?? []).reduce(
-        (sum, c) => sum + (c.unreadCount ?? 0),
-        0
-      );
-      setUnreadCount(total);
-    } catch (error) {
-      console.error('Fetch dashboard data error:', error);
-    } finally {
-      setIsInitialLoad(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isFocused) {
-      const cached = hostDataCache.get('host_properties');
-      if (cached !== null) {
-        fetchDashboardData(true);
-      } else {
-        fetchDashboardData(false);
-      }
-    }
-  }, [isFocused]);
 
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
