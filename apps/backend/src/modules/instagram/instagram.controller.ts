@@ -18,8 +18,9 @@ export class InstagramController {
   @UseGuards(JwtAuthGuard)
   async getAuthUrl(
     @CurrentUser() payload: JwtPayload,
+    @Query('propertyId') propertyId?: string,
   ) {
-    const url = this.instagramService.getOAuthUrl(payload.sub);
+    const url = this.instagramService.getOAuthUrl(payload.sub, propertyId);
     return { url };
   }
 
@@ -29,17 +30,38 @@ export class InstagramController {
     @Query('code') code: string,
     @Query('state') state: string,
   ) {
-    const { hostId } = JSON.parse(
+    const { hostId, propertyId } = JSON.parse(
       Buffer.from(state, 'base64').toString()
     );
     
-    await this.instagramService.exchangeCodeForToken(code, hostId);
+    await this.instagramService.exchangeCodeForToken(code, hostId, propertyId);
 
     // Redirect to app deep link
     return { 
       success: true,
       message: 'Instagram connected! Return to app.'
     };
+  }
+
+  // Get randomized reels for Discover (no auth needed for public discovery)
+  @Get('reels/randomized')
+  async getRandomizedReels(
+    @Query('limit') limit: string = '20',
+    @Query('offset') offset: string = '0',
+  ) {
+    const limitNum = Math.min(parseInt(limit) || 20, 100); // Max 100 per request
+    const offsetNum = parseInt(offset) || 0;
+    return this.instagramService.getRandomizedReels(limitNum, offsetNum);
+  }
+
+  // Save reel to guest profile
+  @Post('save-reel')
+  @UseGuards(JwtAuthGuard)
+  async saveReel(
+    @CurrentUser() payload: JwtPayload,
+    @Body() body: { reelUrl: string },
+  ) {
+    return this.instagramService.saveReelToGuest(payload.sub, body.reelUrl);
   }
 
   // Get host reels

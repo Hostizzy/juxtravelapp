@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, NativeSyntheticEvent, TextInputKeyPressEventData, ImageBackground, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { useAuthStore, UserData } from '../../../stores/authStore';
 import { Session } from '@supabase/supabase-js';
 import i18n from '../../../locales/i18n';
 import styles from './OtpScreen.styles';
+import { Feather as FeatherIcon } from '@expo/vector-icons';
 
 type OtpScreenRouteProp = RouteProp<RootStackParamList, 'Otp'>;
 
@@ -173,6 +174,7 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
 
   return (
     <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F1714" translucent />
       <SafeAreaView style={styles.container} edges={['top']}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -180,23 +182,30 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
         >
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             
-            {/* Header Section */}
-            <View style={styles.header}>
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => navigation.goBack()}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.backButtonText}>←</Text>
-              </TouchableOpacity>
+            {/* Header Section with Background Image */}
+            <ImageBackground
+              source={require('../../../../assets/login_background.png')}
+              style={styles.header}
+              imageStyle={styles.headerImage}
+              resizeMode="cover"
+            >
+              <View style={styles.headerOverlay}>
+                <TouchableOpacity 
+                  style={styles.backButton} 
+                  onPress={() => navigation.goBack()}
+                  activeOpacity={0.7}
+                >
+                  <FeatherIcon name="arrow-left" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
 
-              <View style={styles.headerContent}>
-                <Text style={styles.brandTitle}>{i18n.t('auth.otp.title')}</Text>
-                <Text style={styles.tagline}>
-                  {i18n.t('auth.otp.subtitle')} {formattedPhone}
-                </Text>
+                <View style={styles.headerContent}>
+                  <Text style={styles.brandTitle}>{i18n.t('auth.otp.title')}</Text>
+                  <Text style={styles.tagline}>
+                    {i18n.t('auth.otp.subtitle')} {formattedPhone}
+                  </Text>
+                </View>
               </View>
-            </View>
+            </ImageBackground>
 
             {/* Content Area */}
             <View style={styles.contentArea}>

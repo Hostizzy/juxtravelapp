@@ -64,7 +64,7 @@ export const apiService = {
 
   get: <T>(
     endpoint: string,
-    token: string,
+    token?: string,
   ) => request<T>(
     endpoint,
     { method: 'GET' },

@@ -1,93 +1,83 @@
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../../navigation/RootNavigator';
-import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../../services/api';
-import { useAuthStore, UserData } from '../../../stores/authStore';
-import { queryClient } from '../../../lib/queryClient';
-import styles from './SplashScreen.styles';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../../hooks/useAuth';
+import { AnimatedLogo } from '../../../components/Logo';
+import { useI18n } from '../../../locales';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Splash'>;
-};
+export const SplashScreen: React.FC<any> = ({ navigation }: any) => {
+  const { getUser } = useAuth();
+  const { t } = useI18n();
 
-export default function SplashScreen({ navigation }: Props) {
-  useEffect(() => {
-    const checkAuth = async () => {
-      // Wait for splash animation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      try {
-        // Get token from SecureStore
-        const token = await SecureStore.getItemAsync('access_token');
-
-        console.log(
-          'Auto login - Token:',
-          token ? 'Found' : 'Not found'
-        );
-
-        if (!token) {
-          navigation.replace('Auth');
-          return;
-        }
-
-        // Verify token with backend
-        const userData = await apiService.get<UserData>(
-          '/users/me',
-          token
-        );
-
-        console.log(
-          'Auto login - User:',
-          userData?.name
-        );
-
-        // Save to store
-        useAuthStore.getState().setUser({
-          id: userData.id,
-          name: userData.name,
-          phone: userData.phone,
-          email: userData.email,
-          role: userData.role as 'guest' | 'host' | 'both',
-          avatar_url: userData.avatar_url,
-          guest_profile: userData.guest_profile,
-          host_profile: userData.host_profile,
-        });
-
-        // Navigate based on role
-        navigation.replace('Guest');
-
-      } catch (error) {
-        console.log('Auto login failed:', error);
-        
-        // Clear expired token and query cache
-        queryClient.clear();
-        await SecureStore.deleteItemAsync('access_token');
-        await SecureStore.deleteItemAsync('user_id');
-        useAuthStore.getState().clearAuth();
-        
+  const handleAnimationComplete = async () => {
+    // Animation done, now check if user is logged in
+    try {
+      const user = await getUser();
+      if (user) {
+        // Auto-login successful, navigate to home based on role
+        const route = user.role === 'host' ? 'HostApp' : 'Guest';
+        navigation.replace(route);
+      } else {
+        // No user, go to login
         navigation.replace('Auth');
       }
-    };
+    } catch (error) {
+      console.error('Auto-login error:', error);
+      navigation.replace('Auth');
+    }
+  };
 
-    checkAuth();
-  }, [navigation]);
+  const styles = StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: '#05201B', // Deep emerald
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#05201B',
+    },
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoContainer: {
+      alignItems: 'center',
+      gap: 32,
+    },
+    loadingContainer: {
+      marginTop: 48,
+      alignItems: 'center',
+    },
+  });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.center}>
-        <Text style={styles.icon}>🌿</Text>
-        <Text style={styles.title}>JuxTravel</Text>
-        <Text style={styles.tagline}>
-          Travel like you know someone there
-        </Text>
-      </View>
-      <View style={styles.dots}>
-        <View style={[styles.dot, styles.activeDot]} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-      </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.content}>
+          <View style={styles.logoContainer}>
+            <AnimatedLogo
+              size="large"
+              color="white"
+              onAnimationComplete={handleAnimationComplete}
+              duration={1500}
+            />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator
+                size="small"
+                color="#6FCF97"
+                animating={true}
+              />
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
     </View>
   );
-}
+};
+
+export default SplashScreen;

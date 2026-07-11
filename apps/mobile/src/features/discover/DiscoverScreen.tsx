@@ -87,39 +87,56 @@ export interface Property {
   updated_at?: string;
 }
 
+export interface DiscoverReelItem {
+  id: string;
+  url: string;
+  property_id: string;
+  property_name: string;
+  location: {
+    city: string;
+    state: string;
+  };
+  price_per_night: number;
+  host_id: string;
+}
+
 export default function DiscoverScreen() {
   const navigation = useNavigation<DiscoverScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<TabType>('reels');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
-  const [reelProperties, setReelProperties] = useState<Property[]>([]);
+  const [reelProperties, setReelProperties] = useState<DiscoverReelItem[]>([]);
   const [loadingReels, setLoadingReels] = useState(true);
 
   useEffect(() => {
-    const fetchReels = async () => {
+    const fetchRandomReels = async () => {
       try {
         setLoadingReels(true);
-        const token = await SecureStore.getItemAsync('access_token');
-        if (!token) return;
-        
-        const properties = await apiService.get<Property[]>(
-          '/properties/active',
-          token
+        const response = await apiService.get<any>(
+          '/instagram/reels/randomized?limit=20&offset=0'
         );
-        
-        // Filter properties with reels
-        const withReels = properties.filter(
-          p => p.reel_urls && p.reel_urls.length > 0
-        );
-        
-        setReelProperties(withReels);
+        setReelProperties(response.reels || []);
       } catch (error) {
-        console.error('Fetch reels:', error);
+        console.error('Fetch randomized reels:', error);
+        setReelProperties([]);
       } finally {
         setLoadingReels(false);
       }
     };
-    fetchReels();
+    fetchRandomReels();
   }, []);
+
+  const handleLoadMore = async () => {
+    try {
+      const response = await apiService.get<any>(
+        `/instagram/reels/randomized?limit=20&offset=${reelProperties.length}`
+      );
+      if (response.reels && response.reels.length > 0) {
+        setReelProperties((prev) => [...prev, ...response.reels]);
+      }
+    } catch (error) {
+      console.error('Load more reels failed:', error);
+    }
+  };
 
   const reelsData: ReelItem[] = [
     {
@@ -190,16 +207,30 @@ export default function DiscoverScreen() {
     Alert.alert('Notifications', 'No new notifications.');
   };
 
-  const renderReelItem: ListRenderItem<Property> = ({ item }) => {
-    const videoUrl = item.reel_urls?.[0];
+  const renderReelItem: ListRenderItem<DiscoverReelItem> = ({ item }) => {
+    const handleSaveReel = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) {
+          Alert.alert('Error', 'Please log in to save reels');
+          return;
+        }
+        await apiService.post('/instagram/save-reel', {
+          reelUrl: item.url,
+        }, token);
+        Alert.alert('Saved!', 'Reel added to your saved collection');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to save reel');
+      }
+    };
 
     return (
       <View style={styles.reelCard}>
         {/* Property Video Player */}
         <View style={styles.propertyImageArea}>
-          {videoUrl ? (
+          {item.url ? (
             <Video
-              source={{ uri: videoUrl }}
+              source={{ uri: item.url }}
               style={StyleSheet.absoluteFillObject}
               resizeMode={ResizeMode.COVER}
               shouldPlay={activeTab === 'reels'}
@@ -216,21 +247,21 @@ export default function DiscoverScreen() {
           {/* bookmark icon */}
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleActionPress('save', item.name)}
+            onPress={handleSaveReel}
             activeOpacity={0.7}
           >
             <Feather name="bookmark" size={24} color="#FFFFFF" style={styles.actionIcon} />
-            <Text style={styles.actionCount}>124</Text>
+            <Text style={styles.actionCount}>Save</Text>
           </TouchableOpacity>
 
           {/* share icon */}
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleActionPress('share', item.name)}
+            onPress={() => handleActionPress('share', item.property_name)}
             activeOpacity={0.7}
           >
             <Feather name="share-2" size={24} color="#FFFFFF" style={styles.actionIcon} />
-            <Text style={styles.actionCount}>48</Text>
+            <Text style={styles.actionCount}>Share</Text>
           </TouchableOpacity>
         </View>
 
@@ -238,7 +269,9 @@ export default function DiscoverScreen() {
         <View style={styles.bottomOverlay}>
           {/* ROW 1: Property name + Trust Score */}
           <View style={styles.overlayHeaderRow}>
-            <Text style={[styles.propertyName, { flex: 1, marginRight: 12 }]} numberOfLines={1}>{item.name}</Text>
+            <Text style={[styles.propertyName, { flex: 1, marginRight: 12 }]} numberOfLines={1}>
+              {item.property_name}
+            </Text>
             {/* Trust Score Badge */}
             <View style={styles.trustBadge}>
               <Text style={styles.trustScoreValue}>9.2</Text>
@@ -251,25 +284,16 @@ export default function DiscoverScreen() {
             <Feather name="map-pin" size={12} color="#84C9BA" /> {item.location?.city}, {item.location?.state}
           </Text>
 
-          {/* ROW 3: Amenity chips */}
-          <View style={styles.chipsRow}>
-            {item.amenities.slice(0, 3).map((tag, idx) => (
-              <View key={idx} style={styles.amenityChip}>
-                <Text style={styles.amenityChipText}>{tag.replace('_', ' ').toUpperCase()}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* ROW 4: Price */}
+          {/* ROW 3: Price */}
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>{i18n.t('discover.startingFrom')}</Text>
-            <Text style={styles.priceValue}>₹{item.price_per_night.toLocaleString('en-IN')}/night</Text>
+            <Text style={styles.priceValue}>₹{item.price_per_night?.toLocaleString('en-IN')}/night</Text>
           </View>
 
-          {/* ROW 5: View Property button */}
+          {/* ROW 4: View Property button */}
           <TouchableOpacity
             style={styles.viewPropertyButton}
-            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: item.id })}
+            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: item.property_id })}
             activeOpacity={0.8}
           >
             <Text style={styles.viewPropertyButtonText}>
@@ -364,6 +388,8 @@ export default function DiscoverScreen() {
               pagingEnabled
               showsVerticalScrollIndicator={false}
               decelerationRate="fast"
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
             />
           )
         ) : (

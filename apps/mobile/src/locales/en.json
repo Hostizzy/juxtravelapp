@@ -1,5 +1,15 @@
 {
   "auth": {
+    "find_escape": "Find your perfect escape",
+    "login_subtitle": "AI-curated stays, experiences and memories.",
+    "phone_placeholder": "Phone number",
+    "name_placeholder": "Name",
+    "send_otp": "Send OTP",
+    "invalid_phone": "Please enter a valid phone number",
+    "invalid_name": "Please enter your name",
+    "otp_error": "Failed to send OTP. Please try again.",
+    "new_here": "New here",
+    "new_here_description": "Join 50k+ travelers using AI to curate bespoke Indian escapes.",
     "splash": {
       "tagline": "Travel like you know someone there"
     },

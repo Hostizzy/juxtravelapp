@@ -1,6 +1,10 @@
 import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0F1714',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0F1714',
@@ -13,12 +17,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    overflow: 'hidden',
     backgroundColor: '#0F1714',
-    paddingTop: 80,
-    paddingBottom: 60,
+    height: 200,
+  },
+  headerImage: {
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+  },
+  headerOverlay: {
+    backgroundColor: 'rgba(15, 23, 20, 0.45)',
+    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+    paddingBottom: 50,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     position: 'relative',
   },
   backButton: {
@@ -28,18 +41,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 8,
   },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '600',
-  },
   headerContent: {
     alignItems: 'center',
     marginTop: 20,
   },
   brandTitle: {
-    fontFamily: 'serif',
-    fontSize: 28,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontSize: 30,
     fontWeight: '800',
     color: '#84C9BA',
     textAlign: 'center',
@@ -49,7 +57,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginTop: 8,
     textAlign: 'center',
-    opacity: 0.8,
+    opacity: 0.85,
     lineHeight: 20,
   },
   contentArea: {
@@ -81,21 +89,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6F2EF',
   },
   verifyButton: {
-    backgroundColor: '#1A6B5A',
-    borderRadius: 100,
-    height: 52,
+    backgroundColor: '#0E5E4E',
+    borderRadius: 12,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 32,
     width: '100%',
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
   verifyButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   resendSection: {
     marginTop: 24,
@@ -118,10 +126,6 @@ const styles = StyleSheet.create({
     color: '#6B7370',
     fontSize: 13,
     marginTop: 4,
-  },
-  root: {
-    flex: 1,
-    backgroundColor: '#0F1714',
   },
 });
 

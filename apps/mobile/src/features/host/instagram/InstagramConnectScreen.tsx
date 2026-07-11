@@ -99,7 +99,8 @@ export default function InstagramConnectScreen() {
     try {
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return;
-      const data = await apiService.get<{ url: string }>('/instagram/auth-url', token);
+      const url = `/instagram/auth-url${propertyId ? `?propertyId=${propertyId}` : ''}`;
+      const data = await apiService.get<{ url: string }>(url, token);
       // Open in browser
       await Linking.openURL(data.url);
     } catch (error) {
