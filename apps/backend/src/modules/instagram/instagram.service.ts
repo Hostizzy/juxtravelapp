@@ -26,8 +26,8 @@ export class InstagramService {
 
   // Step 1: Get OAuth URL for Instagram
   getOAuthUrl(hostId: string, propertyId?: string): string {
-    const appId = this.configService.get<string>('instagram.appId');
-    const redirectUri = this.configService.get<string>('instagram.redirectUri');
+    const appId = this.configService.get<string>('INSTAGRAM_APP_ID');
+    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI');
 
     const scope = ['user_profile', 'user_media'].join(' ');
 
@@ -42,9 +42,9 @@ export class InstagramService {
     hostId: string,
     propertyId?: string
   ): Promise<{ success: boolean }> {
-    const appId = this.configService.get<string>('instagram.appId');
-    const appSecret = this.configService.get<string>('instagram.appSecret');
-    const redirectUri = this.configService.get<string>('instagram.redirectUri');
+    const appId = this.configService.get<string>('INSTAGRAM_APP_ID');
+    const appSecret = this.configService.get<string>('INSTAGRAM_APP_SECRET');
+    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI');
 
     try {
       // Exchange for short-lived token
