@@ -29,7 +29,7 @@ export class InstagramService {
     const appId = this.configService.get<string>('instagram.appId');
     const redirectUri = this.configService.get<string>('instagram.redirectUri');
 
-    const scope = ['user_profile', 'user_media'].join(',');
+    const scope = ['user_profile', 'user_media'].join(' ');
 
     const state = Buffer.from(JSON.stringify({ hostId, propertyId })).toString('base64');
 
