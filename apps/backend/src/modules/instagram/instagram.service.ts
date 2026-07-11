@@ -36,7 +36,6 @@ export class InstagramService {
     return `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
   }
 
-  // Step 2: Exchange code for access token
   async exchangeCodeForToken(
     code: string,
     hostId: string,
@@ -47,7 +46,15 @@ export class InstagramService {
     const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI');
 
     try {
+      console.log('[INSTAGRAM] 1️⃣ START OAuth exchange');
+      console.log(`[INSTAGRAM] - hostId: ${hostId}`);
+      console.log(`[INSTAGRAM] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
+      console.log(`[INSTAGRAM] - appId: ${appId ? '✅ EXISTS' : '❌ MISSING'}`);
+      console.log(`[INSTAGRAM] - appSecret: ${appSecret ? '✅ EXISTS' : '❌ MISSING'}`);
+      console.log(`[INSTAGRAM] - redirectUri: ${redirectUri}`);
+
       // Exchange for short-lived token
+      console.log('[INSTAGRAM] 2️⃣ Requesting short-lived token from Instagram API');
       const tokenResponse = await firstValueFrom(
         this.httpService.post(
           'https://api.instagram.com/oauth/access_token',
@@ -68,8 +75,13 @@ export class InstagramService {
 
       const shortToken = tokenResponse.data.access_token;
       const igUserId = tokenResponse.data.user_id;
+      
+      console.log(`[INSTAGRAM] 3️⃣ Short-lived token received`);
+      console.log(`[INSTAGRAM] - igUserId: ${igUserId}`);
+      console.log(`[INSTAGRAM] - shortToken: ${shortToken ? '✅ VALID' : '❌ INVALID'}`);
 
       // Exchange for long-lived token (60 days)
+      console.log('[INSTAGRAM] 4️⃣ Exchanging for long-lived token');
       const longTokenResponse = await firstValueFrom(
         this.httpService.get(
           `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`
@@ -78,9 +90,13 @@ export class InstagramService {
 
       const longToken = longTokenResponse.data.access_token;
       const expiresIn = longTokenResponse.data.expires_in;
+      
+      console.log(`[INSTAGRAM] 5️⃣ Long-lived token received`);
+      console.log(`[INSTAGRAM] - expiresIn: ${expiresIn} seconds (~${Math.round(expiresIn / 86400)} days)`);
 
       // Save token to host_profiles
-      await this.supabaseService.admin
+      console.log('[INSTAGRAM] 6️⃣ Saving token to database');
+      const { error: updateError } = await this.supabaseService.admin
         .from('host_profiles')
         .update({
           instagram_access_token: longToken,
@@ -90,35 +106,66 @@ export class InstagramService {
         })
         .eq('user_id', hostId);
 
-      this.logger.log(`Instagram connected for host: ${hostId}`);
+      if (updateError) {
+        console.log(`[INSTAGRAM] ❌ Database update failed: ${updateError.message}`);
+        throw updateError;
+      }
+
+      console.log(`[INSTAGRAM] 7️⃣ Token saved successfully`);
 
       // AUTO-FETCH: Get 15 reels immediately
+      console.log(`[INSTAGRAM] 8️⃣ Auto-fetching reels from Instagram`);
       const reels = await this.fetchHostReels(hostId);
+      console.log(`[INSTAGRAM] - Found ${reels.length} reels`);
+
       const reelUrls = reels.slice(0, 15).map((r) => r.media_url || r.permalink);
+      console.log(`[INSTAGRAM] - Extracted ${reelUrls.length} reel URLs`);
+      if (reelUrls.length > 0) {
+        console.log(`[INSTAGRAM] - Sample URL: ${reelUrls[0]}`);
+      }
 
       // If propertyId provided, save to that property
       if (propertyId && reelUrls.length > 0) {
+        console.log(`[INSTAGRAM] 9️⃣ Saving reels to property: ${propertyId}`);
         await this.saveReelsToProperty(propertyId, hostId, reelUrls);
-        this.logger.log(`Auto-saved ${reelUrls.length} reels to property ${propertyId}`);
+        console.log(`[INSTAGRAM] ✅ Auto-saved ${reelUrls.length} reels to property`);
+      } else if (!propertyId) {
+        console.log(`[INSTAGRAM] ⚠️ No propertyId provided - skipping auto-save`);
+      } else {
+        console.log(`[INSTAGRAM] ⚠️ No reels found - nothing to save`);
       }
 
+      console.log(`[INSTAGRAM] ✅ COMPLETE - All steps successful`);
       return { success: true };
+
     } catch (error) {
+      console.log(`[INSTAGRAM] ❌ ERROR at step - Details:`, error);
       this.logger.error('Instagram token exchange failed', error);
       throw new Error('Failed to connect Instagram');
     }
   }
 
-  // Step 3: Fetch reels from Instagram
   async fetchHostReels(hostId: string): Promise<InstagramReel[]> {
+    console.log(`[INSTAGRAM] fetchHostReels - hostId: ${hostId}`);
+    
     // Get host instagram token
-    const { data: hostProfile } = await this.supabaseService.admin
-        .from('host_profiles')
-        .select('instagram_access_token, instagram_user_id, instagram_connected')
-        .eq('user_id', hostId)
-        .single();
+    const { data: hostProfile, error: selectError } = await this.supabaseService.admin
+      .from('host_profiles')
+      .select('instagram_access_token, instagram_user_id, instagram_connected')
+      .eq('user_id', hostId)
+      .single();
+
+    if (selectError) {
+      console.log(`[INSTAGRAM] ❌ Failed to get host profile: ${selectError.message}`);
+      return [];
+    }
+
+    console.log(`[INSTAGRAM] - instagram_connected: ${hostProfile?.instagram_connected}`);
+    console.log(`[INSTAGRAM] - instagram_user_id: ${hostProfile?.instagram_user_id}`);
+    console.log(`[INSTAGRAM] - instagram_access_token: ${hostProfile?.instagram_access_token ? '✅ EXISTS' : '❌ MISSING'}`);
 
     if (!hostProfile?.instagram_connected || !hostProfile?.instagram_access_token) {
+      console.log(`[INSTAGRAM] ❌ Instagram not connected or no token`);
       return [];
     }
 
@@ -126,12 +173,16 @@ export class InstagramService {
       const token = hostProfile.instagram_access_token;
       const userId = hostProfile.instagram_user_id;
 
+      console.log(`[INSTAGRAM] Fetching media from Graph API - userId: ${userId}`);
+      
       // Fetch media from Instagram
       const response = await firstValueFrom(
         this.httpService.get(
           `https://graph.instagram.com/${userId}/media?fields=id,media_type,media_url,thumbnail_url,caption,timestamp,permalink&access_token=${token}`
         )
       );
+
+      console.log(`[INSTAGRAM] - Total media from API: ${response.data.data?.length || 0}`);
 
       // Filter only videos/reels
       const reels = response.data.data.filter(
@@ -140,9 +191,13 @@ export class InstagramService {
           item.media_type === 'REEL'
       );
 
+      console.log(`[INSTAGRAM] - Filtered reels (VIDEO/REEL): ${reels.length}`);
+      console.log(`[INSTAGRAM] - Returning first ${Math.min(20, reels.length)} reels`);
+
       return reels.slice(0, 20); // Max 20 reels
 
     } catch (error) {
+      console.log(`[INSTAGRAM] ❌ Failed to fetch reels:`, error);
       this.logger.error('Failed to fetch Instagram reels', error);
       return [];
     }

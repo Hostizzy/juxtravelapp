@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,18 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
+
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { pickImage } from '../../../services/propertyService';
+import { apiService } from '../../../services/api';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep3Screen.styles';
 
@@ -31,6 +35,27 @@ export default function ListStep3Screen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [reels, setReels] = useState<string[]>([]);
   const [isInstaConnected, setIsInstaConnected] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Add effect after component mounts to handle Instagram callback
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      console.log('[PROPERTY_UPLOAD] 🔗 Deep link received:', url);
+      
+      if (url.includes('instagram/callback')) {
+        console.log('[PROPERTY_UPLOAD] ✅ Instagram callback detected');
+        setIsInstaConnected(true);
+        Alert.alert('Connected!', 'Your Instagram account is connected. Reels will be synced.');
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const handleBack = () => {
     navigation.goBack();
@@ -93,9 +118,55 @@ export default function ListStep3Screen() {
     setReels((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleConnectInstagram = () => {
-    setIsInstaConnected(true);
-    Alert.alert('Instagram Sync', 'Instagram account successfully synced! Loading posts...');
+  const handleConnectInstagram = async () => {
+    try {
+      console.log('[PROPERTY_UPLOAD] 🔵 Initiating Instagram OAuth flow');
+      
+      setLoading(true);
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) {
+        Alert.alert('Error', 'No authentication token found');
+        return;
+      }
+
+      console.log('[PROPERTY_UPLOAD] - Getting OAuth URL from backend');
+      const propertyId = (route.params as Partial<{ propertyId: string }>)?.propertyId || 'UNKNOWN';
+      const data = await apiService.get<{ url: string }>(
+        `/instagram/auth-url?propertyId=${propertyId}`,
+        token
+      );
+
+      const authUrl = data.url;
+      console.log('[PROPERTY_UPLOAD] - OAuth URL received');
+      console.log('[PROPERTY_UPLOAD] - Opening browser for Instagram login');
+      
+      // Open OAuth URL in browser
+      const result = await Linking.openURL(authUrl);
+      if (!result) {
+        console.log('[PROPERTY_UPLOAD] ❌ Failed to open browser');
+        Alert.alert('Error', 'Failed to open Instagram login page');
+        return;
+      }
+
+      console.log('[PROPERTY_UPLOAD] - Browser opened, user redirected to Instagram');
+      console.log('[PROPERTY_UPLOAD] ℹ️ After approval, app will receive OAuth callback');
+      
+      // Show info alert
+      Alert.alert(
+        'Instagram Login',
+        'You will be redirected to Instagram to approve access. After approval, you\'ll return to select your reels.',
+        [{ text: 'OK' }]
+      );
+
+      // Navigation to Instagram Select Reels screen happens via deep link
+      // from InstagramConnectScreen after OAuth completes
+
+    } catch (error) {
+      console.log('[PROPERTY_UPLOAD] ❌ Instagram OAuth error:', error);
+      Alert.alert('Error', 'Failed to connect Instagram. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleContinue = () => {
@@ -150,122 +221,127 @@ export default function ListStep3Screen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-        <Text style={styles.title}>{i18n.t('host.listProperty.photosTitle') || 'Photos and video reels of your property'}</Text>
-        <Text style={styles.subtitle}>{i18n.t('host.listProperty.photosSub') || 'Upload pictures and reels to showcase your stay.'}</Text>
+          <Text style={styles.title}>{i18n.t('host.listProperty.photosTitle') || 'Photos and video reels of your property'}</Text>
+          <Text style={styles.subtitle}>{i18n.t('host.listProperty.photosSub') || 'Upload pictures and reels to showcase your stay.'}</Text>
 
-        {/* PROPERTY PHOTOS */}
-        <View style={styles.sectionLabelRow}>
-          <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyPhotos') || 'PROPERTY PHOTOS'}</Text>
-          <Text style={styles.maxPhotosInfo}>
-            {photos.length}/10 PHOTOS
-          </Text>
-        </View>
+          {/* PROPERTY PHOTOS */}
+          <View style={styles.sectionLabelRow}>
+            <Text style={styles.sectionLabel}>{i18n.t('host.listProperty.propertyPhotos') || 'PROPERTY PHOTOS'}</Text>
+            <Text style={styles.maxPhotosInfo}>
+              {photos.length}/10 PHOTOS
+            </Text>
+          </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalScrollPhotos}
-        >
-          {photos.map((uri, idx) => (
-            <View key={idx} style={styles.photoSquareLarge}>
-              <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
-              <TouchableOpacity
-                style={styles.removeBtnLarge}
-                onPress={() => handleRemovePhoto(idx)}
-                activeOpacity={0.7}
-              >
-                <Feather name="x" size={12} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          {photos.length < 10 && (
-            <TouchableOpacity
-              style={styles.photoSquareLargeDashed}
-              onPress={handleAddPhoto}
-              activeOpacity={0.8}
-            >
-              <Feather name="plus" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
-              <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Photos</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-        <Text style={styles.gridTip}>{i18n.t('host.listProperty.tipNaturalLight') || 'Use natural light and capture wide angles.'}</Text>
-
-        {/* PROPERTY REELS */}
-        <View style={styles.sectionLabelRow}>
-          <Text style={styles.sectionLabel}>PROPERTY REELS</Text>
-          <Text style={styles.maxPhotosInfo}>
-            {reels.length}/4 REELS
-          </Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalScrollPhotos}
-        >
-          {reels.map((uri, idx) => (
-            <View key={idx} style={styles.photoSquareLarge}>
-              <View style={{ width: '100%', height: '100%', borderRadius: 12, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
-                <Feather name="video" size={32} color="#84C9BA" />
-                <Text style={{ color: '#84C9BA', fontSize: 10, marginTop: 4 }}>Reel {idx + 1}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScrollPhotos}
+          >
+            {photos.map((uri, idx) => (
+              <View key={idx} style={styles.photoSquareLarge}>
+                <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
+                <TouchableOpacity
+                  style={styles.removeBtnLarge}
+                  onPress={() => handleRemovePhoto(idx)}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="x" size={12} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
+            ))}
+            {photos.length < 10 && (
               <TouchableOpacity
-                style={styles.removeBtnLarge}
-                onPress={() => handleRemoveReel(idx)}
-                activeOpacity={0.7}
+                style={styles.photoSquareLargeDashed}
+                onPress={handleAddPhoto}
+                activeOpacity={0.8}
               >
-                <Feather name="x" size={12} color="#FFFFFF" />
+                <Feather name="plus" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
+                <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Photos</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+          <Text style={styles.gridTip}>{i18n.t('host.listProperty.tipNaturalLight') || 'Use natural light and capture wide angles.'}</Text>
+
+          {/* PROPERTY REELS */}
+          <View style={styles.sectionLabelRow}>
+            <Text style={styles.sectionLabel}>PROPERTY REELS</Text>
+            <Text style={styles.maxPhotosInfo}>
+              {reels.length}/4 REELS
+            </Text>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScrollPhotos}
+          >
+            {reels.map((uri, idx) => (
+              <View key={idx} style={styles.photoSquareLarge}>
+                <View style={{ width: '100%', height: '100%', borderRadius: 12, backgroundColor: '#2E3B35', alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="video" size={32} color="#84C9BA" />
+                  <Text style={{ color: '#84C9BA', fontSize: 10, marginTop: 4 }}>Reel {idx + 1}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeBtnLarge}
+                  onPress={() => handleRemoveReel(idx)}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="x" size={12} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {reels.length < 4 && (
+              <TouchableOpacity
+                style={styles.photoSquareLargeDashed}
+                onPress={handleAddReel}
+                activeOpacity={0.8}
+              >
+                <Feather name="video" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
+                <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Reel</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+
+          {/* IMPORT FROM INSTAGRAM */}
+          <View style={[styles.instaCard, isInstaConnected && { borderColor: '#1A6B5A' }]}>
+            <View style={styles.instaIconCol}>
+              <MaterialCommunityIcons 
+                name="instagram" 
+                size={36} 
+                color={isInstaConnected ? "#1A6B5A" : "#D4704A"} 
+              />
+            </View>
+            <View style={styles.instaContentCol}>
+              <Text style={styles.instaTitle}>{i18n.t('host.listProperty.connectInsta') || 'Sync with Instagram'}</Text>
+              <Text style={styles.instaBody}>{i18n.t('host.listProperty.instaBody') || 'Import photos and reels directly from your profile posts.'}</Text>
+              <TouchableOpacity 
+                style={[
+                  styles.instaBtn, 
+                  isInstaConnected && { borderColor: '#1A6B5A' },
+                  loading && { opacity: 0.6 }
+                ]} 
+                onPress={loading ? undefined : handleConnectInstagram}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={[styles.instaBtnText, isInstaConnected && { color: '#1A6B5A' }]}>
+                  {loading ? 'Connecting...' : (isInstaConnected ? 'CONNECTED' : i18n.t('host.listProperty.connectInstaBtn') || 'Sync Profile')}
+                </Text>
               </TouchableOpacity>
             </View>
-          ))}
-          {reels.length < 4 && (
-            <TouchableOpacity
-              style={styles.photoSquareLargeDashed}
-              onPress={handleAddReel}
-              activeOpacity={0.8}
-            >
-              <Feather name="video" size={24} color="#6B7370" style={{ marginBottom: 4 }} />
-              <Text style={{ fontSize: 12, color: '#6B7370', fontWeight: '600' }}>Add Reel</Text>
-            </TouchableOpacity>
-          )}
+          </View>
+
+          {/* INFO BANNER */}
+          <View style={styles.infoBanner}>
+            <Feather name="info" size={16} color="#1A6B5A" style={styles.infoIcon} />
+            <Text style={styles.infoText}>{i18n.t('host.listProperty.discoverFeedNote') || 'Video reels will display on the guest discover feed.'}</Text>
+          </View>
+
+          {/* CONTINUE */}
+          <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
+            <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
+          </TouchableOpacity>
         </ScrollView>
-
-        {/* IMPORT FROM INSTAGRAM */}
-        <View style={[styles.instaCard, isInstaConnected && { borderColor: '#1A6B5A' }]}>
-          <View style={styles.instaIconCol}>
-            <MaterialCommunityIcons 
-              name="instagram" 
-              size={36} 
-              color={isInstaConnected ? "#1A6B5A" : "#D4704A"} 
-            />
-          </View>
-          <View style={styles.instaContentCol}>
-            <Text style={styles.instaTitle}>{i18n.t('host.listProperty.connectInsta') || 'Sync with Instagram'}</Text>
-            <Text style={styles.instaBody}>{i18n.t('host.listProperty.instaBody') || 'Import photos and reels directly from your profile posts.'}</Text>
-            <TouchableOpacity 
-              style={[styles.instaBtn, isInstaConnected && { borderColor: '#1A6B5A' }]} 
-              onPress={handleConnectInstagram}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.instaBtnText, isInstaConnected && { color: '#1A6B5A' }]}>
-                {isInstaConnected ? 'CONNECTED' : i18n.t('host.listProperty.connectInstaBtn') || 'Sync Profile'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* INFO BANNER */}
-        <View style={styles.infoBanner}>
-          <Feather name="info" size={16} color="#1A6B5A" style={styles.infoIcon} />
-          <Text style={styles.infoText}>{i18n.t('host.listProperty.discoverFeedNote') || 'Video reels will display on the guest discover feed.'}</Text>
-        </View>
-
-        {/* CONTINUE */}
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
-          <Text style={styles.continueButtonText}>{i18n.t('host.listProperty.continue') || 'Continue'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
