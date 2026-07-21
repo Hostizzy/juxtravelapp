@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Headers,
@@ -128,5 +129,14 @@ export class PaymentsController {
       this.logger.error('[RAZORPAY_WEBHOOK] ❌ Webhook handling failed:', error);
       throw error;
     }
+  }
+
+  // Webhook GET health check (for browser testing / monitoring tools)
+  @Get('webhook')
+  getWebhookHealth() {
+    return {
+      status: 'ok',
+      message: 'Razorpay webhook endpoint is active. Webhook events must be sent via HTTP POST.',
+    };
   }
 }
