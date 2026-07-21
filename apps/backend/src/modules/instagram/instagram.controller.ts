@@ -1,8 +1,9 @@
 import {
   Controller, Get, Post,
   Query, Body, UseGuards,
-  Param,
+  Param, Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -24,23 +25,45 @@ export class InstagramController {
     return { url };
   }
 
-  // OAuth callback (no auth - Instagram redirects here)
+  // OAuth callback - REDIRECTS to mobile app
   @Get('callback')
   async handleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Res() res: Response,
   ) {
-    const { hostId, propertyId } = JSON.parse(
-      Buffer.from(state, 'base64').toString()
-    );
-    
-    await this.instagramService.exchangeCodeForToken(code, hostId, propertyId);
+    console.log('[INSTAGRAM_CALLBACK] 1️⃣ Callback received');
+    console.log(`[INSTAGRAM_CALLBACK] - code: ${code ? '✅ EXISTS' : '❌ MISSING'}`);
+    console.log(`[INSTAGRAM_CALLBACK] - state: ${state ? '✅ EXISTS' : '❌ MISSING'}`);
 
-    // Redirect to app deep link
-    return { 
-      success: true,
-      message: 'Instagram connected! Return to app.'
-    };
+    try {
+      // Parse state
+      const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+      const { hostId, propertyId } = decoded;
+      
+      console.log(`[INSTAGRAM_CALLBACK] 2️⃣ State parsed`);
+      console.log(`[INSTAGRAM_CALLBACK] - hostId: ${hostId}`);
+      console.log(`[INSTAGRAM_CALLBACK] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
+
+      // Exchange code for token
+      console.log(`[INSTAGRAM_CALLBACK] 3️⃣ Exchanging code for token`);
+      await this.instagramService.exchangeCodeForToken(code, hostId, propertyId);
+      
+      console.log(`[INSTAGRAM_CALLBACK] ✅ SUCCESS - Redirecting to app`);
+      
+      // Redirect back to mobile app with success
+      return res.redirect(
+        `juxtravel://instagram-callback?status=success&propertyId=${propertyId || ''}`
+      );
+
+    } catch (error: any) {
+      console.log(`[INSTAGRAM_CALLBACK] ❌ ERROR:`, error?.message);
+      
+      // Redirect back to app with error
+      return res.redirect(
+        `juxtravel://instagram-callback?status=error&message=${encodeURIComponent(error?.message ?? 'Unknown error')}`
+      );
+    }
   }
 
   // Get randomized reels for Discover (no auth needed for public discovery)

@@ -26,14 +26,25 @@ export class InstagramService {
 
   // Step 1: Get OAuth URL for Instagram
   getOAuthUrl(hostId: string, propertyId?: string): string {
-    const appId = this.configService.get<string>('INSTAGRAM_APP_ID');
-    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI');
+    const appId = this.configService.get<string>('INSTAGRAM_APP_ID') 
+                  ?? this.configService.get<string>('instagram.appId');
+    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI') 
+                       ?? this.configService.get<string>('instagram.redirectUri');
 
-    const scope = ['user_profile', 'user_media'].join(' ');
+    console.log('[INSTAGRAM_OAUTH_URL] Generating OAuth URL');
+    console.log(`[INSTAGRAM_OAUTH_URL] - appId: ${appId ? '✅ EXISTS' : '❌ MISSING'}`);
+    console.log(`[INSTAGRAM_OAUTH_URL] - redirectUri: ${redirectUri}`);
+    console.log(`[INSTAGRAM_OAUTH_URL] - hostId: ${hostId}`);
+    console.log(`[INSTAGRAM_OAUTH_URL] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
 
+    const scope = ['user_profile', 'user_media'].join(',');
     const state = Buffer.from(JSON.stringify({ hostId, propertyId })).toString('base64');
 
-    return `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
+    const url = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
+    
+    console.log(`[INSTAGRAM_OAUTH_URL] Generated URL (first 100 chars): ${url.substring(0, 100)}...`);
+    
+    return url;
   }
 
   async exchangeCodeForToken(
@@ -41,9 +52,12 @@ export class InstagramService {
     hostId: string,
     propertyId?: string
   ): Promise<{ success: boolean }> {
-    const appId = this.configService.get<string>('INSTAGRAM_APP_ID');
-    const appSecret = this.configService.get<string>('INSTAGRAM_APP_SECRET');
-    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI');
+    const appId = this.configService.get<string>('INSTAGRAM_APP_ID')
+                  ?? this.configService.get<string>('instagram.appId');
+    const appSecret = this.configService.get<string>('INSTAGRAM_APP_SECRET')
+                      ?? this.configService.get<string>('instagram.appSecret');
+    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI')
+                        ?? this.configService.get<string>('instagram.redirectUri');
 
     try {
       console.log('[INSTAGRAM] 1️⃣ START OAuth exchange');

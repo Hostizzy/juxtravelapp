@@ -118,55 +118,14 @@ export default function ListStep3Screen() {
     setReels((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleConnectInstagram = async () => {
-    try {
-      console.log('[PROPERTY_UPLOAD] 🔵 Initiating Instagram OAuth flow');
-      
-      setLoading(true);
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        Alert.alert('Error', 'No authentication token found');
-        return;
-      }
-
-      console.log('[PROPERTY_UPLOAD] - Getting OAuth URL from backend');
-      const propertyId = (route.params as Partial<{ propertyId: string }>)?.propertyId || 'UNKNOWN';
-      const data = await apiService.get<{ url: string }>(
-        `/instagram/auth-url?propertyId=${propertyId}`,
-        token
-      );
-
-      const authUrl = data.url;
-      console.log('[PROPERTY_UPLOAD] - OAuth URL received');
-      console.log('[PROPERTY_UPLOAD] - Opening browser for Instagram login');
-      
-      // Open OAuth URL in browser
-      const result = await Linking.openURL(authUrl);
-      if (!result) {
-        console.log('[PROPERTY_UPLOAD] ❌ Failed to open browser');
-        Alert.alert('Error', 'Failed to open Instagram login page');
-        return;
-      }
-
-      console.log('[PROPERTY_UPLOAD] - Browser opened, user redirected to Instagram');
-      console.log('[PROPERTY_UPLOAD] ℹ️ After approval, app will receive OAuth callback');
-      
-      // Show info alert
-      Alert.alert(
-        'Instagram Login',
-        'You will be redirected to Instagram to approve access. After approval, you\'ll return to select your reels.',
-        [{ text: 'OK' }]
-      );
-
-      // Navigation to Instagram Select Reels screen happens via deep link
-      // from InstagramConnectScreen after OAuth completes
-
-    } catch (error) {
-      console.log('[PROPERTY_UPLOAD] ❌ Instagram OAuth error:', error);
-      Alert.alert('Error', 'Failed to connect Instagram. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const handleConnectInstagram = () => {
+    Alert.alert(
+      'Connect Instagram Later',
+      'You can connect Instagram AFTER creating your property. Complete listing first, then go to property details to sync reels.',
+      [
+        { text: 'OK', onPress: () => {} }
+      ]
+    );
   };
 
   const handleContinue = () => {

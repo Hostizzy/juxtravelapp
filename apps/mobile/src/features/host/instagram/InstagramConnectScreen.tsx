@@ -7,10 +7,10 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  Linking,
   Dimensions,
   Platform,
 } from 'react-native';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -76,6 +76,39 @@ export default function InstagramConnectScreen() {
 
   useEffect(() => {
     checkConnection();
+  }, []);
+
+  // Listen for Instagram OAuth callback deep link
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      console.log('[INSTAGRAM_SCREEN] Deep link received:', url);
+      
+      if (url.includes('instagram-callback')) {
+        // Parse URL params
+        const params = new URLSearchParams(url.split('?')[1] || '');
+        const status = params.get('status');
+        
+        if (status === 'success') {
+          console.log('[INSTAGRAM_SCREEN] ✅ OAuth success, refreshing');
+          Alert.alert('Success!', 'Instagram connected successfully. Loading your reels...');
+          // Refresh connection status and fetch reels
+          checkConnection();
+        } else {
+          const errorMsg = params.get('message') || 'Failed to connect Instagram';
+          Alert.alert('Error', decodeURIComponent(errorMsg));
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    
+    // Check initial URL (if app opened from deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => subscription.remove();
   }, []);
 
   // Fetch reels
