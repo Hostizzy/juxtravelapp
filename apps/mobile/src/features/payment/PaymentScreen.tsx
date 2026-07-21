@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { apiPost, BASE_URL } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import * as WebBrowser from 'expo-web-browser';
+import { WebView } from 'react-native-webview';
 import * as Linking from 'expo-linking';
 import { queryClient } from '../../lib/queryClient';
 
@@ -38,6 +39,9 @@ export default function PaymentScreen() {
 
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState('');
+  const [currentBookingId, setCurrentBookingId] = useState('');
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
@@ -45,8 +49,6 @@ export default function PaymentScreen() {
       if (!url) return;
 
       console.log('🔗 Deep link received:', url);
-
-      WebBrowser.dismissBrowser();
 
       const parsed = Linking.parse(url);
       const bookingId = (parsed.queryParams?.bookingId as string) || propertyId;
@@ -128,55 +130,56 @@ export default function PaymentScreen() {
         }
       );
 
-      // Step 3: Open Razorpay Checkout in WebBrowser
-      const backendBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-      const checkoutUrl = `${backendBase}/payments/checkout?` +
+      // Step 3: Build checkout URL and open in WebView
+      const url = `${BASE_URL}/payments/checkout?` +
         `orderId=${order.orderId}&` +
         `keyId=${order.keyId}&` +
         `amount=${order.amount}&` +
-        `currency=${order.currency ?? 'INR'}&` +
+        `currency=${order.currency}&` +
         `bookingId=${booking.id}&` +
         `name=${encodeURIComponent(user?.name ?? '')}&` +
         `email=${encodeURIComponent(user?.email ?? 'guest@juxtravel.com')}&` +
         `contact=${encodeURIComponent(user?.phone ?? '')}&` +
         `propertyName=${encodeURIComponent(propertyName)}`;
 
-      console.log('Opening Razorpay checkout:', checkoutUrl);
+      setCheckoutUrl(url);
+      setCurrentBookingId(booking.id);
+      setShowCheckout(true);  // Open modal
+      setLoading(false);
 
-      const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
-        dismissButtonStyle: 'close',
-        showTitle: true,
-        toolbarColor: '#1A6B5A',
-      });
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setLoading(false);
+      Alert.alert(
+        'Payment Failed',
+        error?.message ?? 'Payment could not be processed. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
-      console.log('Checkout result:', result);
+  // Handle WebView URL changes (deep link detection)
+  const handleWebViewNavigation = (event: any) => {
+    const url = event.url;
+    console.log('WebView URL:', url);
 
-      // After browser closes, verify payment status via API
-      // The webhook will update the booking status
+    if (url.startsWith('juxtravel://payment-success')) {
+      setShowCheckout(false);
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-
-      // Wait a moment for webhook to process
       setTimeout(() => {
         navigation.navigate('BookingSuccess', {
-          bookingId: booking.id,
+          bookingId: currentBookingId,
           propertyName: propertyName,
           checkIn: checkIn,
           checkOut: checkOut,
         });
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      Alert.alert(
-        'Payment Failed',
-        error?.message ?? 'Payment could not be processed. Please try again.',
-        [
-          { text: 'Try Again', onPress: handlePayment },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-    } finally {
-      setLoading(false);
+      }, 500);
+    } else if (url.startsWith('juxtravel://payment-cancelled')) {
+      setShowCheckout(false);
+      Alert.alert('Payment Cancelled', 'You cancelled the payment.');
+    } else if (url.startsWith('juxtravel://payment-failed')) {
+      setShowCheckout(false);
+      Alert.alert('Payment Failed', 'Please try again.');
     }
   };
 
@@ -267,6 +270,64 @@ export default function PaymentScreen() {
             <Text style={styles.termsLink}>Terms & Conditions</Text>
           </Text>
         </View>
+
+        {/* Razorpay Checkout Modal */}
+        <Modal
+          visible={showCheckout}
+          onRequestClose={() => setShowCheckout(false)}
+          animationType="slide"
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF8F4' }}>
+            <View style={{ 
+              flexDirection: 'row', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: 16,
+              borderBottomWidth: 1,
+              borderColor: '#E8E2D9',
+              backgroundColor: '#FFFFFF'
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1F1E' }}>
+                Payment
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    'Cancel Payment?',
+                    'Are you sure you want to cancel?',
+                    [
+                      { text: 'No', style: 'cancel' },
+                      { 
+                        text: 'Yes', 
+                        style: 'destructive',
+                        onPress: () => setShowCheckout(false)
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Feather name="x" size={24} color="#1A1F1E" />
+              </TouchableOpacity>
+            </View>
+            
+            <WebView
+              source={{ uri: checkoutUrl }}
+              onNavigationStateChange={handleWebViewNavigation}
+              onShouldStartLoadWithRequest={(request) => {
+                // Intercept deep link URLs
+                if (request.url.startsWith('juxtravel://')) {
+                  handleWebViewNavigation({ url: request.url });
+                  return false; // Don't load in WebView
+                }
+                return true;
+              }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              style={{ flex: 1 }}
+            />
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -401,7 +462,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1A6B5A', // sage green
+    color: '#1A6B5A',
   },
   securityRow: {
     flexDirection: 'row',
