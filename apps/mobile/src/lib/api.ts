@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL =
+export const BASE_URL =
   process.env.EXPO_PUBLIC_BACKEND_URL ??
-  'http://10.0.2.2:3000/api/v1';
+  'https://juxtravelapp.onrender.com/api/v1';
 
 export async function apiGet<T>(
   endpoint: string

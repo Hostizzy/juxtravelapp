@@ -5,12 +5,14 @@ import {
   Body,
   Headers,
   Req,
+  Query,
+  Res,
   Logger,
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -73,6 +75,123 @@ export class PaymentsController {
       this.logger.error(`[RAZORPAY] - Error stack: ${error?.stack}`);
       throw error;
     }
+  }
+
+  // Web Checkout (Opens Razorpay Checkout.js in WebBrowser / WebView)
+  @Get('checkout')
+  async serveCheckout(
+    @Query('orderId') orderId: string,
+    @Query('keyId') keyId: string,
+    @Query('amount') amount: string,
+    @Query('currency') currency: string,
+    @Query('bookingId') bookingId: string,
+    @Query('name') name: string,
+    @Query('email') email: string,
+    @Query('contact') contact: string,
+    @Query('propertyName') propertyName: string,
+    @Res() res: Response,
+  ) {
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JuxTravel Payment</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #FAF8F4;
+    }
+    .loader {
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid #E8E2D9;
+      border-top: 4px solid #1A6B5A;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h2 { color: #1A1F1E; margin-bottom: 8px; }
+    p { color: #6B7370; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <h2>Opening Payment...</h2>
+    <p>Please wait</p>
+  </div>
+  <script>
+    const options = {
+      key: '${keyId}',
+      amount: '${amount}',
+      currency: '${currency}',
+      order_id: '${orderId}',
+      name: 'JuxTravel',
+      description: 'Booking for ${propertyName}',
+      image: 'https://juxtravel.com/logo.png',
+      prefill: {
+        name: '${name}',
+        email: '${email}',
+        contact: '${contact}'
+      },
+      theme: {
+        color: '#1A6B5A'
+      },
+      handler: function(response) {
+        // Payment successful
+        document.body.innerHTML = '<div class="loader"><h2 style="color:#1A6B5A;">✓ Payment Successful!</h2><p>Redirecting back to app...</p></div>';
+        // Redirect to app via deep link
+        setTimeout(function() {
+          window.location.href = 'juxtravel://payment-success?bookingId=${bookingId}&paymentId=' + response.razorpay_payment_id;
+        }, 2000);
+      },
+      modal: {
+        ondismiss: function() {
+          document.body.innerHTML = '<div class="loader"><h2>Payment Cancelled</h2><p>Returning to app...</p></div>';
+          setTimeout(function() {
+            window.location.href = 'juxtravel://payment-cancelled?bookingId=${bookingId}';
+          }, 1000);
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    
+    rzp.on('payment.failed', function(response) {
+      document.body.innerHTML = '<div class="loader"><h2 style="color:#D4704A;">✗ Payment Failed</h2><p>' + response.error.description + '</p></div>';
+      setTimeout(function() {
+        window.location.href = 'juxtravel://payment-failed?bookingId=${bookingId}&error=' + encodeURIComponent(response.error.description);
+      }, 3000);
+    });
+
+    // Auto-open on page load
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        rzp.open();
+      }, 500);
+    });
+  </script>
+</body>
+</html>
+  `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   }
 
   // Webhook (NO auth — Razorpay calls this)

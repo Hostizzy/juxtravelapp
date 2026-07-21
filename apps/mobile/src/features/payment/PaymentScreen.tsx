@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { apiPost } from '../../lib/api';
+import { apiPost, BASE_URL } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import RazorpayCheckout from 'react-native-razorpay';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { queryClient } from '../../lib/queryClient';
 
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
@@ -38,6 +39,47 @@ export default function PaymentScreen() {
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      if (!url) return;
+
+      console.log('🔗 Deep link received:', url);
+
+      WebBrowser.dismissBrowser();
+
+      const parsed = Linking.parse(url);
+      const bookingId = (parsed.queryParams?.bookingId as string) || propertyId;
+
+      if (url.includes('payment-success')) {
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        navigation.navigate('BookingSuccess', {
+          bookingId,
+          propertyName,
+          checkIn,
+          checkOut,
+        });
+      } else if (url.includes('payment-failed')) {
+        const errorMsg = parsed.queryParams?.error as string;
+        Alert.alert('Payment Failed', errorMsg ? decodeURIComponent(errorMsg) : 'Payment was not completed.');
+      } else if (url.includes('payment-cancelled')) {
+        Alert.alert('Payment Cancelled', 'You cancelled the payment transaction.');
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    Linking.getInitialURL().then((initialUrl: string | null) => {
+      if (initialUrl) {
+        handleDeepLink({ url: initialUrl });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation, propertyId, propertyName, checkIn, checkOut]);
+
   const serviceFee = Math.round(totalAmount * 0.1);
   const subtotal = totalAmount - serviceFee;
 
@@ -58,7 +100,7 @@ export default function PaymentScreen() {
   const handlePayment = async () => {
     setLoading(true);
     try {
-      // Step 1: Create PENDING booking first
+      // Step 1: Create PENDING booking
       const booking = await apiPost<{ id: string }>(
         '/bookings/create-direct',
         {
@@ -86,67 +128,53 @@ export default function PaymentScreen() {
         }
       );
 
-      // Step 3: Open Razorpay checkout
-      const options = {
-        description: `Booking for ${propertyName}`,
-        image: 'https://juxtravel.com/logo.png',
-        currency: order.currency ?? 'INR',
-        key: order.keyId,
-        amount: order.amount,
-        order_id: order.orderId,
-        name: 'JuxTravel',
-        prefill: {
-          name: user?.name ?? '',
-          contact: user?.phone ?? '',
-          email: user?.email ?? 'guest@juxtravel.com',
-        },
-        theme: { color: '#1A6B5A' },
-      };
+      // Step 3: Open Razorpay Checkout in WebBrowser
+      const backendBase = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+      const checkoutUrl = `${backendBase}/payments/checkout?` +
+        `orderId=${order.orderId}&` +
+        `keyId=${order.keyId}&` +
+        `amount=${order.amount}&` +
+        `currency=${order.currency ?? 'INR'}&` +
+        `bookingId=${booking.id}&` +
+        `name=${encodeURIComponent(user?.name ?? '')}&` +
+        `email=${encodeURIComponent(user?.email ?? 'guest@juxtravel.com')}&` +
+        `contact=${encodeURIComponent(user?.phone ?? '')}&` +
+        `propertyName=${encodeURIComponent(propertyName)}`;
 
-      const paymentData = await RazorpayCheckout.open(options);
+      console.log('Opening Razorpay checkout:', checkoutUrl);
 
-      // Step 4: Payment success
-      console.log('Payment success:', paymentData);
-
-      // Invalidate bookings cache so My Trips updates immediately
-      queryClient.invalidateQueries({
-        queryKey: ['bookings'],
+      const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
+        dismissButtonStyle: 'close',
+        showTitle: true,
+        toolbarColor: '#1A6B5A',
       });
 
-      navigation.navigate('BookingSuccess', {
-        bookingId: booking.id,
-        propertyName: propertyName,
-        checkIn: checkIn,
-        checkOut: checkOut,
-      });
+      console.log('Checkout result:', result);
 
-    } catch (error: unknown) {
-      const err = error as {
-        code?: number;
-        description?: string;
-        reason?: string;
-      };
-      
-      if (err?.code === 2) {
-        // User cancelled — go back silently
-        Alert.alert(
-          'Payment Cancelled',
-          'You cancelled the payment. Your booking has not been confirmed.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        // Payment failed
-        Alert.alert(
-          'Payment Failed',
-          err?.description ?? 
-            err?.reason ??
-            'Payment could not be processed. Please try again.',
-          [
-            { text: 'Try Again', onPress: handlePayment },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
-      }
+      // After browser closes, verify payment status via API
+      // The webhook will update the booking status
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+      // Wait a moment for webhook to process
+      setTimeout(() => {
+        navigation.navigate('BookingSuccess', {
+          bookingId: booking.id,
+          propertyName: propertyName,
+          checkIn: checkIn,
+          checkOut: checkOut,
+        });
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      Alert.alert(
+        'Payment Failed',
+        error?.message ?? 'Payment could not be processed. Please try again.',
+        [
+          { text: 'Try Again', onPress: handlePayment },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     } finally {
       setLoading(false);
     }
