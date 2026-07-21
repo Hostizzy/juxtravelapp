@@ -3,7 +3,10 @@
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
-    "scheme": ["juxtravel", "juxtravelapp"],
+    "scheme": [
+      "juxtravel",
+      "juxtravelapp"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,13 +23,21 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan"
     },
+    "expo": {
+      "name": "JuxTravel",
+      "scheme": "juxtravel",
+      "android": {
+        "package": "com.juxtravel.app"
+      }
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-video"
+      "expo-video",
+      "expo-web-browser"
     ]
   }
 }

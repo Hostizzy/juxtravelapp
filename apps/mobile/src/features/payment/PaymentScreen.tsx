@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,15 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { apiPost, BASE_URL } from '../../lib/api';
+import { apiPost } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import { WebView } from 'react-native-webview';
-import * as Linking from 'expo-linking';
+import RazorpayCheckout from 'react-native-razorpay';
 import { queryClient } from '../../lib/queryClient';
 
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
@@ -39,48 +37,6 @@ export default function PaymentScreen() {
 
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState('');
-  const [currentBookingId, setCurrentBookingId] = useState('');
-
-  useEffect(() => {
-    const handleDeepLink = (event: { url: string }) => {
-      const url = event.url;
-      if (!url) return;
-
-      console.log('🔗 Deep link received:', url);
-
-      const parsed = Linking.parse(url);
-      const bookingId = (parsed.queryParams?.bookingId as string) || propertyId;
-
-      if (url.includes('payment-success')) {
-        queryClient.invalidateQueries({ queryKey: ['bookings'] });
-        navigation.navigate('BookingSuccess', {
-          bookingId,
-          propertyName,
-          checkIn,
-          checkOut,
-        });
-      } else if (url.includes('payment-failed')) {
-        const errorMsg = parsed.queryParams?.error as string;
-        Alert.alert('Payment Failed', errorMsg ? decodeURIComponent(errorMsg) : 'Payment was not completed.');
-      } else if (url.includes('payment-cancelled')) {
-        Alert.alert('Payment Cancelled', 'You cancelled the payment transaction.');
-      }
-    };
-
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    Linking.getInitialURL().then((initialUrl: string | null) => {
-      if (initialUrl) {
-        handleDeepLink({ url: initialUrl });
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [navigation, propertyId, propertyName, checkIn, checkOut]);
 
   const serviceFee = Math.round(totalAmount * 0.1);
   const subtotal = totalAmount - serviceFee;
@@ -100,9 +56,40 @@ export default function PaymentScreen() {
   };
 
   const handlePayment = async () => {
+    console.log('═══════════════════════════════════════');
+    console.log('💳 [PAYMENT] Starting payment flow');
+    console.log('═══════════════════════════════════════');
+    
     setLoading(true);
+    
+    let bookingId: string | null = null;
+    
     try {
-      // Step 1: Create PENDING booking
+      // ═══ STEP 1: Validate User Data ═══
+      console.log('📋 [PAYMENT] Step 1: Validating user data');
+      console.log('   - propertyId:', propertyId);
+      console.log('   - propertyName:', propertyName);
+      console.log('   - checkIn:', checkIn);
+      console.log('   - checkOut:', checkOut);
+      console.log('   - guests:', guests);
+      console.log('   - totalAmount:', totalAmount);
+      console.log('   - user:', user?.name, user?.phone, user?.email);
+      
+      if (!propertyId || !propertyName || !totalAmount) {
+        throw new Error('Missing property details. Please try booking again.');
+      }
+      
+      if (totalAmount <= 0) {
+        throw new Error('Invalid amount. Please contact support.');
+      }
+      
+      if (!user) {
+        throw new Error('User not authenticated. Please login again.');
+      }
+      
+      // ═══ STEP 2: Create Booking (PENDING) ═══
+      console.log('📝 [PAYMENT] Step 2: Creating pending booking');
+      
       const booking = await apiPost<{ id: string }>(
         '/bookings/create-direct',
         {
@@ -114,8 +101,13 @@ export default function PaymentScreen() {
           status: 'pending',
         }
       );
-
-      // Step 2: Create Razorpay order
+      
+      bookingId = booking.id;
+      console.log('✅ [PAYMENT] Booking created:', bookingId);
+      
+      // ═══ STEP 3: Create Razorpay Order ═══
+      console.log('📦 [PAYMENT] Step 3: Creating Razorpay order');
+      
       const order = await apiPost<{
         orderId: string;
         amount: number;
@@ -129,57 +121,143 @@ export default function PaymentScreen() {
           propertyName: propertyName,
         }
       );
-
-      // Step 3: Build checkout URL and open in WebView
-      const url = `${BASE_URL}/payments/checkout?` +
-        `orderId=${order.orderId}&` +
-        `keyId=${order.keyId}&` +
-        `amount=${order.amount}&` +
-        `currency=${order.currency}&` +
-        `bookingId=${booking.id}&` +
-        `name=${encodeURIComponent(user?.name ?? '')}&` +
-        `email=${encodeURIComponent(user?.email ?? 'guest@juxtravel.com')}&` +
-        `contact=${encodeURIComponent(user?.phone ?? '')}&` +
-        `propertyName=${encodeURIComponent(propertyName)}`;
-
-      setCheckoutUrl(url);
-      setCurrentBookingId(booking.id);
-      setShowCheckout(true);  // Open modal
-      setLoading(false);
-
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      setLoading(false);
-      Alert.alert(
-        'Payment Failed',
-        error?.message ?? 'Payment could not be processed. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  // Handle WebView URL changes (deep link detection)
-  const handleWebViewNavigation = (event: any) => {
-    const url = event.url;
-    console.log('WebView URL:', url);
-
-    if (url.startsWith('juxtravel://payment-success')) {
-      setShowCheckout(false);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      setTimeout(() => {
-        navigation.navigate('BookingSuccess', {
-          bookingId: currentBookingId,
+      
+      console.log('✅ [PAYMENT] Razorpay order created:');
+      console.log('   - orderId:', order.orderId);
+      console.log('   - amount:', order.amount, '(paise)');
+      console.log('   - currency:', order.currency);
+      console.log('   - keyId exists:', !!order.keyId);
+      
+      if (!order.orderId || !order.keyId) {
+        throw new Error('Failed to create payment order. Please try again.');
+      }
+      
+      // ═══ STEP 4: Prepare Razorpay Options ═══
+      console.log('⚙️ [PAYMENT] Step 4: Preparing Razorpay options');
+      
+      const options = {
+        description: `Booking for ${propertyName}`,
+        image: 'https://juxtravel.com/logo.png',
+        currency: order.currency || 'INR',
+        key: order.keyId,
+        amount: order.amount,
+        order_id: order.orderId,
+        name: 'JuxTravel',
+        prefill: {
+          name: user.name || 'Guest',
+          contact: user.phone || '',
+          email: user.email || 'guest@juxtravel.com',
+        },
+        theme: { 
+          color: '#1A6B5A' 
+        },
+        notes: {
+          bookingId: booking.id,
           propertyName: propertyName,
-          checkIn: checkIn,
-          checkOut: checkOut,
-        });
-      }, 500);
-    } else if (url.startsWith('juxtravel://payment-cancelled')) {
-      setShowCheckout(false);
-      Alert.alert('Payment Cancelled', 'You cancelled the payment.');
-    } else if (url.startsWith('juxtravel://payment-failed')) {
-      setShowCheckout(false);
-      Alert.alert('Payment Failed', 'Please try again.');
+        },
+      };
+      
+      console.log('📋 [PAYMENT] Razorpay options prepared');
+      
+      // ═══ STEP 5: Open Native Razorpay Modal ═══
+      console.log('🚀 [PAYMENT] Step 5: Opening native Razorpay checkout');
+      
+      const paymentData = await RazorpayCheckout.open(options);
+      
+      console.log('═══════════════════════════════════════');
+      console.log('✅ [PAYMENT] PAYMENT SUCCESSFUL');
+      console.log('═══════════════════════════════════════');
+      console.log('   - razorpay_payment_id:', paymentData.razorpay_payment_id);
+      console.log('   - razorpay_order_id:', paymentData.razorpay_order_id);
+      console.log('   - razorpay_signature:', paymentData.razorpay_signature ? 'EXISTS' : 'MISSING');
+      
+      // ═══ STEP 6: Verify Payment Success ═══
+      if (!paymentData.razorpay_payment_id) {
+        throw new Error('Payment ID not received. Please contact support.');
+      }
+      
+      // ═══ STEP 7: Invalidate Cache & Navigate ═══
+      console.log('🔄 [PAYMENT] Step 7: Invalidating cache and navigating');
+      
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      
+      console.log('🎉 [PAYMENT] Navigating to BookingSuccess');
+      
+      navigation.replace('BookingSuccess', {
+        bookingId: booking.id,
+        propertyName: propertyName,
+        checkIn: checkIn,
+        checkOut: checkOut,
+      });
+      
+    } catch (error: any) {
+      console.log('═══════════════════════════════════════');
+      console.log('❌ [PAYMENT] ERROR OCCURRED');
+      console.log('═══════════════════════════════════════');
+      console.log('   - Error object:', JSON.stringify(error));
+      console.log('   - Error code:', error?.code);
+      console.log('   - Error message:', error?.message);
+      console.log('   - Error description:', error?.description);
+      console.log('   - Error reason:', error?.reason);
+      console.log('   - Error source:', error?.source);
+      console.log('   - Booking ID:', bookingId);
+      
+      if (error?.code === 0) {
+        // Network error
+        console.log('🌐 [PAYMENT] Network error detected');
+        Alert.alert(
+          'Network Error',
+          'Please check your internet connection and try again.',
+          [
+            { text: 'Retry', onPress: handlePayment },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      } else if (error?.code === 2 || error?.description?.toLowerCase().includes('cancel')) {
+        // User cancelled
+        console.log('🚫 [PAYMENT] Payment cancelled by user');
+        Alert.alert(
+          'Payment Cancelled',
+          'You cancelled the payment. Your booking is not confirmed.',
+          [
+            { text: 'Try Again', onPress: handlePayment },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      } else if (error?.code === 1) {
+        // Server error
+        console.log('🔴 [PAYMENT] Server error');
+        Alert.alert(
+          'Payment Failed',
+          error?.description || 'Payment server error. Please try again.',
+          [
+            { text: 'Retry', onPress: handlePayment },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      } else if (error?.message?.includes('Missing') || error?.message?.includes('Invalid')) {
+        // Validation error
+        console.log('⚠️ [PAYMENT] Validation error');
+        Alert.alert('Error', error.message, [{ text: 'OK' }]);
+      } else {
+        // Generic error
+        console.log('❓ [PAYMENT] Unknown error');
+        Alert.alert(
+          'Payment Failed',
+          error?.description || error?.message || 'Something went wrong. Please try again.',
+          [
+            { text: 'Retry', onPress: handlePayment },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
+      
+    } finally {
+      setLoading(false);
+      console.log('═══════════════════════════════════════');
+      console.log('🏁 [PAYMENT] Flow complete');
+      console.log('═══════════════════════════════════════');
     }
   };
 
@@ -270,78 +348,6 @@ export default function PaymentScreen() {
             <Text style={styles.termsLink}>Terms & Conditions</Text>
           </Text>
         </View>
-
-        {/* Razorpay Checkout Modal */}
-        <Modal
-          visible={showCheckout}
-          onRequestClose={() => setShowCheckout(false)}
-          animationType="slide"
-        >
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF8F4' }}>
-            <View style={{ 
-              flexDirection: 'row', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: 16,
-              borderBottomWidth: 1,
-              borderColor: '#E8E2D9',
-              backgroundColor: '#FFFFFF'
-            }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1F1E' }}>
-                Payment
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    'Cancel Payment?',
-                    'Are you sure you want to cancel?',
-                    [
-                      { text: 'No', style: 'cancel' },
-                      { 
-                        text: 'Yes', 
-                        style: 'destructive',
-                        onPress: () => setShowCheckout(false)
-                      }
-                    ]
-                  );
-                }}
-              >
-                <Feather name="x" size={24} color="#1A1F1E" />
-              </TouchableOpacity>
-            </View>
-            
-            <WebView
-              source={{ uri: checkoutUrl }}
-              onNavigationStateChange={handleWebViewNavigation}
-              onShouldStartLoadWithRequest={(request) => {
-                // Intercept deep link URLs
-                if (request.url.startsWith('juxtravel://')) {
-                  handleWebViewNavigation({ url: request.url });
-                  return false; // Don't load in WebView
-                }
-                return true;
-              }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              startInLoadingState={true}
-              mixedContentMode="always"
-              originWhitelist={['*']}
-              onMessage={(event) => {
-                console.log('WebView message:', event.nativeEvent.data);
-              }}
-              onError={(event) => {
-                console.error('WebView error:', event.nativeEvent);
-              }}
-              onHttpError={(event) => {
-                console.error('WebView HTTP error:', event.nativeEvent);
-              }}
-              onLoadEnd={() => {
-                console.log('WebView loaded');
-              }}
-              style={{ flex: 1 }}
-            />
-          </SafeAreaView>
-        </Modal>
       </SafeAreaView>
     </View>
   );
