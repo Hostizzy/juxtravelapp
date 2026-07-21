@@ -324,6 +324,20 @@ export default function PaymentScreen() {
               javaScriptEnabled={true}
               domStorageEnabled={true}
               startInLoadingState={true}
+              mixedContentMode="always"
+              originWhitelist={['*']}
+              onMessage={(event) => {
+                console.log('WebView message:', event.nativeEvent.data);
+              }}
+              onError={(event) => {
+                console.error('WebView error:', event.nativeEvent);
+              }}
+              onHttpError={(event) => {
+                console.error('WebView HTTP error:', event.nativeEvent);
+              }}
+              onLoadEnd={() => {
+                console.log('WebView loaded');
+              }}
               style={{ flex: 1 }}
             />
           </SafeAreaView>

@@ -96,21 +96,22 @@ export class PaymentsController {
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>JuxTravel Payment</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
+      min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: #FAF8F4;
+      padding: 20px;
     }
-    .loader {
+    .container {
       text-align: center;
+      max-width: 400px;
     }
     .spinner {
       border: 4px solid #E8E2D9;
@@ -125,72 +126,146 @@ export class PaymentsController {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    h2 { color: #1A1F1E; margin-bottom: 8px; }
-    p { color: #6B7370; font-size: 14px; }
+    h2 { color: #1A1F1E; margin-bottom: 8px; font-size: 18px; }
+    p { color: #6B7370; font-size: 14px; line-height: 20px; }
+    .error { color: #D4704A; }
+    .success { color: #1A6B5A; }
+    .debug {
+      background: #F0F0F0;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 11px;
+      text-align: left;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+    button {
+      background: #1A6B5A;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <div class="loader">
-    <div class="spinner"></div>
-    <h2>Opening Payment...</h2>
-    <p>Please wait</p>
+  <div class="container" id="container">
+    <div class="spinner" id="spinner"></div>
+    <h2 id="title">Loading Razorpay...</h2>
+    <p id="message">Please wait</p>
+    <div class="debug" id="debug">Loading Razorpay SDK...</div>
   </div>
+
   <script>
-    const options = {
-      key: '${keyId}',
-      amount: '${amount}',
-      currency: '${currency}',
-      order_id: '${orderId}',
-      name: 'JuxTravel',
-      description: 'Booking for ${propertyName}',
-      image: 'https://juxtravel.com/logo.png',
-      prefill: {
-        name: '${name}',
-        email: '${email}',
-        contact: '${contact}'
-      },
-      theme: {
-        color: '#1A6B5A'
-      },
-      handler: function(response) {
-        // Payment successful
-        document.body.innerHTML = '<div class="loader"><h2 style="color:#1A6B5A;">✓ Payment Successful!</h2><p>Redirecting back to app...</p></div>';
-        // Redirect to app via deep link
-        setTimeout(function() {
-          window.location.href = 'juxtravel://payment-success?bookingId=${bookingId}&paymentId=' + response.razorpay_payment_id;
-        }, 2000);
-      },
-      modal: {
-        ondismiss: function() {
-          document.body.innerHTML = '<div class="loader"><h2>Payment Cancelled</h2><p>Returning to app...</p></div>';
+    // Debug helper
+    function log(msg) {
+      var debug = document.getElementById('debug');
+      var time = new Date().toLocaleTimeString();
+      debug.innerHTML += '<br>[' + time + '] ' + msg;
+      debug.scrollTop = debug.scrollHeight;
+      console.log(msg);
+    }
+
+    function showStatus(title, message, isError) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('title').innerText = title;
+      document.getElementById('title').className = isError ? 'error' : 'success';
+      document.getElementById('message').innerText = message;
+    }
+
+    log('Page loaded');
+    log('Loading Razorpay Checkout.js...');
+
+    // Load Razorpay script with error handling
+    var script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = false;
+    
+    script.onload = function() {
+      log('✅ Razorpay SDK loaded');
+      
+      if (typeof Razorpay === 'undefined') {
+        log('❌ Razorpay object undefined');
+        showStatus('Failed to Load', 'Razorpay SDK not available', true);
+        return;
+      }
+
+      try {
+        log('Building options...');
+        
+        var options = {
+          key: '${keyId}',
+          amount: parseInt('${amount}', 10),
+          currency: '${currency}',
+          order_id: '${orderId}',
+          name: 'JuxTravel',
+          description: 'Booking for ${propertyName}',
+          prefill: {
+            name: '${name}',
+            email: '${email}',
+            contact: '${contact}'
+          },
+          theme: { color: '#1A6B5A' },
+          handler: function(response) {
+            log('✅ Payment Success: ' + response.razorpay_payment_id);
+            showStatus('✓ Payment Successful!', 'Redirecting to app...', false);
+            setTimeout(function() {
+              window.location.href = 'juxtravel://payment-success?bookingId=${bookingId}&paymentId=' + response.razorpay_payment_id;
+            }, 2000);
+          },
+          modal: {
+            ondismiss: function() {
+              log('Modal dismissed by user');
+              showStatus('Payment Cancelled', 'Returning to app...', true);
+              setTimeout(function() {
+                window.location.href = 'juxtravel://payment-cancelled?bookingId=${bookingId}';
+              }, 1000);
+            }
+          }
+        };
+        
+        log('Options ready: key=${keyId}, amount=${amount}, orderId=${orderId}');
+        log('Creating Razorpay instance...');
+        
+        var rzp = new Razorpay(options);
+        
+        rzp.on('payment.failed', function(response) {
+          log('❌ Payment failed: ' + response.error.description);
+          showStatus('✗ Payment Failed', response.error.description, true);
           setTimeout(function() {
-            window.location.href = 'juxtravel://payment-cancelled?bookingId=${bookingId}';
-          }, 1000);
-        }
+            window.location.href = 'juxtravel://payment-failed?bookingId=${bookingId}&error=' + encodeURIComponent(response.error.description);
+          }, 3000);
+        });
+
+        log('Opening Razorpay checkout modal...');
+        rzp.open();
+        log('rzp.open() called successfully');
+        
+      } catch (err) {
+        log('❌ Error: ' + err.message);
+        showStatus('Error', err.message, true);
       }
     };
-
-    const rzp = new Razorpay(options);
     
-    rzp.on('payment.failed', function(response) {
-      document.body.innerHTML = '<div class="loader"><h2 style="color:#D4704A;">✗ Payment Failed</h2><p>' + response.error.description + '</p></div>';
-      setTimeout(function() {
-        window.location.href = 'juxtravel://payment-failed?bookingId=${bookingId}&error=' + encodeURIComponent(response.error.description);
-      }, 3000);
-    });
-
-    // Auto-open on page load
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        rzp.open();
-      }, 500);
-    });
+    script.onerror = function(e) {
+      log('❌ Failed to load Razorpay SDK from CDN');
+      showStatus('Network Error', 'Failed to load Razorpay. Check internet connection.', true);
+    };
+    
+    document.head.appendChild(script);
+    log('Script tag added, waiting for load...');
   </script>
 </body>
 </html>
-  `;
+`;
 
     res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'no-cache');
     res.send(html);
   }
 

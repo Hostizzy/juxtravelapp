@@ -88,7 +88,7 @@ export class PropertiesService {
           honest_notes: dto.honestNotes,
           host_story: dto.hostStory,
           photos: dto.photos ?? [],
-          status: 'under_review',
+          status: dto.status ?? 'under_review',
           minimum_stay: dto.minimumStay ?? 1,
           cancellation_policy: dto.cancellationPolicy ?? 'flexible',
         })
@@ -196,6 +196,7 @@ export class PropertiesService {
     if (dto.photos !== undefined) updatePayload.photos = dto.photos;
     if (dto.minimumStay !== undefined) updatePayload.minimum_stay = dto.minimumStay;
     if (dto.cancellationPolicy !== undefined) updatePayload.cancellation_policy = dto.cancellationPolicy;
+    if (dto.status !== undefined) updatePayload.status = dto.status;
 
     const { data, error } = await this.supabaseService.admin
         .from('properties')

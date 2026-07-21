@@ -41,20 +41,28 @@ export default function ListStep3Screen() {
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       const url = event.url;
-      console.log('[PROPERTY_UPLOAD] 🔗 Deep link received:', url);
+      console.log('[STEP3] Deep link received:', url);
       
-      if (url.includes('instagram/callback')) {
-        console.log('[PROPERTY_UPLOAD] ✅ Instagram callback detected');
-        setIsInstaConnected(true);
-        Alert.alert('Connected!', 'Your Instagram account is connected. Reels will be synced.');
+      if (url.includes('instagram-callback') || url.includes('instagram/callback')) {
+        const params = new URLSearchParams(url.split('?')[1] || '');
+        const status = params.get('status');
+        
+        if (status === 'success' || !status) {
+          setIsInstaConnected(true);
+          Alert.alert('Connected!', 'Instagram connected successfully. Reels imported to your property.');
+        } else {
+          const errorMsg = params.get('message') || 'Failed to connect';
+          Alert.alert('Instagram Error', decodeURIComponent(errorMsg));
+        }
       }
     };
 
     const subscription = Linking.addEventListener('url', handleDeepLink);
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
 
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, []);
 
   const handleBack = () => {
@@ -118,14 +126,36 @@ export default function ListStep3Screen() {
     setReels((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleConnectInstagram = () => {
-    Alert.alert(
-      'Connect Instagram Later',
-      'You can connect Instagram AFTER creating your property. Complete listing first, then go to property details to sync reels.',
-      [
-        { text: 'OK', onPress: () => {} }
-      ]
-    );
+  const handleConnectInstagram = async () => {
+    try {
+      setLoading(true);
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      // Get REAL propertyId from route params (created in Step 2)
+      const propertyId = route.params?.propertyId;
+      if (!propertyId || propertyId === 'UNKNOWN') {
+        Alert.alert('Error', 'Property not saved yet. Please go back and complete Step 2.');
+        return;
+      }
+
+      console.log('[STEP3] Instagram connect for property:', propertyId);
+
+      // Get OAuth URL from backend
+      const data = await apiService.get<{ url: string }>(
+        `/instagram/auth-url?propertyId=${propertyId}`,
+        token
+      );
+
+      console.log('[STEP3] Opening OAuth URL');
+      await Linking.openURL(data.url);
+      
+    } catch (error: any) {
+      console.error('[STEP3] Instagram connect error:', error);
+      Alert.alert('Error', error?.message ?? 'Failed to connect Instagram');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleContinue = () => {

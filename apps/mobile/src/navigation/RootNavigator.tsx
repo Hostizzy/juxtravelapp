@@ -150,6 +150,7 @@ export type RootStackParamList = {
     pricePerNight: number;
     amenities: string[];
     honestNotes: string;
+    propertyId: string;
   };
   HostList4: {
     name: string;
@@ -170,6 +171,7 @@ export type RootStackParamList = {
     honestNotes: string;
     photos: string[];
     reels: string[];
+    propertyId: string;
   };
   HostList5: {
     name: string;
@@ -190,8 +192,9 @@ export type RootStackParamList = {
     honestNotes: string;
     photos: string[];
     reels: string[];
-    activities: string[];
-    hostStory: string;
+    activities?: string[];
+    hostStory?: string;
+    propertyId: string;
   };
   HostReviewPending: {
     propertyId: string;

@@ -18,7 +18,8 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import i18n from '../../../locales/i18n';
-import { uploadPhoto, submitProperty } from '../../../services/propertyService';
+import { uploadPhoto } from '../../../services/propertyService';
+import { apiPatch } from '../../../lib/api';
 import styles from './ListStep5Screen.styles';
 
 type PolicyType = 'flexible' | 'moderate' | 'strict';
@@ -117,42 +118,49 @@ export default function ListStep5Screen() {
   const proceedWithSubmission = async (urls: string[], coverUrl: string) => {
     setLoading(true);
     try {
-      const result = await submitProperty({
+      const propertyId = allData.propertyId;
+      
+      if (!propertyId) {
+        Alert.alert('Error', 'Property ID missing. Please restart listing.');
+        return;
+      }
+
+      await apiPatch(`/properties/${propertyId}`, {
         name: allData.name,
         tagline: allData.tagline,
         type: allData.type,
-        city: allData.city,
-        state: allData.state,
-        pincode: allData.pincode,
-        coverPhoto: coverUrl || undefined,
-        address: allData.address,
-        maxGuests: allData.maxGuests,
-        rooms: allData.rooms,
-        comfortableGuests: allData.comfortableGuests,
-        bathrooms: allData.bathrooms,
-        beds: allData.beds,
+        location: {
+          address: allData.address,
+          city: allData.city,
+          state: allData.state,
+          pincode: allData.pincode,
+        },
+        capacity: {
+          rooms: allData.rooms,
+          maxGuests: allData.maxGuests,
+          comfortableGuests: allData.comfortableGuests,
+          bathrooms: allData.bathrooms,
+          beds: allData.beds,
+        },
         pricePerNight: parseFloat(basePrice) || 0,
-        amenities: allData.amenities,
-        honestNotes: allData.honestNotes,
-        photos: urls,
-        activities: allData.activities,
-        hostStory: allData.hostStory,
-        minimumStay: minStay,
         weekendPrice: weekendEnabled ? (parseFloat(weekendPrice) || 0) : 0,
+        amenities: allData.amenities,
+        activities: allData.activities,
+        honestNotes: allData.honestNotes,
+        hostStory: allData.hostStory,
+        photos: urls.length > 0 ? urls : (coverUrl ? [coverUrl] : []),
+        minimumStay: minStay,
         cancellationPolicy: policy,
+        status: 'under_review',
       });
 
-      if (result.success) {
-        navigation.navigate('HostReviewPending', {
-          propertyId: result.id ?? '',
-          propertyName: allData.name,
-          propertyPhoto: coverUrl || urls[0] || '',
-          propertyType: allData.type,
-          propertyCity: allData.city,
-        });
-      } else {
-        Alert.alert('Error', result.error || 'Failed to submit property.');
-      }
+      navigation.navigate('HostReviewPending', {
+        propertyId: propertyId,
+        propertyName: allData.name,
+        propertyPhoto: coverUrl || urls[0] || '',
+        propertyType: allData.type,
+        propertyCity: allData.city,
+      });
     } catch (error) {
       console.error('Submission failed:', error);
       Alert.alert('Error', 'Failed to submit. Try again.');

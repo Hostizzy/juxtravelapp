@@ -15,6 +15,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { apiPost } from '../../../lib/api';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep2Screen.styles';
 
@@ -88,13 +89,13 @@ export default function ListStep2Screen() {
     navigation.goBack();
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!address || !price) {
       Alert.alert('Required Fields', 'Please fill in the Address and Base Price per night.');
       return;
     }
-    navigation.navigate('HostList3', {
-      ...step1Data,
+
+    const currentFormData = {
       address,
       rooms,
       maxGuests,
@@ -104,7 +105,46 @@ export default function ListStep2Screen() {
       pricePerNight: parseFloat(price) || 0,
       amenities: selectedAmenities,
       honestNotes,
-    });
+    };
+
+    try {
+      // Create DRAFT property with Step 1 + Step 2 data
+      const draftProperty = await apiPost<{ id: string }>('/properties', {
+        name: step1Data.name,
+        tagline: step1Data.tagline,
+        type: step1Data.type,
+        location: {
+          address,
+          city: step1Data.city,
+          state: step1Data.state,
+          pincode: step1Data.pincode,
+        },
+        capacity: {
+          rooms,
+          maxGuests,
+          comfortableGuests: comfortGuests,
+          bathrooms,
+          beds,
+        },
+        pricePerNight: parseFloat(price) || 0,
+        amenities: selectedAmenities,
+        honestNotes,
+        status: 'draft',
+        photos: [],
+      });
+
+      console.log('[STEP2] Draft property created:', draftProperty.id);
+
+      // Pass propertyId to Step 3
+      navigation.navigate('HostList3', {
+        ...step1Data,
+        ...currentFormData,
+        propertyId: draftProperty.id,
+      });
+    } catch (error) {
+      console.error('[STEP2] Failed to create draft:', error);
+      Alert.alert('Error', 'Failed to save property draft. Please try again.');
+    }
   };
 
   const toggleAmenity = (id: string) => {
