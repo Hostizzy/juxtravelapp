@@ -113,7 +113,7 @@ export class PaymentsService {
       const orderPayload = {
         amount: amountInPaise,
         currency: 'INR',
-        receipt: `booking_${params.bookingId}`,
+        receipt: `bk_${params.bookingId.slice(0, 30)}`,
         notes: {
           bookingId: params.bookingId,
           guestId: params.guestId,
