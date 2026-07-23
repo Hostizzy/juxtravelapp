@@ -102,8 +102,18 @@ const calculateTotalPrice = (
   checkIn?: string,
   checkOut?: string
 ): { subtotal: number; serviceFee: number; total: number; nights: number } => {
+  // If no dates, show 1 night default
+  const finalPricePerNight = pricePerNight || 0;
+  const finalWeekendPrice = weekendPrice || finalPricePerNight;
+  
   if (!checkIn || !checkOut) {
-    return { subtotal: pricePerNight, serviceFee: 0, total: pricePerNight, nights: 1 };
+    const serviceFee = Math.round(finalPricePerNight * 0.1);
+    return { 
+      subtotal: finalPricePerNight, 
+      serviceFee, 
+      total: finalPricePerNight + serviceFee, 
+      nights: 1 
+    };
   }
   
   const start = new Date(checkIn);
@@ -115,8 +125,7 @@ const calculateTotalPrice = (
     const d = new Date(start);
     d.setDate(d.getDate() + i);
     const day = d.getDay();
-    // Friday(5) or Saturday(6) = weekend
-    subtotal += (day === 5 || day === 6) ? (weekendPrice || pricePerNight) : pricePerNight;
+    subtotal += (day === 5 || day === 6) ? finalWeekendPrice : finalPricePerNight;
   }
   
   const serviceFee = Math.round(subtotal * 0.1);

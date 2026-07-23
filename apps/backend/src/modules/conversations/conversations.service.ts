@@ -473,4 +473,45 @@ export class ConversationsService {
 
     return data;
   }
+
+  /**
+   * Mark all unread messages in a conversation as read for a user.
+   */
+  async markAsRead(conversationId: string, userId: string): Promise<{ success: boolean }> {
+    const { data: conv } = await this.supabaseService.admin
+      .from('conversations')
+      .select('guest_id, host_id')
+      .eq('id', conversationId)
+      .maybeSingle();
+
+    if (!conv) {
+      return { success: false };
+    }
+
+    const isGuest = conv.guest_id === userId;
+    const isHost = conv.host_id === userId;
+    if (!isGuest && !isHost) {
+      return { success: false };
+    }
+
+    const readColumn = isGuest ? 'read_by_guest' : 'read_by_host';
+    const senderTypeToExclude = isGuest ? 'guest' : 'host';
+
+    try {
+      await this.supabaseService.admin
+        .from('messages')
+        .update({ [readColumn]: true, is_read: true, read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .neq('sender_type', senderTypeToExclude);
+    } catch {
+      await this.supabaseService.admin
+        .from('messages')
+        .update({ [readColumn]: true })
+        .eq('conversation_id', conversationId)
+        .neq('sender_type', senderTypeToExclude);
+    }
+
+    this.logger.log(`[MSG] Marked as read for user ${userId} in conversation ${conversationId}`);
+    return { success: true };
+  }
 }

@@ -21,6 +21,8 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiPost } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import {
   useMessages,
@@ -49,6 +51,39 @@ export default function ChatDetailScreen() {
   const sending = sendMessageMutation.isPending;
   const [draft, setDraft] = useState('');
   const flatListRef = useRef<FlatList>(null);
+  const queryClient = useQueryClient();
+
+  // Mark messages as read when chat opens
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    const markAsRead = async () => {
+      try {
+        await apiPost(`/conversations/${conversationId}/mark-read`, {});
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      } catch (error) {
+        console.log('[CHAT] Mark as read failed (non-blocking):', error);
+      }
+    };
+    
+    markAsRead();
+  }, [conversationId]);
+
+  // Mark messages as read when new messages arrive while chat is open
+  useEffect(() => {
+    if (!conversationId || messages.length === 0) return;
+    
+    const timer = setTimeout(async () => {
+      try {
+        await apiPost(`/conversations/${conversationId}/mark-read`, {});
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      } catch (error) {
+        // Silent
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [messages.length, conversationId]);
 
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {

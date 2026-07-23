@@ -124,6 +124,19 @@ export class ConversationsController {
   }
 
   /**
+   * POST /conversations/:id/mark-read
+   * Mark all messages in a conversation as read for the current user.
+   */
+  @Post(':id/mark-read')
+  @UseGuards(JwtAuthGuard)
+  async markAsRead(
+    @Param('id') conversationId: string,
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.conversationsService.markAsRead(conversationId, payload.sub);
+  }
+
+  /**
    * POST /conversations/:id/messages
    * Send a new message in a conversation.
    */

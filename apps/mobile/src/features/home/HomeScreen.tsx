@@ -35,13 +35,7 @@ interface MomentItem {
   imageUrl: string;
 }
 
-interface TrendingItem {
-  id: string;
-  placeName: string;
-  stateName: string;
-  rating: string;
-  imageUrl: string;
-}
+
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -144,43 +138,7 @@ export default function HomeScreen() {
     },
   ];
 
-  const trendingData: TrendingItem[] = [
-    {
-      id: '1',
-      placeName: 'Varkala Cliff',
-      stateName: 'Kerala',
-      rating: '4.9',
-      imageUrl: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=400',
-    },
-    {
-      id: '2',
-      placeName: 'Gokarna Surf',
-      stateName: 'Karnataka',
-      rating: '4.8',
-      imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400',
-    },
-    {
-      id: '3',
-      placeName: 'Rishikesh Yoga',
-      stateName: 'Uttarakhand',
-      rating: '4.9',
-      imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-    },
-    {
-      id: '4',
-      placeName: 'Udaipur Lakes',
-      stateName: 'Rajasthan',
-      rating: '4.7',
-      imageUrl: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800',
-    },
-    {
-      id: '5',
-      placeName: 'Coorg Coffee Trails',
-      stateName: 'Karnataka',
-      rating: '4.8',
-      imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400',
-    },
-  ];
+
 
   return (
     <View style={styles.root}>
@@ -350,34 +308,7 @@ export default function HomeScreen() {
               ))}
             </ScrollView>
 
-            {/* Section: Trending This Week */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{i18n.t('home.trending')}</Text>
-              <TouchableOpacity onPress={handleViewAllMoments} activeOpacity={0.6}>
-                <Text style={styles.viewAllText}>{i18n.t('home.viewAll')} &gt;</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {trendingData.map((trend) => (
-                <View key={trend.id} style={styles.trendingCard}>
-                  <View style={{ position: 'relative' }}>
-                    <Image source={{ uri: trend.imageUrl }} style={styles.trendingImage} />
-                    <View style={styles.ratingBadge}>
-                      <Feather name="star" size={10} color="#1A1F1E" />
-                      <Text style={styles.ratingText}>{trend.rating}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.trendingInfo}>
-                    <Text style={styles.trendingName} numberOfLines={1}>{trend.placeName}</Text>
-                    <Text style={styles.trendingState}>{trend.stateName}</Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+
 
             {/* Bottom padding spacing for tab bar comfort */}
             <View style={styles.bottomSpacer} />
