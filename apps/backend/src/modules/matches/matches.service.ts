@@ -31,7 +31,7 @@ export class MatchesService {
           scorePercentage: r.aiScore,
           aiReasoning: r.aiReasoning,
           similarity: r.similarity,
-          matchReasons: [r.aiReasoning],
+          matchReasons: [], // AI reasoning shown separately, no duplicate
           breakdown: {
             location: Math.round(r.similarity * 30),
             capacity: Math.round(r.aiScore * 0.2),

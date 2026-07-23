@@ -339,20 +339,6 @@ export default function MatchResultsScreen() {
                     </View>
                   ) : null}
 
-                  {/* Match Reasons Chips (Orange) */}
-                  {result.matchReasons && result.matchReasons.length > 0 && (
-                    <View style={styles.matchReasonsRow}>
-                      {result.matchReasons.map((reason, idx) => (
-                        <View key={idx} style={styles.matchReasonChip}>
-                          <Feather name={getReasonIconName(idx)} size={12} color="#D4704A" />
-                          <Text style={styles.matchReasonChipText}>
-                            {reason}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
                   {/* Score Breakdown Section */}
                   <View style={styles.breakdownSection}>
                     {/* Vibe Match */}

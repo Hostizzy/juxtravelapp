@@ -19,6 +19,7 @@ import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanStep4Screen.styles';
 
 import PlanHeader from './PlanHeader';
+import { AIInsightCard } from './AIInsightCard';
 
 type PlanStep4Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanStep4'>;
@@ -207,18 +208,15 @@ export default function PlanStep4Screen({ navigation, route }: PlanStep4Props) {
               textAlignVertical="top"
             />
 
-            {/* AI Insight Chip */}
-            <View style={styles.aiInsightCard}>
-              <View style={styles.aiInsightIconCircle}>
-                <Feather name="info" size={16} color="#1A6B5A" />
-              </View>
-              <View style={styles.aiInsightContent}>
-                <Text style={styles.aiInsightTitle}>✨ AI Insight</Text>
-                <Text style={styles.aiInsightDesc}>
-                  {getAIInsightText()}
-                </Text>
-              </View>
-            </View>
+            <AIInsightCard
+              step={4}
+              destination={destination}
+              budget={budget}
+              groupType={groupType}
+              moods={moods}
+              bedrooms={bedrooms}
+              fallbackText={getAIInsightText()}
+            />
           </View>
 
           {/* Get Matches Button */}
