@@ -21,4 +21,10 @@ export class MatchesController {
     dto.userId = payload.sub;
     return this.matchesService.findMatches(dto);
   }
+
+  @Post('find-rag')
+  @UseGuards(JwtAuthGuard)
+  async findWithRAG(@Body() dto: FindMatchesDto) {
+    return this.matchesService.findMatchesHybrid(dto);
+  }
 }

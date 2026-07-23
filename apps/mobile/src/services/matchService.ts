@@ -32,6 +32,9 @@ export interface MatchResult {
   property: Property;
   score: number;
   scorePercentage: number;
+  aiReasoning?: string;
+  similarity?: number;
+  isFromRAG?: boolean;
   breakdown: {
     location: number;
     capacity: number;
@@ -43,8 +46,8 @@ export interface MatchResult {
   };
   priceBreakdown: {
     nights: number;
-    weekdayNights: number;
-    weekendNights: number;
+    weekdayNights?: number;
+    weekendNights?: number;
     subtotal: number;
     serviceFee: number;
     grandTotal: number;
@@ -69,7 +72,7 @@ export const getMatches = async (
     if (!token) return [];
 
     const results = await apiService.post<MatchResult[]>(
-      '/matches/find',
+      '/matches/find-rag',
       {
         destination,
         checkIn,
@@ -90,4 +93,3 @@ export const getMatches = async (
     return [];
   }
 };
-

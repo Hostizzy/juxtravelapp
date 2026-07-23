@@ -373,4 +373,20 @@ export default StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  aiInsight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E6F2EF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  aiInsightText: {
+    fontSize: 12,
+    color: '#1A6B5A',
+    fontWeight: '600',
+    flex: 1,
+  },
 });

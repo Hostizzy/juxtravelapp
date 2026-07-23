@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Image,
   Switch,
   StyleSheet,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +20,7 @@ import CalendarBottomSheet from './CalendarBottomSheet';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import styles from './PlanStep1Screen.styles';
+import { apiGet } from '../../lib/api';
 
 import PlanHeader from './PlanHeader';
 
@@ -43,6 +46,49 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [isFlexible, setIsFlexible] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<Array<{ name: string; state: string }>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAllCitiesModal, setShowAllCitiesModal] = useState(false);
+  const [allCities, setAllCities] = useState<Array<{ name: string; state: string }>>([]);
+
+  useEffect(() => {
+    if (!destination || destination.length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const data = await apiGet<{ cities: Array<{ name: string; state: string }> }>(
+          `/locations/search?q=${encodeURIComponent(destination)}&limit=8`
+        );
+        setSuggestions(data.cities);
+        setShowSuggestions(data.cities.length > 0);
+      } catch (error) {
+        console.error('City search failed:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [destination]);
+
+  const handleCitySelect = (cityName: string) => {
+    setDestination(cityName);
+    setSelectedChip(cityName);
+    setShowSuggestions(false);
+  };
+
+  const handleShowAllCities = async () => {
+    try {
+      const data = await apiGet<{ cities: Array<{ name: string; state: string }> }>('/locations/all');
+      setAllCities(data.cities);
+      setShowAllCitiesModal(true);
+    } catch (error) {
+      console.error('Failed to load cities:', error);
+    }
+  };
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -166,6 +212,25 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
               />
             </View>
 
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((city, idx) => (
+                  <TouchableOpacity
+                    key={`${city.name}-${idx}`}
+                    style={styles.suggestionItem}
+                    onPress={() => handleCitySelect(city.name)}
+                  >
+                    <Feather name="map-pin" size={14} color="#84C9BA" />
+                    <View>
+                      <Text style={styles.suggestionCity}>{city.name}</Text>
+                      <Text style={styles.suggestionState}>{city.state}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
             {/* Popular Destination Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScrollView} contentContainerStyle={styles.chipsScroll}>
               <View style={styles.chipsRow}>
@@ -187,7 +252,7 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
                 <TouchableOpacity 
                   style={styles.arrowChip} 
                   activeOpacity={0.7}
-                  onPress={() => Alert.alert('More Destinations', 'Loading additional standard escapes...')}
+                  onPress={handleShowAllCities}
                 >
                   <Feather name="chevron-right" size={16} color="#1A1F1E" />
                 </TouchableOpacity>
@@ -274,6 +339,41 @@ export default function PlanStep1Screen({ navigation }: PlanStep1Props) {
             setShowCalendar(false);
           }}
         />
+
+        <Modal
+          visible={showAllCitiesModal}
+          animationType="slide"
+          onRequestClose={() => setShowAllCitiesModal(false)}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF8F4' }}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>All Destinations</Text>
+              <TouchableOpacity onPress={() => setShowAllCitiesModal(false)}>
+                <Feather name="x" size={24} color="#1A1F1E" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={allCities}
+              keyExtractor={(item, idx) => `${item.name}-${idx}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.cityRow}
+                  onPress={() => {
+                    setDestination(item.name);
+                    setSelectedChip(item.name);
+                    setShowAllCitiesModal(false);
+                  }}
+                >
+                  <Feather name="map-pin" size={16} color="#84C9BA" />
+                  <View>
+                    <Text style={styles.cityName}>{item.name}</Text>
+                    <Text style={styles.cityState}>{item.state}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </SafeAreaView>
+        </Modal>
       </View>
     </View>
   );

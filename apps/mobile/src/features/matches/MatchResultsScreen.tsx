@@ -331,6 +331,14 @@ export default function MatchResultsScreen() {
                     </View>
                   )}
 
+                  {/* AI Reasoning Insight */}
+                  {result.aiReasoning ? (
+                    <View style={styles.aiInsight}>
+                      <Feather name="star" size={12} color="#1A6B5A" />
+                      <Text style={styles.aiInsightText}>{result.aiReasoning}</Text>
+                    </View>
+                  ) : null}
+
                   {/* Match Reasons Chips (Orange) */}
                   {result.matchReasons && result.matchReasons.length > 0 && (
                     <View style={styles.matchReasonsRow}>

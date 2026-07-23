@@ -6,6 +6,9 @@ export interface MatchResult {
   property: Property;
   score: number;
   scorePercentage: number;
+  aiReasoning?: string;
+  similarity?: number;
+  isFromRAG?: boolean;
   breakdown: {
     location: number;
     capacity: number;
@@ -36,6 +39,6 @@ export function useFindMatches() {
       groupType?: string;
       moods?: string[];
       budget?: number;
-    }) => apiPost<MatchResult[]>('/matches/find', params),
+    }) => apiPost<MatchResult[]>('/matches/find-rag', params),
   });
 }

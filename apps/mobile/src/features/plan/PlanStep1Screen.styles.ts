@@ -350,6 +350,67 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  suggestionsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: -8,
+    marginBottom: 16,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E8E2D9',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  suggestionCity: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1F1E',
+  },
+  suggestionState: {
+    fontSize: 11,
+    color: '#6B7370',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E2D9',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1F1E',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  cityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EDE8',
+  },
+  cityName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1F1E',
+  },
+  cityState: {
+    fontSize: 12,
+    color: '#6B7370',
+  },
 });
 
 export default styles;

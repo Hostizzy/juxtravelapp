@@ -13,6 +13,8 @@ import { MatchesModule } from './modules/matches/matches.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { AIModule } from './modules/ai/ai.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -42,6 +44,8 @@ import configuration from './config/configuration';
     BookingsModule,
     ConversationsModule,
     PaymentsModule,
+    AIModule,
+    LocationsModule,
   ],
 })
 export class AppModule {}

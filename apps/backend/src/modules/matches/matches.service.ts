@@ -3,6 +3,7 @@ import { SupabaseService } from '../../supabase/supabase.service';
 import { MatchEngine } from './matches.engine';
 import { FindMatchesDto } from './dto/find-matches.dto';
 import { MatchResult } from './interfaces/match-result.interface';
+import { RAGService } from '../ai/rag.service';
 
 @Injectable()
 export class MatchesService {
@@ -11,7 +12,52 @@ export class MatchesService {
   constructor(
     private supabaseService: SupabaseService,
     private matchEngine: MatchEngine,
+    private ragService: RAGService,
   ) { }
+
+  // Hybrid RAG + rule-based
+  async findMatchesHybrid(dto: FindMatchesDto): Promise<any[]> {
+    this.logger.log(`[HYBRID] Finding matches for: ${dto.destination}`);
+
+    try {
+      // Try RAG first
+      const ragResults = await this.ragService.findMatchesWithRAG(dto, 3);
+      
+      if (ragResults.length >= 3) {
+        this.logger.log(`[HYBRID] RAG returned ${ragResults.length} matches`);
+        return ragResults.map(r => ({
+          property: r.property,
+          score: r.aiScore,
+          scorePercentage: r.aiScore,
+          aiReasoning: r.aiReasoning,
+          similarity: r.similarity,
+          matchReasons: [r.aiReasoning],
+          breakdown: {
+            location: Math.round(r.similarity * 30),
+            capacity: Math.round(r.aiScore * 0.2),
+            bedrooms: Math.round(r.aiScore * 0.15),
+            budget: Math.round(r.aiScore * 0.15),
+            vibe: Math.round(r.aiScore * 0.15),
+            trust: Math.round(r.aiScore * 0.05),
+            total: r.aiScore,
+          },
+          priceBreakdown: this.matchEngine.calculatePrice(
+            r.property,
+            dto.checkIn ?? new Date().toISOString(),
+            dto.checkOut ?? new Date(Date.now() + 2 * 86400000).toISOString(),
+          ),
+          isFromRAG: true,
+        }));
+      }
+
+      // Fallback to old rule-based matching
+      this.logger.log('[HYBRID] Falling back to rule-based matching');
+      return await this.findMatches(dto);
+    } catch (error: any) {
+      this.logger.error(`[HYBRID] Error, falling back: ${error?.message}`);
+      return await this.findMatches(dto);
+    }
+  }
 
   async findMatches(
     dto: FindMatchesDto

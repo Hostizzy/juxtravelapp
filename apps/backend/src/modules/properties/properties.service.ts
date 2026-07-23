@@ -8,13 +8,15 @@ import {
 import { SupabaseService } from '../../supabase/supabase.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+import { EmbeddingsService } from '../ai/embeddings.service';
 
 @Injectable()
 export class PropertiesService {
   private readonly logger = new Logger(PropertiesService.name);
 
   constructor(
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private embeddingsService: EmbeddingsService,
   ) {}
 
   async uploadPhoto(
@@ -108,6 +110,11 @@ export class PropertiesService {
       .eq('id', data.id);
 
     this.logger.log(`Property created: ${data.id} by host: ${hostId}`);
+
+    // Auto-generate embedding (fire and forget - don't block response)
+    this.embeddingsService.embedProperty(data.id).catch(err => {
+      this.logger.warn(`[EMBED] Auto-embed failed: ${err?.message}`);
+    });
 
     return { ...data, slug };
   }
@@ -209,6 +216,11 @@ export class PropertiesService {
       this.logger.error('Update failed', error);
       throw new Error('Update failed');
     }
+
+    // Auto-generate embedding (fire and forget - don't block response)
+    this.embeddingsService.embedProperty(data.id).catch(err => {
+      this.logger.warn(`[EMBED] Auto-embed failed: ${err?.message}`);
+    });
 
     return data;
   }
