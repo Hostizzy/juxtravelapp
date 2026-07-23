@@ -239,7 +239,7 @@ export default function CalendarBottomSheet({
                   {tempCheckOut ? formatDateShort(tempCheckOut) : 'Select'}
                 </Text>
                 <Text style={styles.tripSummaryMeta}>
-                  {nightsCount > 0 ? `${nightsCount} Nights` : '0 Nights'} • 2 Guests
+                  {nightsCount > 0 ? `${nightsCount} Nights` : '0 Nights'}
                 </Text>
               </View>
               <View style={styles.tripSummaryRight}>
@@ -368,12 +368,6 @@ export default function CalendarBottomSheet({
                     <Text style={styles.summaryDatesText}>Choose dates above</Text>
                   )}
                 </View>
-              </View>
-              <View style={styles.guestsCardRight}>
-                <View style={styles.guestIconCircle}>
-                  <Feather name="users" size={18} color="#1B7A69" />
-                </View>
-                <Text style={styles.guestsCountText}>2 Guests</Text>
               </View>
             </View>
 
