@@ -28,6 +28,7 @@ export interface Conversation {
 }
 
 export const CONVERSATION_KEYS = {
+  all: ['conversations'] as const,
   list: (role: string) => ['conversations', role] as const,
   messages: (id: string) => ['conversations', 'messages', id] as const,
   byBooking: (bookingId: string) => ['conversations', 'booking', bookingId] as const,
@@ -37,7 +38,8 @@ export function useConversations(role: 'guest' | 'host') {
   return useQuery({
     queryKey: CONVERSATION_KEYS.list(role),
     queryFn: () => apiGet<Conversation[]>(`/conversations/my?role=${role}`),
-    refetchInterval: 10000, // Poll every 10s for new messages (replaces manual interval)
+    refetchInterval: 3000, // Poll every 3s (was 10s)
+    staleTime: 0, // Always fresh
   });
 }
 

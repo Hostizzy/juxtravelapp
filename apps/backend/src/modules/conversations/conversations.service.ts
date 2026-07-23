@@ -498,20 +498,28 @@ export class ConversationsService {
     const senderTypeToExclude = isGuest ? 'guest' : 'host';
 
     try {
-      await this.supabaseService.admin
+      const { error } = await this.supabaseService.admin
         .from('messages')
         .update({ [readColumn]: true, is_read: true, read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
-        .neq('sender_type', senderTypeToExclude);
-    } catch {
-      await this.supabaseService.admin
-        .from('messages')
-        .update({ [readColumn]: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_type', senderTypeToExclude);
+        .neq('sender_type', senderTypeToExclude)
+        .eq(readColumn, false);
+        
+      if (error) {
+        this.logger.warn(`[MSG] Update with read_at failed, trying fallback: ${error.message}`);
+        await this.supabaseService.admin
+          .from('messages')
+          .update({ [readColumn]: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_type', senderTypeToExclude)
+          .eq(readColumn, false);
+      }
+      
+      this.logger.log(`[MSG] ✅ Marked read for user ${userId} in conv ${conversationId}`);
+      return { success: true };
+    } catch (error: any) {
+      this.logger.error(`[MSG] Mark read failed: ${error?.message}`);
+      return { success: false };
     }
-
-    this.logger.log(`[MSG] Marked as read for user ${userId} in conversation ${conversationId}`);
-    return { success: true };
   }
 }

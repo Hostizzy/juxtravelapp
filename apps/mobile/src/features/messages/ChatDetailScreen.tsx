@@ -53,37 +53,67 @@ export default function ChatDetailScreen() {
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
 
-  // Mark messages as read when chat opens
+  // Mark messages as read when chat opens or new messages arrive
   useEffect(() => {
     if (!conversationId) return;
     
     const markAsRead = async () => {
       try {
         await apiPost(`/conversations/${conversationId}/mark-read`, {});
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        
+        // Invalidate ALL conversation queries (guest + host variants)
+        await queryClient.invalidateQueries({ 
+          queryKey: ['conversations'],
+          refetchType: 'active', // Force immediate refetch of active queries
+        });
+        
+        // Also refetch current messages to update read_by_guest/host flags
+        await queryClient.invalidateQueries({
+          queryKey: ['conversations', 'messages', conversationId],
+          refetchType: 'active',
+        });
       } catch (error) {
-        console.log('[CHAT] Mark as read failed (non-blocking):', error);
+        console.log('[CHAT] Mark as read failed:', error);
       }
     };
     
+    // Initial mark on chat open
     markAsRead();
   }, [conversationId]);
 
-  // Mark messages as read when new messages arrive while chat is open
+  // Also mark as read when new messages come while chat is open
   useEffect(() => {
     if (!conversationId || messages.length === 0) return;
+    
+    // Check if any unread messages from other party
+    const hasUnread = messages.some(m => {
+      const isFromMe = m.sender_id === user?.id;
+      if (isFromMe) return false;
+      // Check if not yet read
+      const readField = role === 'guest' ? m.read_by_guest : m.read_by_host;
+      return !readField;
+    });
+    
+    if (!hasUnread) return;
     
     const timer = setTimeout(async () => {
       try {
         await apiPost(`/conversations/${conversationId}/mark-read`, {});
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ 
+          queryKey: ['conversations'],
+          refetchType: 'active',
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['conversations', 'messages', conversationId],
+          refetchType: 'active',
+        });
       } catch (error) {
         // Silent
       }
-    }, 1000);
+    }, 500);
     
     return () => clearTimeout(timer);
-  }, [messages.length, conversationId]);
+  }, [messages.length, conversationId, role, user?.id]);
 
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,8 +23,19 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MessagesScreen() {
   const navigation = useNavigation<NavProp>();
+  const queryClient = useQueryClient();
   const { data: conversations = [], isLoading: isInitialLoading, refetch } = useConversations('guest');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Refetch conversations when screen focuses (after coming back from chat)
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['conversations'],
+        refetchType: 'active',
+      });
+    }, [queryClient])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
