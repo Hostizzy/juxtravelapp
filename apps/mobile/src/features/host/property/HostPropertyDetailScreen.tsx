@@ -69,13 +69,60 @@ interface PropertyData {
   status: 'active' | 'under_review' | 'draft' | string;
   minimum_stay?: number;
   cancellation_policy?: string;
-  bookings?: number;
+  total_bookings?: number;
   host?: {
     id: string;
     name: string;
     phone?: string;
+    bio?: string;
+    profile_pic?: string;
+    response_time_hours?: number;
+    created_at?: string;
   } | null;
 }
+
+const formatJoinedDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+const formatResponseTime = (hours?: number): string => {
+  if (!hours || hours <= 1) return 'Within an hour';
+  if (hours <= 4) return `Within ${hours} hours`;
+  if (hours <= 24) return 'Within a day';
+  return `Within ${Math.ceil(hours / 24)} days`;
+};
+
+const calculateTotalPrice = (
+  pricePerNight: number,
+  weekendPrice: number,
+  checkIn?: string,
+  checkOut?: string
+): { subtotal: number; serviceFee: number; total: number; nights: number } => {
+  if (!checkIn || !checkOut) {
+    return { subtotal: pricePerNight, serviceFee: 0, total: pricePerNight, nights: 1 };
+  }
+  
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  
+  let subtotal = 0;
+  for (let i = 0; i < nights; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const day = d.getDay();
+    // Friday(5) or Saturday(6) = weekend
+    subtotal += (day === 5 || day === 6) ? (weekendPrice || pricePerNight) : pricePerNight;
+  }
+  
+  const serviceFee = Math.round(subtotal * 0.1);
+  const total = subtotal + serviceFee;
+  return { subtotal, serviceFee, total, nights };
+};
 
 type PropertyType = 'Homestay' | 'Farmstay' | 'Villa' | 'Boutique Hotel' | 'Cottage';
 type PolicyType = 'flexible' | 'moderate' | 'strict';
@@ -116,13 +163,24 @@ export default function HostPropertyDetailScreen() {
 
   const handleBookNow = () => {
     if (!property) return;
+    
+    const finalCheckIn = checkIn ?? new Date().toISOString().split('T')[0];
+    const finalCheckOut = checkOut ?? new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    
+    const priceInfo = calculateTotalPrice(
+      property.price_per_night ?? 0,
+      property.weekend_price ?? property.price_per_night ?? 0,
+      finalCheckIn,
+      finalCheckOut,
+    );
+    
     navigation.navigate('GuestVerification', {
       propertyId: property.id,
       propertyName: property.name,
-      checkIn: checkIn ?? new Date().toISOString().split('T')[0],
-      checkOut: checkOut ?? new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      checkIn: finalCheckIn,
+      checkOut: finalCheckOut,
       guests: guests ?? 1,
-      totalAmount: property.price_per_night,
+      totalAmount: priceInfo.total,
     });
   };
 
@@ -592,21 +650,121 @@ export default function HostPropertyDetailScreen() {
               </View>
             </View>
 
-            {/* Host section */}
-            <View style={styles.hostCard}>
-              <View style={styles.hostInfoCol}>
-                <View style={styles.hostAvatar}>
-                  <Text style={styles.hostAvatarText}>
-                    {property.host?.name?.charAt(0).toUpperCase() || 'H'}
+            {/* Full Amenities Grid */}
+            {property.amenities && property.amenities.length > 0 && (
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionTitle}>All Amenities</Text>
+                <View style={styles.amenitiesGrid}>
+                  {property.amenities.map((amenity, idx) => (
+                    <View key={idx} style={styles.amenityGridItem}>
+                      <Feather name="check-circle" size={14} color="#1A6B5A" />
+                      <Text style={styles.amenityGridText}>
+                        {amenity.replace('_', ' ').charAt(0).toUpperCase() + amenity.replace('_', ' ').slice(1)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Activities */}
+            {property.activities && property.activities.length > 0 && (
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionTitle}>Activities Available</Text>
+                <View style={styles.amenitiesGrid}>
+                  {property.activities.map((activity, idx) => (
+                    <View key={idx} style={styles.activityChip}>
+                      <Feather name="activity" size={12} color="#D4704A" />
+                      <Text style={styles.activityChipText}>{activity}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Location Details */}
+            {property.location && (
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionTitle}>Location</Text>
+                <View style={styles.locationRow}>
+                  <Feather name="map-pin" size={16} color="#1A6B5A" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.locationCity}>
+                      {property.location.city}, {property.location.state}
+                    </Text>
+                    {property.location.address && (
+                      <Text style={styles.locationAddress}>
+                        {property.location.address}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Host Story */}
+            {property.host_story && property.host_story.length > 0 ? (
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionTitle}>Host's Story</Text>
+                <Text style={styles.sectionText}>{property.host_story}</Text>
+              </View>
+            ) : null}
+
+            {/* Honest Notes */}
+            {property.honest_notes && property.honest_notes.length > 0 ? (
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionTitleRow}>
+                  <Feather name="info" size={16} color="#D4704A" />
+                  <Text style={styles.sectionTitle}>Honest Notes from Host</Text>
+                </View>
+                <Text style={styles.sectionText}>{property.honest_notes}</Text>
+              </View>
+            ) : null}
+
+            {/* Cancellation Policy */}
+            {property.cancellation_policy && (
+              <View style={styles.sectionCard}>
+                <Text style={styles.sectionTitle}>Cancellation Policy</Text>
+                <View style={styles.policyRow}>
+                  <Feather name="shield" size={16} color="#1A6B5A" />
+                  <Text style={styles.policyText}>
+                    {property.cancellation_policy === 'flexible' 
+                      ? 'Flexible - Free cancellation up to 24 hours before check-in'
+                      : property.cancellation_policy === 'moderate'
+                      ? 'Moderate - Free cancellation up to 5 days before check-in'
+                      : 'Strict - 50% refund up to 7 days before check-in'}
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {/* Host section - Real Data */}
+            <View style={styles.hostCard}>
+              <View style={styles.hostInfoCol}>
+                {property.host?.profile_pic ? (
+                  <Image source={{ uri: property.host.profile_pic }} style={styles.hostAvatarImage} />
+                ) : (
+                  <View style={styles.hostAvatar}>
+                    <Text style={styles.hostAvatarText}>
+                      {property.host?.name?.charAt(0).toUpperCase() || 'H'}
+                    </Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.hostName}>Hosted by {property.host?.name ?? 'Host'}</Text>
-                  <View style={styles.superHostBadge}>
-                    <Text style={styles.superHostText}>Super Host</Text>
-                  </View>
-                  <Text style={styles.hostSmallText}>Response time &lt; 1hr</Text>
-                  <Text style={styles.hostSmallText}>Joined March 2021</Text>
+                  <Text style={styles.hostSmallText}>
+                    {formatResponseTime(property.host?.response_time_hours)}
+                  </Text>
+                  {property.host?.created_at && (
+                    <Text style={styles.hostSmallText}>
+                      Joined {formatJoinedDate(property.host.created_at)}
+                    </Text>
+                  )}
+                  {property.total_bookings && property.total_bookings > 0 ? (
+                    <Text style={styles.hostSmallText}>
+                      {property.total_bookings} bookings hosted
+                    </Text>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.hostActionGroup}>
@@ -622,41 +780,64 @@ export default function HostPropertyDetailScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Host Bio - if exists */}
+            {property.host?.bio && property.host.bio.length > 0 ? (
+              <View style={[styles.sectionCard, { marginBottom: 140 }]}>
+                <Text style={styles.sectionTitle}>About the Host</Text>
+                <Text style={styles.sectionText}>{property.host.bio}</Text>
+              </View>
+            ) : null}
           </ScrollView>
 
           {/* Sticky Bottom Bar */}
-          <View style={styles.stickyBottomBar}>
-            <View style={styles.stickyPriceCol}>
-              <Text style={styles.stickyPriceText}>₹{(property.price_per_night ?? 0).toLocaleString('en-IN')}</Text>
-              <Text style={styles.stickyPriceLabel}>Total before taxes</Text>
-            </View>
-            <View style={styles.stickyActionGroup}>
-              <TouchableOpacity 
-                style={styles.stickySaveBtn}
-                onPress={() => handleSaveProperty(property.id)}
-                activeOpacity={0.7}
-              >
-                <Feather 
-                  name="bookmark" 
-                  size={20} 
-                  color={savedProperties.includes(property.id) ? "#D4704A" : "#6B7370"} 
-                  fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"} 
-                />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.bookNowBtn} 
-                onPress={handleBookNow} 
-                activeOpacity={0.8}
-                disabled={bookingLoading}
-              >
-                {bookingLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.bookNowText}>Book Now</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          {(() => {
+            const priceInfo = calculateTotalPrice(
+              property.price_per_night ?? 0,
+              property.weekend_price ?? property.price_per_night ?? 0,
+              checkIn,
+              checkOut,
+            );
+
+            return (
+              <View style={styles.stickyBottomBar}>
+                <View style={styles.stickyPriceCol}>
+                  <Text style={styles.stickyPriceText}>
+                    ₹{priceInfo.total.toLocaleString('en-IN')}
+                  </Text>
+                  <Text style={styles.stickyPriceLabel}>
+                    Total for {priceInfo.nights} night{priceInfo.nights > 1 ? 's' : ''} • Incl. taxes
+                  </Text>
+                </View>
+                <View style={styles.stickyActionGroup}>
+                  <TouchableOpacity 
+                    style={styles.stickySaveBtn}
+                    onPress={() => handleSaveProperty(property.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather 
+                      name="bookmark" 
+                      size={20} 
+                      color={savedProperties.includes(property.id) ? "#D4704A" : "#6B7370"} 
+                      fill={savedProperties.includes(property.id) ? "#D4704A" : "transparent"}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.bookNowBtn} 
+                    onPress={handleBookNow} 
+                    activeOpacity={0.8}
+                    disabled={bookingLoading}
+                  >
+                    {bookingLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.bookNowText}>Book Now</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })()}
         </View>
       </View>
     );

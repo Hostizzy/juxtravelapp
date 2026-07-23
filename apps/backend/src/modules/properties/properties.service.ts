@@ -158,15 +158,23 @@ export class PropertiesService {
       throw new NotFoundException('Property not found');
     }
 
+    // Fetch host with all profile fields
     const { data: host } = await this.supabaseService.admin
         .from('users')
-        .select('id, name, phone')
+        .select('id, name, phone, bio, profile_pic, response_time_hours, created_at')
         .eq('id', property.host_id)
         .single();
+
+    // Count host's total bookings for this host (real data)
+    const { count: hostBookings } = await this.supabaseService.admin
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('property_id', property.id);
 
     return {
       ...property,
       host: host ?? null,
+      total_bookings: hostBookings ?? 0,
     };
   }
 
