@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
   headerWrapper: {
-    height: Platform.OS === 'ios' ? 130 : 115,
+    height: Platform.OS === 'ios' ? 110 : 95,
     overflow: 'hidden',
     backgroundColor: '#021412',
   },

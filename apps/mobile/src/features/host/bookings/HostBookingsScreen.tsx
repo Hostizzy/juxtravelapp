@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ImageBackground,
   StyleSheet,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,9 +28,12 @@ import styles from './HostBookingsScreen.styles';
 
 type TabType = 'all' | 'upcoming' | 'completed' | 'cancelled';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function HostBookingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const horizontalScrollRef = useRef<ScrollView>(null);
   
   const { data: bookings = [], isLoading: loading, refetch } = useHostBookings();
   const { data: conversations = [] } = useConversations('host');
@@ -44,6 +48,11 @@ export default function HostBookingsScreen() {
     { key: 'completed', label: i18n.t('host.bookings.tabCompleted') || 'Completed' },
     { key: 'cancelled', label: i18n.t('host.bookings.tabCancelled') || 'Cancelled' },
   ];
+
+  const handleTabPress = (index: number, key: TabType) => {
+    setActiveTab(key);
+    horizontalScrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+  };
 
   const filteredBookings = bookings.filter((b) => {
     if (activeTab === 'all') return true;
@@ -189,11 +198,11 @@ export default function HostBookingsScreen() {
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <TouchableOpacity
               key={tab.key}
               style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
-              onPress={() => setActiveTab(tab.key)}
+              onPress={() => handleTabPress(idx, tab.key)}
               activeOpacity={0.7}
             >
               <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
@@ -203,127 +212,162 @@ export default function HostBookingsScreen() {
           ))}
         </View>
 
-        {/* Scrollable Booking List */}
-        {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#1A6B5A" />
-          </View>
-        ) : filteredBookings.length === 0 ? (
-          <View style={styles.centerContainer}>
-            <Feather name="calendar" size={48} color="#6B7370" />
-            <Text style={styles.emptyText}>No bookings found</Text>
-          </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#1A6B5A" />
+        {/* Swipeable Tab Content */}
+        <ScrollView
+          ref={horizontalScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+            if (idx >= 0 && idx < tabs.length) {
+              setActiveTab(tabs[idx].key);
             }
-          >
-            {filteredBookings.map((booking) => {
-              const guestName = booking.guest?.name ?? 'Guest';
-              const propertyName = booking.property?.name ?? 'Property';
-              const badge = getStatusStyle(booking.status);
-              const initials = getInitials(guestName);
-              const avatarBg = getAvatarColor(guestName);
-              const shortId = booking.id.substring(0, 6).toUpperCase();
-              const refString = `JUX-2026-${shortId}`;
-              
-              // Fallback notes from amenities if special_requests is empty
-              const notes = booking.special_requests || (booking.property?.location?.address ? `📍 Near ${booking.property.location.address}` : '🍽 Welcome breakfast included');
+          }}
+          style={{ flex: 1 }}
+        >
+          {tabs.map((tab) => {
+            const tabBookings = bookings.filter((b) => {
+              if (tab.key === 'all') return true;
+              if (tab.key === 'upcoming') {
+                return (
+                  ['pending', 'confirmed'].includes(b.status.toLowerCase()) &&
+                  new Date(b.check_in) >= new Date(new Date().setHours(0, 0, 0, 0))
+                );
+              }
+              if (tab.key === 'completed') return b.status.toLowerCase() === 'completed';
+              if (tab.key === 'cancelled') return b.status.toLowerCase() === 'cancelled';
+              return true;
+            });
 
-              return (
-                <View key={booking.id} style={styles.card}>
-                  {/* Top row */}
-                  <View style={styles.cardHeader}>
-                    <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
-                      <Text style={styles.avatarText}>{initials}</Text>
-                    </View>
-                    <View style={styles.headerDetails}>
-                      <Text style={styles.guestName}>{guestName}</Text>
-                      <View style={styles.guestsRow}>
-                        <Feather name="user" size={12} color="#6B7370" />
-                        <Text style={styles.guestsCount}> {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</Text>
-                      </View>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: badge.bg, flexDirection: 'row', alignItems: 'center' }]}>
-                      {badge.label.toLowerCase() === 'confirmed' || badge.label.toLowerCase() === 'completed' ? (
-                        <Feather name="check-circle" size={11} color={badge.text} style={{ marginRight: 4 }} />
-                      ) : badge.label.toLowerCase() === 'pending' ? (
-                        <Feather name="clock" size={11} color={badge.text} style={{ marginRight: 4 }} />
-                      ) : badge.label.toLowerCase() === 'cancelled' ? (
-                        <Feather name="alert-circle" size={11} color={badge.text} style={{ marginRight: 4 }} />
-                      ) : null}
-                      <Text style={[styles.statusBadgeText, { color: badge.text }]}>
-                        {badge.label}
-                      </Text>
-                    </View>
+            return (
+              <View key={tab.key} style={{ width: SCREEN_WIDTH, flex: 1 }}>
+                {loading ? (
+                  <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color="#1A6B5A" />
                   </View>
-
-                  {/* Property Name */}
-                  <View style={styles.propertyDetails}>
-                    <Text style={styles.propertyName}>{propertyName}</Text>
-                    <View style={styles.dateRow}>
-                      <Feather name="calendar" size={14} color="#6B7370" style={{ marginRight: 6 }} />
-                      <Text style={styles.bookingDates}>{formatDateRange(booking.check_in, booking.check_out)}</Text>
+                ) : tabBookings.length === 0 ? (
+                  <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+                    refreshControl={
+                      <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#1A6B5A" />
+                    }
+                  >
+                    <View style={styles.centerContainer}>
+                      <Feather name="calendar" size={48} color="#6B7370" />
+                      <Text style={styles.emptyText}>No bookings found</Text>
                     </View>
-                  </View>
+                  </ScrollView>
+                ) : (
+                  <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                      <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#1A6B5A" />
+                    }
+                  >
+                    {tabBookings.map((booking) => {
+                      const guestName = booking.guest?.name ?? 'Guest';
+                      const propertyName = booking.property?.name ?? 'Property';
+                      const badge = getStatusStyle(booking.status);
+                      const initials = getInitials(guestName);
+                      const avatarBg = getAvatarColor(guestName);
+                      const shortId = booking.id.substring(0, 6).toUpperCase();
+                      const refString = `JUX-2026-${shortId}`;
+                      
+                      // Fallback notes from amenities if special_requests is empty
+                      const notes = booking.special_requests || (booking.property?.location?.address ? `📍 Near ${booking.property.location.address}` : '🍽 Welcome breakfast included');
 
-                  {/* Booking Reference Box */}
-                  <View style={styles.refBox}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.refLabel}>BOOKING REFERENCE</Text>
-                      <Text style={styles.refValue}>REF: {refString}</Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.copyBtn} 
-                      onPress={() => handleCopyReference(refString)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="copy" size={16} color="#1A6B5A" />
-                    </TouchableOpacity>
-                  </View>
+                      return (
+                        <View key={booking.id} style={styles.card}>
+                          {/* Top row */}
+                          <View style={styles.cardHeader}>
+                            <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
+                              <Text style={styles.avatarText}>{initials}</Text>
+                            </View>
+                            <View style={styles.headerDetails}>
+                              <Text style={styles.guestName}>{guestName}</Text>
+                              <View style={styles.guestsRow}>
+                                <Feather name="user" size={12} color="#6B7370" />
+                                <Text style={styles.guestsCount}> {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</Text>
+                              </View>
+                            </View>
+                            <View style={[styles.statusBadge, { backgroundColor: badge.bg, flexDirection: 'row', alignItems: 'center' }]}>
+                              {badge.label.toLowerCase() === 'confirmed' || badge.label.toLowerCase() === 'completed' ? (
+                                <Feather name="check-circle" size={11} color={badge.text} style={{ marginRight: 4 }} />
+                              ) : badge.label.toLowerCase() === 'pending' ? (
+                                <Feather name="clock" size={11} color={badge.text} style={{ marginRight: 4 }} />
+                              ) : badge.label.toLowerCase() === 'cancelled' ? (
+                                <Feather name="alert-circle" size={11} color={badge.text} style={{ marginRight: 4 }} />
+                              ) : null}
+                              <Text style={[styles.statusBadgeText, { color: badge.text }]}>
+                                {badge.label}
+                              </Text>
+                            </View>
+                          </View>
 
-                  {/* Guest notes */}
-                  {!!notes && (
-                    <View style={styles.specialRequestRow}>
-                      <MaterialCommunityIcons name="silverware-fork-knife" size={14} color="#D4704A" style={{ marginRight: 8 }} />
-                      <Text style={styles.specialRequestText}>
-                        {notes}
-                      </Text>
-                    </View>
-                  )}
+                          {/* Property Name */}
+                          <View style={styles.propertyDetails}>
+                            <Text style={styles.propertyName}>{propertyName}</Text>
+                            <View style={styles.dateRow}>
+                              <Feather name="calendar" size={14} color="#6B7370" style={{ marginRight: 6 }} />
+                              <Text style={styles.bookingDates}>{formatDateRange(booking.check_in, booking.check_out)}</Text>
+                            </View>
+                          </View>
 
-                  {/* Bottom row */}
-                  <View style={styles.cardFooter}>
-                    <TouchableOpacity
-                      style={styles.messageIconBtn}
-                      onPress={() => handleMessageGuest(booking.id, guestName, propertyName)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="message-circle" size={20} color="#1A6B5A" />
-                    </TouchableOpacity>
+                          {/* Booking Reference Box */}
+                          <View style={styles.refBox}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.refLabel}>BOOKING REFERENCE</Text>
+                              <Text style={styles.refValue}>REF: {refString}</Text>
+                            </View>
+                            <TouchableOpacity 
+                              style={styles.copyBtn} 
+                              onPress={() => handleCopyReference(refString)}
+                              activeOpacity={0.7}
+                            >
+                              <Feather name="copy" size={16} color="#1A6B5A" />
+                            </TouchableOpacity>
+                          </View>
 
-                    <TouchableOpacity
-                      style={styles.detailsBtn}
-                      onPress={() => handleViewDetails(booking.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.detailsBtnText}>View Details</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.amountText} numberOfLines={1}>₹{booking.total_amount.toLocaleString('en-IN')}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        )}
+                          {/* Guest notes */}
+                          {!!notes && (
+                            <View style={styles.specialRequestRow}>
+                              <MaterialCommunityIcons name="silverware-fork-knife" size={14} color="#D4704A" style={{ marginRight: 8 }} />
+                              <Text style={styles.specialRequestText}>
+                                {notes}
+                              </Text>
+                            </View>
+                          )}
 
-        {/* Floating Plus FAB */}
-        <TouchableOpacity style={styles.fab} onPress={handleAddNew} activeOpacity={0.8}>
-          <Feather name="plus" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+                          {/* Bottom row */}
+                          <View style={styles.cardFooter}>
+                            <TouchableOpacity
+                              style={styles.messageIconBtn}
+                              onPress={() => handleMessageGuest(booking.id, guestName, propertyName)}
+                              activeOpacity={0.7}
+                            >
+                              <Feather name="message-circle" size={20} color="#1A6B5A" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={styles.detailsBtn}
+                              onPress={() => handleViewDetails(booking.id)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.detailsBtnText}>View Details</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.amountText} numberOfLines={1}>₹{booking.total_amount.toLocaleString('en-IN')}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
       </View>
     </View>
   );

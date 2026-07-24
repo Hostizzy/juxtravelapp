@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -96,6 +97,8 @@ type ProfileRouteProp = RouteProp<
   'Profile'
 >;
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const route = useRoute<ProfileRouteProp>();
@@ -103,6 +106,7 @@ export default function ProfileScreen() {
   const userName = user?.name ?? 'Traveller';
   const isAlreadyHost = user?.role === 'host' || user?.role === 'both';
   const [activeTab, setActiveTab] = useState<TabType>('trips');
+  const horizontalScrollRef = useRef<ScrollView>(null);
 
   const { data: savedPropsData = [], isLoading: savedLoading, refetch: refetchSaved } = useSavedProperties();
   const savedProperties = savedPropsData as SavedProperty[];
@@ -115,9 +119,19 @@ export default function ProfileScreen() {
     (t) => t.status === 'confirmed' || t.status === 'completed'
   ).length * 100;
 
+  const handleTabPress = (index: number, key: TabType) => {
+    setActiveTab(key);
+    horizontalScrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+  };
+
   React.useEffect(() => {
     if (route.params?.activeTab) {
-      setActiveTab(route.params.activeTab);
+      const tabKey = route.params.activeTab;
+      setActiveTab(tabKey);
+      const tabIndex = tabs.findIndex((t) => t.key === tabKey);
+      if (tabIndex !== -1) {
+        horizontalScrollRef.current?.scrollTo({ x: tabIndex * SCREEN_WIDTH, animated: false });
+      }
     }
   }, [route.params?.activeTab]);
 
@@ -341,14 +355,14 @@ export default function ProfileScreen() {
 
           {/* Tab Selector Bar */}
           <View style={styles.tabsContainer}>
-            {tabs.map((tab) => (
+            {tabs.map((tab, idx) => (
               <TouchableOpacity
                 key={tab.key}
                 style={[
                   styles.tabButton,
                   activeTab === tab.key && styles.activeTabButton,
                 ]}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => handleTabPress(idx, tab.key)}
                 activeOpacity={0.7}
               >
                 {tab.key === 'settings' ? (
@@ -371,182 +385,188 @@ export default function ProfileScreen() {
             ))}
           </View>
 
-          {/* Tab Content Area */}
-          <View style={styles.tabContent}>
+          {/* Swipeable Tab Content Area */}
+          <ScrollView
+            ref={horizontalScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              if (idx >= 0 && idx < tabs.length) {
+                setActiveTab(tabs[idx].key);
+              }
+            }}
+            style={{ flex: 1 }}
+          >
             {/* TAB 1: TRIPS */}
-            {activeTab === 'trips' && (
-              <View>
-                {(tripsLoading && trips.length === 0) ? (
-                  <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
-                ) : trips.length === 0 ? (
-                  <View style={styles.emptySavedContainer}>
-                    <Feather name="briefcase" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
-                    <Text style={styles.emptySavedTitle}>
-                      No bookings found
+            <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}>
+              {(tripsLoading && trips.length === 0) ? (
+                <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
+              ) : trips.length === 0 ? (
+                <View style={styles.emptySavedContainer}>
+                  <Feather name="briefcase" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
+                  <Text style={styles.emptySavedTitle}>
+                    No bookings found
+                  </Text>
+                  <Text style={styles.emptySavedSubtitle}>
+                    Once you book a stay, your upcoming and completed trips will appear here.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.exploreButton}
+                    onPress={handleExplore}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.exploreButtonText}>
+                      Start Planning
                     </Text>
-                    <Text style={styles.emptySavedSubtitle}>
-                      Once you book a stay, your upcoming and completed trips will appear here.
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.exploreButton}
-                      onPress={handleExplore}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.exploreButtonText}>
-                        Start Planning
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  trips.map((trip) => {
-                    const checkInDate = trip.check_in ? new Date(trip.check_in) : null;
-                    const checkOutDate = trip.check_out ? new Date(trip.check_out) : null;
-                    const dateStr = (checkInDate && checkOutDate)
-                      ? `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                      : 'Dates flexible';
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                trips.map((trip) => {
+                  const checkInDate = trip.check_in ? new Date(trip.check_in) : null;
+                  const checkOutDate = trip.check_out ? new Date(trip.check_out) : null;
+                  const dateStr = (checkInDate && checkOutDate)
+                    ? `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : 'Dates flexible';
 
-                    return (
-                      <TouchableOpacity
-                        key={trip.id}
-                        style={styles.tripCard}
-                        activeOpacity={0.9}
-                        onPress={() => {
-                          navigation.navigate('BookingDetail', { bookingId: trip.id });
-                        }}
-                      >
-                        <View style={styles.tripImageContainer}>
-                          <Image 
-                            source={{ uri: trip.property?.photos?.[0] || 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} 
-                            style={styles.tripImage}
-                            resizeMode="cover"
-                          />
-                          <View style={[
-                            styles.tripStatusBadge, 
-                            { 
-                              backgroundColor: 
-                                trip.status === 'confirmed' ? '#1A6B5A' :
-                                trip.status === 'completed' ? '#2E7D32' :
-                                trip.status === 'cancelled' ? '#C62828' : '#F57C00' 
-                            }
-                          ]}>
-                            <Text style={styles.tripStatusText}>{trip.status.toUpperCase()}</Text>
+                  return (
+                    <TouchableOpacity
+                      key={trip.id}
+                      style={styles.tripCard}
+                      activeOpacity={0.9}
+                      onPress={() => {
+                        navigation.navigate('BookingDetail', { bookingId: trip.id });
+                      }}
+                    >
+                      <View style={styles.tripImageContainer}>
+                        <Image 
+                          source={{ uri: trip.property?.photos?.[0] || 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800' }} 
+                          style={styles.tripImage}
+                          resizeMode="cover"
+                        />
+                        <View style={[
+                          styles.tripStatusBadge, 
+                          { 
+                            backgroundColor: 
+                              trip.status === 'confirmed' ? '#1A6B5A' :
+                              trip.status === 'completed' ? '#2E7D32' :
+                              trip.status === 'cancelled' ? '#C62828' : '#F57C00' 
+                          }
+                        ]}>
+                          <Text style={styles.tripStatusText}>{trip.status.toUpperCase()}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.tripInfo}>
+                        <Text style={styles.tripTitle}>{trip.property?.name || 'Beautiful Stay'}</Text>
+                        <View style={styles.tripDetailsRow}>
+                          <Feather name="map-pin" size={12} color="#6B7370" />
+                          <Text style={styles.tripDetailsText}>{trip.property?.location?.city || 'India'}</Text>
+                        </View>
+                        <View style={styles.tripDetailsRow}>
+                          <Feather name="calendar" size={12} color="#6B7370" />
+                          <Text style={styles.tripDetailsText}>{dateStr}  •  {trip.guests ?? 1} {trip.guests === 1 ? 'Guest' : 'Guests'}</Text>
+                        </View>
+                        <View style={styles.tripActionRow}>
+                          <View style={styles.tripCTA}>
+                            <Text style={styles.tripCTAText}>View Stay Details</Text>
+                            <Feather name="chevron-right" size={14} color="#1A6B5A" />
                           </View>
                         </View>
-                        
-                        <View style={styles.tripInfo}>
-                          <Text style={styles.tripTitle}>{trip.property?.name || 'Beautiful Stay'}</Text>
-                          <View style={styles.tripDetailsRow}>
-                            <Feather name="map-pin" size={12} color="#6B7370" />
-                            <Text style={styles.tripDetailsText}>{trip.property?.location?.city || 'India'}</Text>
-                          </View>
-                          <View style={styles.tripDetailsRow}>
-                            <Feather name="calendar" size={12} color="#6B7370" />
-                            <Text style={styles.tripDetailsText}>{dateStr}  •  {trip.guests ?? 1} {trip.guests === 1 ? 'Guest' : 'Guests'}</Text>
-                          </View>
-                          <View style={styles.tripActionRow}>
-                            <View style={styles.tripCTA}>
-                              <Text style={styles.tripCTAText}>View Stay Details</Text>
-                              <Feather name="chevron-right" size={14} color="#1A6B5A" />
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
-              </View>
-            )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
 
             {/* TAB 2: SAVED */}
-            {activeTab === 'saved' && (
-              <View>
-                {(savedLoading && savedProperties.length === 0) ? (
-                  <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
-                ) : savedProperties.length === 0 ? (
-                  <View style={styles.emptySavedContainer}>
-                    <Feather name="bookmark" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
-                    <Text style={styles.emptySavedTitle}>
-                      No saved properties yet
+            <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}>
+              {(savedLoading && savedProperties.length === 0) ? (
+                <ActivityIndicator size="small" color="#1A6B5A" style={{ marginVertical: 20 }} />
+              ) : savedProperties.length === 0 ? (
+                <View style={styles.emptySavedContainer}>
+                  <Feather name="bookmark" size={32} color="#6B7370" style={{ marginBottom: 12 }} />
+                  <Text style={styles.emptySavedTitle}>
+                    No saved properties yet
+                  </Text>
+                  <Text style={styles.emptySavedSubtitle}>
+                    Properties you save will appear here.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.exploreButton}
+                    onPress={handleExplore}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.exploreButtonText}>
+                      {i18n.t('profile.explore')}
                     </Text>
-                    <Text style={styles.emptySavedSubtitle}>
-                      Properties you save will appear here.
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.exploreButton}
-                      onPress={handleExplore}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.exploreButtonText}>
-                        {i18n.t('profile.explore')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  savedProperties.map((property) => (
-                    <View key={property.id} style={styles.card}>
-                      {/* Photo Area */}
-                      <View style={styles.photoArea}>
-                        {property.photos && property.photos.length > 0 ? (
-                          <Image
-                            source={{ uri: property.photos[0] }}
-                            style={styles.cardImage}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View style={styles.placeholderContainer}>
-                            <Feather name="home" size={48} color="#84C9BA" />
-                          </View>
-                        )}
-                        <View style={styles.scoreBadge}>
-                          <Text style={styles.scoreValue}>{(property.matchScore ?? 8.5).toFixed(1)}</Text>
-                          <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                savedProperties.map((property) => (
+                  <View key={property.id} style={styles.card}>
+                    {/* Photo Area */}
+                    <View style={styles.photoArea}>
+                      {property.photos && property.photos.length > 0 ? (
+                        <Image
+                          source={{ uri: property.photos[0] }}
+                          style={styles.cardImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.placeholderContainer}>
+                          <Feather name="home" size={48} color="#84C9BA" />
                         </View>
-                      </View>
-                      <View style={styles.contentArea}>
-                        <View style={styles.row1}>
-                          <Text style={styles.propertyName} numberOfLines={1}>{property.name}</Text>
-                          <Text style={styles.propertyPrice}>₹{property.price_per_night.toLocaleString('en-IN')}/night</Text>
-                        </View>
-                        <View style={styles.row5}>
-                          <TouchableOpacity
-                            style={styles.viewButton}
-                            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={styles.viewButtonText}>{i18n.t('matches.viewProperty')}</Text>
-                          </TouchableOpacity>
-                        </View>
+                      )}
+                      <View style={styles.scoreBadge}>
+                        <Text style={styles.scoreValue}>{(property.matchScore ?? 8.5).toFixed(1)}</Text>
+                        <Text style={styles.scoreText}>{i18n.t('matches.matchScore')}</Text>
                       </View>
                     </View>
-                  ))
-                )}
-              </View>
-            )}
+                    <View style={styles.contentArea}>
+                      <View style={styles.row1}>
+                        <Text style={styles.propertyName} numberOfLines={1}>{property.name}</Text>
+                        <Text style={styles.propertyPrice}>₹{property.price_per_night.toLocaleString('en-IN')}/night</Text>
+                      </View>
+                      <View style={styles.row5}>
+                        <TouchableOpacity
+                          style={styles.viewButton}
+                          onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: property.id })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.viewButtonText}>{i18n.t('matches.viewProperty')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
 
             {/* TAB 3: HOW */}
-            {activeTab === 'how' && (
-              <View>
-                <Text style={styles.howTitle}>{i18n.t('profile.howTitle')}</Text>
-                <View style={styles.howStepsContainer}>
-                  {howSteps.map((step) => (
-                    <View key={step.id} style={styles.howStepRow}>
-                      <View style={styles.howStepIconContainer}>
-                        {step.id === '1' && <Feather name="target" size={24} color="#1A6B5A" />}
-                        {step.id === '2' && <MaterialCommunityIcons name="robot" size={24} color="#1A6B5A" />}
-                        {step.id === '3' && <Feather name="check-circle" size={24} color="#1A6B5A" />}
-                      </View>
-                      <View style={styles.howStepTextContainer}>
-                        <Text style={styles.howStepTitle}>{step.title}</Text>
-                        <Text style={styles.howStepSubtitle}>{step.subtitle}</Text>
-                      </View>
+            <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}>
+              <Text style={styles.howTitle}>{i18n.t('profile.howTitle')}</Text>
+              <View style={styles.howStepsContainer}>
+                {howSteps.map((step) => (
+                  <View key={step.id} style={styles.howStepRow}>
+                    <View style={styles.howStepIconContainer}>
+                      {step.id === '1' && <Feather name="target" size={24} color="#1A6B5A" />}
+                      {step.id === '2' && <MaterialCommunityIcons name="robot" size={24} color="#1A6B5A" />}
+                      {step.id === '3' && <Feather name="check-circle" size={24} color="#1A6B5A" />}
                     </View>
-                  ))}
-                </View>
+                    <View style={styles.howStepTextContainer}>
+                      <Text style={styles.howStepTitle}>{step.title}</Text>
+                      <Text style={styles.howStepSubtitle}>{step.subtitle}</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-            )}
+            </View>
 
             {/* TAB 4: SETTINGS */}
-            {activeTab === 'settings' && (
+            <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}>
               <View style={styles.settingsList}>
                 {settingsItems.map((item) => (
                   <TouchableOpacity
@@ -582,8 +602,8 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-            )}
-          </View>
+            </View>
+          </ScrollView>
         </ScrollView>
       </View>
     </View>
