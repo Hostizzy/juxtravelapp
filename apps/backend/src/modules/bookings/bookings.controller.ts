@@ -61,6 +61,13 @@ export class BookingsController {
     return this.bookingsService.getHostStats(payload.sub);
   }
 
+  @Get('host-detailed-stats')
+  async getHostDetailedStats(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    return this.bookingsService.getHostDetailedStats(payload.sub);
+  }
+
   @Get(':id')
   async getBookingById(
     @CurrentUser() payload: JwtPayload,

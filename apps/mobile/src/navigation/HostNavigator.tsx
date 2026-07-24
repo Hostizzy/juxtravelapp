@@ -16,7 +16,7 @@ export type HostTabParamList = {
   HostBookings: undefined;
   HostListProperty: undefined;
   HostMessages: undefined;
-  HostProfile: undefined;
+  HostProfile: { activeTab?: 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'STATS' | 'SETTINGS' } | undefined;
 };
 
 const Tab = createBottomTabNavigator<HostTabParamList>();

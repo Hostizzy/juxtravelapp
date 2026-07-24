@@ -244,6 +244,103 @@ export class BookingsService {
       earningsThisMonth 
     };
   }
+
+  async getHostDetailedStats(hostId: string) {
+    // Get all bookings for host with property info
+    const { data: bookings } = await this.supabaseService.admin
+      .from('bookings')
+      .select('id, property_id, total_amount, host_payout, status, check_in, check_out, guests')
+      .eq('host_id', hostId);
+
+    // Get all host properties
+    const { data: properties } = await this.supabaseService.admin
+      .from('properties')
+      .select('id, name, price_per_night')
+      .eq('host_id', hostId);
+
+    const allBookings = bookings ?? [];
+    const allProperties = properties ?? [];
+
+    // Overall totals
+    const totalGrossRevenue = allBookings
+      .filter(b => ['confirmed', 'completed'].includes(b.status))
+      .reduce((sum, b) => sum + (b.total_amount ?? 0), 0);
+
+    const totalCommission = allBookings
+      .filter(b => ['confirmed', 'completed'].includes(b.status))
+      .reduce((sum, b) => {
+        const total = b.total_amount ?? 0;
+        const payout = b.host_payout ?? total * 0.9;
+        return sum + (total - payout);
+      }, 0);
+
+    const totalNetEarnings = allBookings
+      .filter(b => ['confirmed', 'completed'].includes(b.status))
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    const totalBookings = allBookings.filter(b => 
+      ['confirmed', 'completed'].includes(b.status)
+    ).length;
+
+    const totalGuests = allBookings
+      .filter(b => ['confirmed', 'completed'].includes(b.status))
+      .reduce((sum, b) => sum + (b.guests ?? 0), 0);
+
+    // Property-wise breakdown
+    const propertyStats = allProperties.map(prop => {
+      const propBookings = allBookings.filter(b => 
+        b.property_id === prop.id && 
+        ['confirmed', 'completed'].includes(b.status)
+      );
+      
+      const propRevenue = propBookings.reduce(
+        (sum, b) => sum + (b.total_amount ?? 0), 0
+      );
+      const propCommission = propBookings.reduce(
+        (sum, b) => sum + ((b.total_amount ?? 0) - (b.host_payout ?? (b.total_amount ?? 0) * 0.9)), 0
+      );
+      const propNet = propBookings.reduce(
+        (sum, b) => sum + (b.host_payout ?? 0), 0
+      );
+
+      return {
+        id: prop.id,
+        name: prop.name,
+        totalBookings: propBookings.length,
+        grossRevenue: propRevenue,
+        commission: propCommission,
+        netEarnings: propNet,
+      };
+    }).filter(p => p.totalBookings > 0); // Only show properties with bookings
+
+    // Sort by revenue descending
+    propertyStats.sort((a, b) => b.grossRevenue - a.grossRevenue);
+
+    // Average booking value
+    const avgBookingValue = totalBookings > 0 
+      ? Math.round(totalGrossRevenue / totalBookings) 
+      : 0;
+
+    // Available balance (pending payout for confirmed bookings / completed)
+    const availableBalance = allBookings
+      .filter(b => b.status === 'completed')
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    return {
+      overview: {
+        totalGrossRevenue,
+        totalCommission,
+        totalNetEarnings,
+        commissionRate: 10,
+        totalBookings,
+        totalGuests,
+        totalProperties: allProperties.length,
+        avgBookingValue,
+        availableBalance,
+      },
+      properties: propertyStats,
+    };
+  }
 }
 
 

@@ -38,11 +38,34 @@ export interface HostEarnings {
   pendingPayout: number;
 }
 
+export interface HostDetailedStats {
+  overview: {
+    totalGrossRevenue: number;
+    totalCommission: number;
+    totalNetEarnings: number;
+    commissionRate: number;
+    totalBookings: number;
+    totalGuests: number;
+    totalProperties: number;
+    avgBookingValue: number;
+    availableBalance: number;
+  };
+  properties: Array<{
+    id: string;
+    name: string;
+    totalBookings: number;
+    grossRevenue: number;
+    commission: number;
+    netEarnings: number;
+  }>;
+}
+
 export const BOOKING_KEYS = {
   myBookings: ['bookings', 'my'] as const,
   hostBookings: ['bookings', 'host'] as const,
   hostStats: ['bookings', 'host-stats'] as const,
   hostEarnings: ['bookings', 'host-earnings'] as const,
+  hostDetailedStats: ['bookings', 'host-detailed-stats'] as const,
   detail: (id: string) => ['bookings', 'detail', id] as const,
 };
 
@@ -73,6 +96,14 @@ export function useHostEarnings() {
     queryKey: BOOKING_KEYS.hostEarnings,
     queryFn: () => apiGet<HostEarnings>('/bookings/earnings'),
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useHostDetailedStats() {
+  return useQuery({
+    queryKey: BOOKING_KEYS.hostDetailedStats,
+    queryFn: () => apiGet<HostDetailedStats>('/bookings/host-detailed-stats'),
+    refetchInterval: 30000,
   });
 }
 

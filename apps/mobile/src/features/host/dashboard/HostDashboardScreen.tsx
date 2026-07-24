@@ -123,23 +123,38 @@ export default function HostDashboardScreen() {
             ) : (
               <View style={styles.statsRow}>
                 {/* Stat 1 */}
-                <View style={styles.statCard}>
+                <TouchableOpacity 
+                  style={styles.statCard}
+                  onPress={() => (navigation as any).navigate('HostProfile', { activeTab: 'STATS' })}
+                  activeOpacity={0.7}
+                >
                   <Feather name="calendar" size={16} color="#84C9BA" />
                   <Text style={styles.statValue}>{stats.allTimeBookings}</Text>
                   <Text style={styles.statLabel}>All time bookings</Text>
-                </View>
+                </TouchableOpacity>
                 {/* Stat 2 */}
-                <View style={styles.statCard}>
+                <TouchableOpacity 
+                  style={styles.statCard}
+                  onPress={() => (navigation as any).navigate('HostProfile', { activeTab: 'STATS' })}
+                  activeOpacity={0.7}
+                >
                   <Feather name="check-square" size={16} color="#84C9BA" />
                   <Text style={styles.statValue}>{stats.checkInsThisMonth}</Text>
                   <Text style={styles.statLabel}>Check-ins this month</Text>
-                </View>
+                </TouchableOpacity>
                 {/* Stat 3 */}
-                <View style={styles.statCard}>
+                <TouchableOpacity 
+                  style={styles.statCard}
+                  onPress={() => (navigation as any).navigate('HostProfile', { activeTab: 'STATS' })}
+                  activeOpacity={0.7}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MaterialCommunityIcons name="currency-inr" size={16} color="#84C9BA" />
                     <TouchableOpacity
-                      onPress={() => Alert.alert('Earnings Calculation', 'Earnings shown are after the platform service fee is deducted from the total booking amount paid by the guest.')}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        Alert.alert('Earnings Calculation', 'Earnings shown are after the platform service fee is deducted from the total booking amount paid by the guest.');
+                      }}
                       activeOpacity={0.7}
                     >
                       <Feather name="info" size={12} color="#84C9BA" />
@@ -154,7 +169,7 @@ export default function HostDashboardScreen() {
                     <Text style={styles.statLabel} numberOfLines={1}>Your earnings this month</Text>
                     <Text style={{ fontSize: 8, color: '#84C9BA', marginTop: 1, fontFamily: 'monospace' }}>(after service fee)</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               </View>
             )}
           </SafeAreaView>

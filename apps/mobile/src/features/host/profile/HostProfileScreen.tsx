@@ -7,36 +7,47 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { HostTabParamList } from '../../../navigation/HostNavigator';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore } from '../../../stores/authStore';
 import { useMyProperties } from '../../../hooks/useProperties';
-import { useHostEarnings } from '../../../hooks/useBookings';
+import { useHostEarnings, useHostDetailedStats } from '../../../hooks/useBookings';
 import { useConversations } from '../../../hooks/useConversations';
 import { queryClient } from '../../../lib/queryClient';
 import i18n from '../../../locales/i18n';
 import styles from './HostProfileScreen.styles';
 
-type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'SETTINGS';
+type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'STATS' | 'SETTINGS';
 
 export default function HostProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<HostTabParamList, 'HostProfile'>>();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
   const isVerified = (user as any)?.host_profile?.verified ?? true;
 
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
+
+  useEffect(() => {
+    if (route.params?.activeTab) {
+      setActiveTab(route.params.activeTab);
+    }
+  }, [route.params?.activeTab]);
+
   const { data: properties = [], isLoading: loadingProps } = useMyProperties();
   const { data: earningsData, isLoading: loadingEarnings } = useHostEarnings();
   const earnings = earningsData ?? { totalEarnings: 0, thisMonth: 0, pendingPayout: 0 };
+  const { data: detailedStats, isLoading: loadingStats } = useHostDetailedStats();
   const { data: conversations = [] } = useConversations('host');
   const unreadCount = conversations.reduce(
     (sum, c) => sum + (c.unreadCount ?? 0),
@@ -47,6 +58,7 @@ export default function HostProfileScreen() {
     { key: 'PROFILE', label: 'Profile', icon: 'user' },
     { key: 'PROPERTIES', label: 'Properties', icon: 'home' },
     { key: 'REVIEWS', label: 'Reviews', icon: 'star' },
+    { key: 'STATS', label: 'Stats', icon: 'bar-chart-2' },
     { key: 'SETTINGS', label: 'Settings', icon: 'settings' },
   ];
 
@@ -368,6 +380,291 @@ export default function HostProfileScreen() {
               <View style={styles.emptyReviewsContainer}>
                 <Feather name="star" size={32} color="#6B7370" />
                 <Text style={styles.emptyReviewsText}>No reviews yet</Text>
+              </View>
+            )}
+
+            {/* STATS TAB */}
+            {activeTab === 'STATS' && (
+              <View style={{ padding: 16 }}>
+                {loadingStats ? (
+                  <View style={{ padding: 40, alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#1A6B5A" />
+                  </View>
+                ) : (
+                  <>
+                    {/* Available Balance Card */}
+                    <View style={{
+                      backgroundColor: '#1A6B5A',
+                      borderRadius: 16,
+                      padding: 20,
+                      marginBottom: 16,
+                    }}>
+                      <Text style={{ 
+                        color: 'rgba(255,255,255,0.85)', 
+                        fontSize: 11, 
+                        fontWeight: '700',
+                        letterSpacing: 1,
+                        marginBottom: 8,
+                      }}>
+                        AVAILABLE BALANCE
+                      </Text>
+                      <Text style={{ 
+                        color: '#FFFFFF', 
+                        fontSize: 32, 
+                        fontWeight: '800',
+                        fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+                        marginBottom: 16,
+                      }}>
+                        ₹{(detailedStats?.overview.availableBalance ?? 0).toLocaleString('en-IN')}
+                      </Text>
+                      <TouchableOpacity 
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          paddingVertical: 12,
+                          borderRadius: 100,
+                          alignItems: 'center',
+                        }}
+                        activeOpacity={0.8}
+                        onPress={() => Alert.alert('Coming Soon', 'Withdrawal feature will be available soon.')}
+                      >
+                        <Text style={{ 
+                          color: '#1A6B5A', 
+                          fontSize: 14, 
+                          fontWeight: '800',
+                        }}>
+                          Withdraw Funds
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Overview Stats Grid */}
+                    <View style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      marginBottom: 16,
+                    }}>
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="dollar-sign" size={20} color="#1A6B5A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          GROSS REVENUE
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1F1E' }}>
+                          ₹{(detailedStats?.overview.totalGrossRevenue ?? 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="percent" size={20} color="#D4704A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          COMMISSION ({detailedStats?.overview.commissionRate ?? 10}%)
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#D4704A' }}>
+                          -₹{(detailedStats?.overview.totalCommission ?? 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="trending-up" size={20} color="#1A6B5A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          NET EARNINGS
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A6B5A' }}>
+                          ₹{(detailedStats?.overview.totalNetEarnings ?? 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="calendar" size={20} color="#1A6B5A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          TOTAL BOOKINGS
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1F1E' }}>
+                          {detailedStats?.overview.totalBookings ?? 0}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="users" size={20} color="#1A6B5A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          TOTAL GUESTS
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1F1E' }}>
+                          {detailedStats?.overview.totalGuests ?? 0}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        flex: 1,
+                        minWidth: '45%',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="target" size={20} color="#1A6B5A" style={{ marginBottom: 8 }} />
+                        <Text style={{ fontSize: 11, color: '#6B7370', marginBottom: 4, fontWeight: '700' }}>
+                          AVG BOOKING
+                        </Text>
+                        <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1F1E' }}>
+                          ₹{(detailedStats?.overview.avgBookingValue ?? 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Property-wise Breakdown */}
+                    <Text style={{
+                      fontSize: 14,
+                      fontWeight: '800',
+                      color: '#1A1F1E',
+                      marginTop: 8,
+                      marginBottom: 12,
+                      fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+                    }}>
+                      Property Performance
+                    </Text>
+
+                    {(detailedStats?.properties ?? []).length === 0 ? (
+                      <View style={{
+                        padding: 24,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: '#F0EDE8',
+                      }}>
+                        <Feather name="inbox" size={32} color="#C5CCC9" />
+                        <Text style={{ 
+                          marginTop: 12, 
+                          color: '#6B7370', 
+                          fontSize: 13,
+                          textAlign: 'center' 
+                        }}>
+                          No bookings yet. Your property stats will appear here once bookings come in.
+                        </Text>
+                      </View>
+                    ) : (
+                      (detailedStats?.properties ?? []).map((prop, idx) => (
+                        <View 
+                          key={prop.id}
+                          style={{
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: 12,
+                            padding: 16,
+                            marginBottom: 10,
+                            borderWidth: 1,
+                            borderColor: '#F0EDE8',
+                          }}
+                        >
+                          <View style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: 12,
+                          }}>
+                            <View style={{ flex: 1, marginRight: 12 }}>
+                              <Text style={{ 
+                                fontSize: 14, 
+                                fontWeight: '800', 
+                                color: '#1A1F1E',
+                                marginBottom: 4,
+                              }} numberOfLines={1}>
+                                {prop.name}
+                              </Text>
+                              <Text style={{ fontSize: 11, color: '#6B7370' }}>
+                                {prop.totalBookings} booking{prop.totalBookings !== 1 ? 's' : ''}
+                              </Text>
+                            </View>
+                            <View style={{
+                              backgroundColor: '#E6F2EF',
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                              borderRadius: 8,
+                            }}>
+                              <Text style={{ fontSize: 10, color: '#1A6B5A', fontWeight: '800' }}>
+                                #{idx + 1}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={{ 
+                            flexDirection: 'row', 
+                            justifyContent: 'space-between',
+                            paddingTop: 12,
+                            borderTopWidth: 1,
+                            borderTopColor: '#F0EDE8',
+                          }}>
+                            <View>
+                              <Text style={{ fontSize: 10, color: '#6B7370', fontWeight: '700', marginBottom: 2 }}>
+                                GROSS
+                              </Text>
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: '#1A1F1E' }}>
+                                ₹{prop.grossRevenue.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 10, color: '#6B7370', fontWeight: '700', marginBottom: 2 }}>
+                                COMMISSION
+                              </Text>
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: '#D4704A' }}>
+                                -₹{prop.commission.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 10, color: '#6B7370', fontWeight: '700', marginBottom: 2 }}>
+                                NET
+                              </Text>
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: '#1A6B5A' }}>
+                                ₹{prop.netEarnings.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </>
+                )}
               </View>
             )}
 
