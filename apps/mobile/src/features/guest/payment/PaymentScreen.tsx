@@ -13,11 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { apiPost } from '../../lib/api';
-import { useAuthStore } from '../../stores/authStore';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { apiPost } from '../../../lib/api';
+import { useAuthStore } from '../../../stores/authStore';
 import RazorpayCheckout from 'react-native-razorpay';
-import { queryClient } from '../../lib/queryClient';
+import { queryClient } from '../../../lib/queryClient';
 
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
 type PaymentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;

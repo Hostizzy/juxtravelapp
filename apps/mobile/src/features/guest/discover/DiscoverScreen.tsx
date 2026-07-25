@@ -22,10 +22,10 @@ import * as SecureStore from 'expo-secure-store';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { GuestTabParamList } from '../../navigation/GuestNavigator';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { apiService } from '../../services/api';
-import i18n from '../../locales/i18n';
+import { GuestTabParamList } from '../../../navigation/GuestNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { apiService } from '../../../services/api';
+import i18n from '../../../locales/i18n';
 import styles from './DiscoverScreen.styles';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

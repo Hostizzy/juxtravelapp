@@ -4,14 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { GuestTabParamList } from '../../navigation/GuestNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { GuestTabParamList } from '../../../navigation/GuestNavigator';
 import { Feather } from '@expo/vector-icons';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../../stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useMyBookings } from '../../hooks/useBookings';
-import i18n from '../../locales/i18n';
+import { useMyBookings } from '../../../hooks/useBookings';
+import i18n from '../../../locales/i18n';
 import styles from './HomeScreen.styles';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<

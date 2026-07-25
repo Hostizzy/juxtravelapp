@@ -14,11 +14,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { MatchResult } from '../../services/matchService';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { MatchResult } from '../../../services/matchService';
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../services/api';
-import i18n from '../../locales/i18n';
+import { apiService } from '../../../services/api';
+import i18n from '../../../locales/i18n';
 import styles from './MatchResultsScreen.styles';
 
 type ExtendedParamList = RootStackParamList & {

@@ -16,11 +16,11 @@ import { RouteProp } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 import styles from './PlanProcessingScreen.styles';
-import { getMatches } from '../../services/matchService';
+import { getMatches } from '../../../services/matchService';
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../services/api';
+import { apiService } from '../../../services/api';
 
 type PlanProcessingProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanProcessing'>;

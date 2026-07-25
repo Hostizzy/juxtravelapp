@@ -18,9 +18,9 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import CalendarBottomSheet from './CalendarBottomSheet';
 import { StatusBar } from 'expo-status-bar';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 import styles from './PlanStep1Screen.styles';
-import { apiGet } from '../../lib/api';
+import { apiGet } from '../../../lib/api';
 
 import PlanHeader from './PlanHeader';
 import { AIInsightCard } from './AIInsightCard';

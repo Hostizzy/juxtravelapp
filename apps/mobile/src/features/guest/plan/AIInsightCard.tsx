@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { apiPost } from '../../lib/api';
+import { apiPost } from '../../../lib/api';
 
 interface AIInsightCardProps {
   step: number;

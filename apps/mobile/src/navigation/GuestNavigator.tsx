@@ -1,9 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from '../features/home/HomeScreen';
-import DiscoverScreen from '../features/discover/DiscoverScreen';
-import MessagesScreen from '../features/messages/MessagesScreen';
-import ProfileScreen from '../features/profile/ProfileScreen';
+import HomeScreen from '../features/guest/home/HomeScreen';
+import DiscoverScreen from '../features/guest/discover/DiscoverScreen';
+import MessagesScreen from '../features/guest/messages/MessagesScreen';
+import ProfileScreen from '../features/guest/profile/ProfileScreen';
 import FloatingNavBar from '../components/FloatingNavBar/FloatingNavBar';
 import { useConversations } from '../hooks/useConversations';
 

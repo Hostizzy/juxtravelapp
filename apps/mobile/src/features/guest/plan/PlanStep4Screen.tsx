@@ -15,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 import styles from './PlanStep4Screen.styles';
 
 import PlanHeader from './PlanHeader';

@@ -22,14 +22,14 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiPost } from '../../lib/api';
-import { useAuthStore } from '../../stores/authStore';
+import { apiPost } from '../../../lib/api';
+import { useAuthStore } from '../../../stores/authStore';
 import {
   useMessages,
   useSendMessage,
   Message,
-} from '../../hooks/useConversations';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+} from '../../../hooks/useConversations';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 
 type ChatDetailRouteProp = RouteProp<RootStackParamList, 'ChatDetail'>;
 

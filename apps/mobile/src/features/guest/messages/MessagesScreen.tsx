@@ -16,8 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useConversations, Conversation } from '../../hooks/useConversations';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { useConversations, Conversation } from '../../../hooks/useConversations';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 

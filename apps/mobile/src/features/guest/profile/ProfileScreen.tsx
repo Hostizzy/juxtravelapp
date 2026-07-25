@@ -19,16 +19,16 @@ import { useNavigation, useRoute, useFocusEffect, RouteProp, CompositeNavigation
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { GuestTabParamList } from '../../navigation/GuestNavigator';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { GuestTabParamList } from '../../../navigation/GuestNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 import * as SecureStore from 'expo-secure-store';
-import { supabase } from '../../services/supabase';
-import { useAuthStore } from '../../stores/authStore';
-import { useSavedProperties } from '../../hooks/useSavedProperties';
-import { useMyBookings } from '../../hooks/useBookings';
-import { queryClient } from '../../lib/queryClient';
+import { supabase } from '../../../services/supabase';
+import { useAuthStore } from '../../../stores/authStore';
+import { useSavedProperties } from '../../../hooks/useSavedProperties';
+import { useMyBookings } from '../../../hooks/useBookings';
+import { queryClient } from '../../../lib/queryClient';
 import { Property } from '../discover/DiscoverScreen';
-import i18n from '../../locales/i18n';
+import i18n from '../../../locales/i18n';
 import styles from './ProfileScreen.styles';
 
 type ProfileScreenNavigationProp = CompositeNavigationProp<

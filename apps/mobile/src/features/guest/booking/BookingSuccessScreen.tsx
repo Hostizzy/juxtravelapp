@@ -13,10 +13,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { RootStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
 import styles from './BookingSuccessScreen.styles';
-import { apiGet } from '../../lib/api';
-import { queryClient } from '../../lib/queryClient';
+import { apiGet } from '../../../lib/api';
+import { queryClient } from '../../../lib/queryClient';
 
 type BookingSuccessScreenRouteProp = RouteProp<
   RootStackParamList,

@@ -4,12 +4,12 @@ import GuestNavigator from './GuestNavigator';
 import SplashScreen from '../features/auth/splash/SplashScreen';
 import LoginScreen from '../features/auth/login/LoginScreen';
 import OtpScreen from '../features/auth/otp/OtpScreen';
-import PlanStep1Screen from '../features/plan/PlanStep1Screen';
-import PlanStep2Screen from '../features/plan/PlanStep2Screen';
-import PlanStep3Screen from '../features/plan/PlanStep3Screen';
-import PlanStep4Screen from '../features/plan/PlanStep4Screen';
-import PlanProcessingScreen from '../features/plan/PlanProcessingScreen';
-import MatchResultsScreen from '../features/matches/MatchResultsScreen';
+import PlanStep1Screen from '../features/guest/plan/PlanStep1Screen';
+import PlanStep2Screen from '../features/guest/plan/PlanStep2Screen';
+import PlanStep3Screen from '../features/guest/plan/PlanStep3Screen';
+import PlanStep4Screen from '../features/guest/plan/PlanStep4Screen';
+import PlanProcessingScreen from '../features/guest/plan/PlanProcessingScreen';
+import MatchResultsScreen from '../features/guest/matches/MatchResultsScreen';
 import { MatchResult } from '../services/matchService';
 
 // Host screens
@@ -24,12 +24,12 @@ import ListStep4Screen from '../features/host/listProperty/ListStep4Screen';
 import ListStep5Screen from '../features/host/listProperty/ListStep5Screen';
 import ReviewPendingScreen from '../features/host/reviewPending/ReviewPendingScreen';
 import HostPropertyDetailScreen from '../features/host/property/HostPropertyDetailScreen';
-import GuestVerificationScreen from '../features/verification/GuestVerificationScreen';
-import PaymentScreen from '../features/payment/PaymentScreen';
+import GuestVerificationScreen from '../features/guest/verification/GuestVerificationScreen';
+import PaymentScreen from '../features/guest/payment/PaymentScreen';
 import InstagramConnectScreen from '../features/host/instagram/InstagramConnectScreen';
-import BookingSuccessScreen from '../features/booking/BookingSuccessScreen';
-import BookingDetailScreen from '../features/booking/BookingDetailScreen';
-import ChatDetailScreen from '../features/messages/ChatDetailScreen';
+import BookingSuccessScreen from '../features/guest/booking/BookingSuccessScreen';
+import BookingDetailScreen from '../features/guest/booking/BookingDetailScreen';
+import ChatDetailScreen from '../features/guest/messages/ChatDetailScreen';
 import HostBookingDetailScreen from '../features/host/bookings/HostBookingDetailScreen';
 
 

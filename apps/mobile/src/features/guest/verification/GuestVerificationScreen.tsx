@@ -16,10 +16,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 
-import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useAuthStore } from '../../stores/authStore';
-import { apiService } from '../../services/api';
-import { pickImage, uploadVerificationDoc } from '../../services/propertyService';
+import { RootStackParamList } from '../../../navigation/RootNavigator';
+import { useAuthStore } from '../../../stores/authStore';
+import { apiService } from '../../../services/api';
+import { pickImage, uploadVerificationDoc } from '../../../services/propertyService';
 import styles from './GuestVerificationScreen.styles';
 
 type GuestVerificationScreenRouteProp = RouteProp<
