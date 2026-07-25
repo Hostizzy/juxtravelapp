@@ -17,10 +17,11 @@ import * as crypto from 'crypto';
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  // Test numbers for development
-  private readonly TEST_NUMBERS: Record<string, string> = {
-    '+919999999999': '123456',
-  };
+  // Test numbers only in development
+  private readonly TEST_NUMBERS: Record<string, string> =
+    process.env.NODE_ENV === 'development'
+      ? { '+919999999999': '123456' }
+      : {};
 
   constructor(
     private supabaseService: SupabaseService,

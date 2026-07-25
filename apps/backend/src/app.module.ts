@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -15,6 +16,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AIModule } from './modules/ai/ai.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { AdminModule } from './modules/admin/admin.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -24,10 +26,18 @@ import configuration from './config/configuration';
       load: [configuration],
       envFilePath: '.env',
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+      {
+        name: 'auth',
+        ttl: 60000,
+        limit: 5, // Strict for auth
+      },
+    ]),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
@@ -46,6 +56,13 @@ import configuration from './config/configuration';
     PaymentsModule,
     AIModule,
     LocationsModule,
+    AdminModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

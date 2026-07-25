@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { ConversationsService } from '../conversations/conversations.service';
@@ -33,83 +33,110 @@ export class PaymentsService {
 
   // Create Razorpay order (called before payment)
   async createOrder(params: {
-    amount: number; // in rupees
+    amount: number;
     bookingId: string;
     guestId: string;
     propertyName: string;
   }) {
     try {
-      this.logger.log('[RAZORPAY_SERVICE] 1️⃣ createOrder() called');
-      this.logger.log(`[RAZORPAY_SERVICE] - guestId: ${params.guestId}`);
-      this.logger.log(`[RAZORPAY_SERVICE] - bookingId: ${params.bookingId}`);
-      this.logger.log(`[RAZORPAY_SERVICE] - amount: ${params.amount} rupees`);
-      this.logger.log(`[RAZORPAY_SERVICE] - propertyName: ${params.propertyName}`);
+      this.logger.log('[RAZORPAY] createOrder called');
 
-      // Check Razorpay config
-      const keyId = this.configService.get<string>('RAZORPAY_KEY_ID') ??
-                    this.configService.get<string>('razorpay.keyId') ?? '';
-      const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET') ??
-                        this.configService.get<string>('razorpay.keySecret') ?? '';
+      // ==== FIX 1: SERVER-SIDE PRICE VALIDATION ====
+      // Fetch booking from DB to get REAL price
+      const { data: booking, error: bookingErr } = await this.supabaseService.admin
+        .from('bookings')
+        .select('id, property_id, check_in, check_out, total_amount, guest_id')
+        .eq('id', params.bookingId)
+        .single();
 
-      this.logger.log('[RAZORPAY_SERVICE] 2️⃣ Checking Razorpay credentials');
-      this.logger.log(`[RAZORPAY_SERVICE] - KEY_ID exists: ${keyId ? '✅ YES' : '❌ NO'}`);
-      this.logger.log(`[RAZORPAY_SERVICE] - KEY_SECRET exists: ${keySecret ? '✅ YES' : '❌ NO'}`);
+      if (bookingErr || !booking) {
+        this.logger.error(`[RAZORPAY] Booking not found: ${params.bookingId}`);
+        throw new BadRequestException('Booking not found');
+      }
 
-      // Fallback: If Razorpay keys are not configured, perform mock payment confirmation
+      // Verify guestId matches
+      if (booking.guest_id !== params.guestId) {
+        this.logger.error(`[RAZORPAY] Guest ID mismatch`);
+        throw new BadRequestException('Unauthorized booking access');
+      }
+
+      // Fetch property to recompute price
+      const { data: property } = await this.supabaseService.admin
+        .from('properties')
+        .select('price_per_night, weekend_price')
+        .eq('id', booking.property_id)
+        .single();
+
+      if (!property) {
+        throw new BadRequestException('Property not found');
+      }
+
+      // Recompute total from server data
+      const checkIn = new Date(booking.check_in);
+      const checkOut = new Date(booking.check_out);
+      const nights = Math.max(
+        1,
+        Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+
+      const pricePerNight = property.price_per_night ?? 0;
+      const weekendPrice = property.weekend_price ?? pricePerNight;
+
+      let subtotal = 0;
+      for (let i = 0; i < nights; i++) {
+        const d = new Date(checkIn);
+        d.setDate(d.getDate() + i);
+        const day = d.getDay();
+        subtotal += day === 5 || day === 6 ? weekendPrice : pricePerNight;
+      }
+
+      const serviceFee = Math.round(subtotal * 0.1);
+      const serverCalculatedTotal = subtotal + serviceFee;
+
+      // Validate client amount (allow small tolerance for rounding)
+      if (Math.abs(params.amount - serverCalculatedTotal) > 10) {
+        this.logger.error(
+          `[RAZORPAY] Price mismatch! Client: ${params.amount}, Server: ${serverCalculatedTotal}`,
+        );
+        throw new BadRequestException(
+          `Invalid amount. Expected ₹${serverCalculatedTotal}, received ₹${params.amount}`,
+        );
+      }
+
+      // Use SERVER calculated amount, not client amount
+      const finalAmount = serverCalculatedTotal;
+      this.logger.log(`[RAZORPAY] Server-verified amount: ₹${finalAmount}`);
+
+      // ==== FIX 2: NO MOCK FALLBACK IN PRODUCTION ====
+      const keyId =
+        this.configService.get<string>('RAZORPAY_KEY_ID') ??
+        this.configService.get<string>('razorpay.keyId') ??
+        '';
+      const keySecret =
+        this.configService.get<string>('RAZORPAY_KEY_SECRET') ??
+        this.configService.get<string>('razorpay.keySecret') ??
+        '';
+
       if (!keyId || !keySecret || !this.razorpay) {
-        this.logger.warn('[RAZORPAY_SERVICE] ⚠️ Razorpay credentials not configured. Falling back to Mock Payment Flow.');
-        this.logger.log(`[MOCK] Confirming booking direct fallback: ${params.bookingId}`);
-
-        // Update booking status to confirmed directly
-        const { data: booking, error } = await this.supabaseService.admin
-          .from('bookings')
-          .update({
-            status: 'confirmed',
-            payment_id: 'MOCK_PAYMENT_' + Date.now(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', params.bookingId)
-          .select('*, property:properties(name)')
-          .single();
-
-        if (error) {
-          this.logger.error('[MOCK] Failed to confirm booking', error);
-        } else if (booking) {
-          this.logger.log(`[MOCK] Booking confirmed: ${params.bookingId}`);
-          // Create conversation
-          try {
-            const { data: property } = await this.supabaseService.admin
-              .from('properties')
-              .select('name, host_id')
-              .eq('id', booking.property_id)
-              .single();
-
-            await this.conversationsService.createForBooking(
-              params.bookingId,
-              booking.guest_id,
-              property?.host_id ?? '',
-              booking.property_id,
-              property?.name ?? 'the property',
-            );
-          } catch (convError) {
-            this.logger.error('[MOCK] Failed to create conversation', convError);
-          }
+        if (process.env.NODE_ENV === 'production') {
+          this.logger.error('[RAZORPAY] ❌ Credentials missing in PRODUCTION');
+          throw new BadRequestException('Payment service unavailable');
         }
 
+        // Development only - mock flow
+        this.logger.warn('[RAZORPAY] Using mock flow (DEV ONLY)');
         return {
           orderId: 'MOCK_ORDER_' + Date.now(),
-          amount: params.amount * 100,
+          amount: finalAmount * 100,
           currency: 'INR',
           keyId: '',
           isMock: true,
         };
       }
 
-      // Convert to paise
-      const amountInPaise = Math.round(params.amount * 100);
-      this.logger.log(`[RAZORPAY_SERVICE] 3️⃣ Amount conversion: ${params.amount} rupees → ${amountInPaise} paise`);
+      // Convert to paise using SERVER calculated amount
+      const amountInPaise = Math.round(finalAmount * 100);
 
-      // Prepare order payload
       const orderPayload = {
         amount: amountInPaise,
         currency: 'INR',
@@ -118,40 +145,23 @@ export class PaymentsService {
           bookingId: params.bookingId,
           guestId: params.guestId,
           propertyName: params.propertyName,
+          serverAmount: String(finalAmount),
         },
       };
 
-      this.logger.log('[RAZORPAY_SERVICE] 4️⃣ Order payload ready:');
-      this.logger.log(JSON.stringify(orderPayload, null, 2));
-
-      this.logger.log('[RAZORPAY_SERVICE] 5️⃣ Calling Razorpay API...');
-
-      // Call Razorpay API
+      this.logger.log('[RAZORPAY] Calling Razorpay API...');
       const order = await this.razorpay.orders.create(orderPayload);
 
-      this.logger.log('[RAZORPAY_SERVICE] ✅ Order created successfully');
-      this.logger.log(`[RAZORPAY_SERVICE] - orderId: ${order.id}`);
-      this.logger.log(`[RAZORPAY_SERVICE] - amount: ${order.amount}`);
-      this.logger.log(`[RAZORPAY_SERVICE] - status: ${order.status}`);
-
-      // Save order to database
-      this.logger.log('[RAZORPAY_SERVICE] 6️⃣ Saving order to database');
-
-      const { error: dbError } = await this.supabaseService.admin
+      // Update booking with real total_amount (in case client sent wrong)
+      await this.supabaseService.admin
         .from('bookings')
         .update({
           payment_id: order.id as string,
+          total_amount: finalAmount,
           status: 'pending',
         })
         .eq('id', params.bookingId)
         .eq('guest_id', params.guestId);
-
-      if (dbError) {
-        this.logger.error('[RAZORPAY_SERVICE] ❌ Database save failed:', dbError.message);
-        throw dbError;
-      }
-
-      this.logger.log('[RAZORPAY_SERVICE] ✅ Order saved to database');
 
       return {
         orderId: order.id as string,
@@ -160,14 +170,51 @@ export class PaymentsService {
         keyId,
         isMock: false,
       };
-
     } catch (error: any) {
-      this.logger.error('[RAZORPAY_SERVICE] ❌ createOrder() failed');
-      this.logger.error(`[RAZORPAY_SERVICE] - Error type: ${error?.constructor?.name}`);
-      this.logger.error(`[RAZORPAY_SERVICE] - Error message: ${error?.message}`);
-      this.logger.error(`[RAZORPAY_SERVICE] - Error details:`, error);
+      this.logger.error('[RAZORPAY] createOrder failed', error);
       throw error;
     }
+  }
+
+  async verifyPaymentSignature(params: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    bookingId: string;
+  }): Promise<{ verified: boolean }> {
+    const keySecret =
+      this.configService.get<string>('RAZORPAY_KEY_SECRET') ??
+      this.configService.get<string>('razorpay.keySecret') ??
+      '';
+
+    if (!keySecret) {
+      this.logger.error('[RAZORPAY] No secret for verification');
+      return { verified: false };
+    }
+
+    const body = `${params.razorpay_order_id}|${params.razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', keySecret)
+      .update(body)
+      .digest('hex');
+
+    const verified = expectedSignature === params.razorpay_signature;
+
+    if (verified) {
+      // Update booking to confirmed
+      await this.supabaseService.admin
+        .from('bookings')
+        .update({
+          status: 'confirmed',
+          payment_id: params.razorpay_payment_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', params.bookingId);
+
+      this.logger.log(`[RAZORPAY] ✅ Signature verified for booking ${params.bookingId}`);
+    }
+
+    return { verified };
   }
 
   // Verify webhook signature

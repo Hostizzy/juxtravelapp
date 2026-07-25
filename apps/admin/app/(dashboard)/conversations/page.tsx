@@ -17,7 +17,8 @@ interface ConvRow {
 }
 
 async function getConversations(): Promise<ConvRow[]> {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+  const backendUrl =
+    process.env.BACKEND_URL || 'https://juxtravelapp.onrender.com/api/v1';
   try {
     const res = await fetch(
       `${backendUrl}/conversations/admin/all`,

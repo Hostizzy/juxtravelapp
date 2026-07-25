@@ -26,7 +26,8 @@ async function getConversationDetail(id: string): Promise<{
   conv: ConvDetail;
   messages: MessageRow[];
 } | null> {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+  const backendUrl =
+    process.env.BACKEND_URL || 'https://juxtravelapp.onrender.com/api/v1';
   try {
     const [detailRes, messagesRes] = await Promise.all([
       fetch(`${backendUrl}/conversations/${id}/detail`, { cache: 'no-store' }),

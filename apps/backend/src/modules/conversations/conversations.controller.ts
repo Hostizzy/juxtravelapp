@@ -10,6 +10,7 @@ import {
 import { ConversationsService } from './conversations.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
 import {
   CurrentUser,
   JwtPayload,
@@ -72,6 +73,7 @@ export class ConversationsController {
    * Returns all conversations across system for admin dashboard.
    */
   @Get('admin/all')
+  @UseGuards(AdminAuthGuard)
   async getAllForAdmin(): Promise<ConversationRow[]> {
     return this.conversationsService.getAllConversations();
   }
@@ -81,6 +83,7 @@ export class ConversationsController {
    * Returns full conversation metadata (for admin).
    */
   @Get(':id/detail')
+  @UseGuards(AdminAuthGuard)
   async getDetail(@Param('id') id: string) {
     return this.conversationsService.getConversationDetail(id);
   }
@@ -90,6 +93,7 @@ export class ConversationsController {
    * Returns conversation messages list (for admin details and chat threads).
    */
   @Get(':id/messages')
+  @UseGuards(AdminAuthGuard)
   async getMessages(
     @Param('id') id: string,
     @Query('role') role?: string,
@@ -102,6 +106,7 @@ export class ConversationsController {
    * Sends support message from admin dashboard.
    */
   @Post(':id/admin-reply')
+  @UseGuards(AdminAuthGuard)
   async adminReply(
     @Param('id') id: string,
     @Body() dto: SendMessageDto,

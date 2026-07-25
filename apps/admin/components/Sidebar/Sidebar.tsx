@@ -2,54 +2,71 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Home, UserCheck, Users, Calendar, ShieldCheck, LogOut, Shield, History, MessageSquare } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Home,
+  UserCheck,
+  Users,
+  Calendar,
+  ShieldCheck,
+  LogOut,
+  Shield,
+  History,
+  MessageSquare,
+  UserCog,
+} from 'lucide-react';
 import styles from './Sidebar.module.css';
 
 const navItems = [
-  { 
-    href: '/dashboard', 
-    icon: LayoutDashboard, 
-    label: 'Dashboard' 
+  {
+    href: '/dashboard',
+    icon: LayoutDashboard,
+    label: 'Dashboard',
   },
-  { 
-    href: '/properties', 
-    icon: Home, 
-    label: 'Properties' 
+  {
+    href: '/properties',
+    icon: Home,
+    label: 'Properties',
   },
-  { 
-    href: '/hosts', 
-    icon: UserCheck, 
-    label: 'Hosts' 
+  {
+    href: '/hosts',
+    icon: UserCheck,
+    label: 'Hosts',
   },
-  { 
-    href: '/hosts/verification', 
-    icon: Shield, 
-    label: 'Host Verification' 
+  {
+    href: '/hosts/verification',
+    icon: Shield,
+    label: 'Host Verification',
   },
-  { 
-    href: '/guests', 
-    icon: Users, 
-    label: 'Guests' 
+  {
+    href: '/guests',
+    icon: Users,
+    label: 'Guests',
   },
-  { 
-    href: '/bookings', 
-    icon: Calendar, 
-    label: 'Bookings' 
+  {
+    href: '/bookings',
+    icon: Calendar,
+    label: 'Bookings',
   },
-  { 
-    href: '/verification', 
-    icon: ShieldCheck, 
-    label: 'KYC Verification' 
+  {
+    href: '/verification',
+    icon: ShieldCheck,
+    label: 'KYC Verification',
   },
-  { 
-    href: '/activity', 
-    icon: History, 
-    label: 'Activity Log' 
+  {
+    href: '/activity',
+    icon: History,
+    label: 'Activity Log',
   },
-  { 
-    href: '/conversations', 
-    icon: MessageSquare, 
-    label: 'Conversations' 
+  {
+    href: '/conversations',
+    icon: MessageSquare,
+    label: 'Conversations',
+  },
+  {
+    href: '/admins',
+    icon: UserCog,
+    label: 'Admins',
   },
 ];
 
@@ -72,13 +89,16 @@ export default function Sidebar() {
       </div>
 
       <nav className={styles.nav}>
-        {navItems.map(item => {
+        {navItems.map((item) => {
           const Icon = item.icon;
-          
+
           // Differentiate host verification from standard host details to prevent double highlight
-          const isActive = item.href === '/hosts'
-            ? pathname === '/hosts' || (pathname.startsWith('/hosts/') && !pathname.startsWith('/hosts/verification'))
-            : pathname === item.href || pathname.startsWith(item.href + '/');
+          const isActive =
+            item.href === '/hosts'
+              ? pathname === '/hosts' ||
+                (pathname.startsWith('/hosts/') &&
+                  !pathname.startsWith('/hosts/verification'))
+              : pathname === item.href || pathname.startsWith(item.href + '/');
 
           return (
             <Link
@@ -95,10 +115,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <button
-        onClick={handleLogout}
-        className={styles.logout}
-      >
+      <button onClick={handleLogout} className={styles.logout}>
         <span className={styles.navIcon}>
           <LogOut size={16} />
         </span>
