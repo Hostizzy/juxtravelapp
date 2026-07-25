@@ -57,6 +57,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.use('/api/v1/health', (req: express.Request, res: express.Response) => {
+    logger.log(`[HEALTH] Ping from ${req.headers['user-agent'] || 'unknown'}`);
     res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),
