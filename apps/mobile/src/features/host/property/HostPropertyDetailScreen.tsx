@@ -170,7 +170,7 @@ export default function HostPropertyDetailScreen() {
     return nights > 0 ? nights : 1;
   };
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     if (!property) return;
     
     const finalCheckIn = checkIn ?? new Date().toISOString().split('T')[0];
@@ -183,14 +183,29 @@ export default function HostPropertyDetailScreen() {
       finalCheckOut,
     );
     
-    navigation.navigate('GuestVerification', {
+    const bookingParams = {
       propertyId: property.id,
       propertyName: property.name,
       checkIn: finalCheckIn,
       checkOut: finalCheckOut,
       guests: guests ?? 1,
       totalAmount: priceInfo.total,
-    });
+    };
+
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (token) {
+        const data = await apiService.get<{ isVerified: boolean }>('/verification/status', token);
+        if (data?.isVerified) {
+          navigation.navigate('Payment', bookingParams);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('Pre-check verification failed:', e);
+    }
+
+    navigation.navigate('GuestVerification', bookingParams);
   };
 
   const handleSaveProperty = async (propertyId: string) => {

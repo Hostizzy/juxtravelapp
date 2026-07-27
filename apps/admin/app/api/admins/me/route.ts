@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const res = await fetch(`${backendUrl}/admin/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const data = await res.json();
+  const rawResponse = await res.json();
+  const data = rawResponse.data ?? rawResponse;
   return NextResponse.json(data);
 }

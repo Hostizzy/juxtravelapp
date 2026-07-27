@@ -52,6 +52,35 @@ export default function GuestVerificationScreen() {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    checkVerificationStatus();
+  }, []);
+
+  const checkVerificationStatus = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+
+      const data = await apiService.get<{ isVerified: boolean; status: string }>(
+        '/verification/status',
+        token
+      );
+
+      if (data?.isVerified) {
+        navigation.replace('Payment', {
+          propertyId,
+          propertyName,
+          checkIn,
+          checkOut,
+          guests,
+          totalAmount,
+        });
+      }
+    } catch (error) {
+      console.log('Check verification failed:', error);
+    }
+  };
+
   const [fullName, setFullName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [age, setAge] = useState('');

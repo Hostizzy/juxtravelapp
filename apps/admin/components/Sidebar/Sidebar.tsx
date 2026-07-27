@@ -104,6 +104,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
             >
               <span className={styles.navIcon}>

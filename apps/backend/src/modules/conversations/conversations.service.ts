@@ -167,16 +167,16 @@ export class ConversationsService {
     const userMap = new Map((users ?? []).map(u => [u.id, u]));
 
     const conversationIds = conversations.map(c => c.id);
-    const { data: messageCounts } = await this.supabaseService.admin
+    const { data: allMessages } = await this.supabaseService.admin
       .from('messages')
-      .select('conversation_id')
+      .select('conversation_id, sender_type')
       .in('conversation_id', conversationIds);
 
-    const countMap = new Map<string, number>();
-    (messageCounts ?? []).forEach(m => {
-      countMap.set(
+    const messageCountMap = new Map<string, number>();
+    (allMessages ?? []).forEach(m => {
+      messageCountMap.set(
         m.conversation_id,
-        (countMap.get(m.conversation_id) ?? 0) + 1,
+        (messageCountMap.get(m.conversation_id) ?? 0) + 1,
       );
     });
 
@@ -185,7 +185,8 @@ export class ConversationsService {
       property: propertyMap.get(conv.property_id) ?? null,
       guest: userMap.get(conv.guest_id) ?? null,
       host: userMap.get(conv.host_id) ?? null,
-      messageCount: countMap.get(conv.id) ?? 0,
+      messageCount: messageCountMap.get(conv.id) ?? 0,
+      unreadCount: 0,
     }));
   }
 

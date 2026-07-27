@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd apps/admin && pnpm install --no-frozen-lockfile && pnpm build",
-  "outputDirectory": "apps/admin/.next",
-  "installCommand": "echo 'Install handled in buildCommand'",
-  "framework": "nextjs"
-}

@@ -19,29 +19,38 @@ export class VerificationService {
     userId: string,
     dto: CreateVerificationDto
   ) {
-    // Check existing verification
+    // Check if user already verified
     const { data: existing } = await this.supabaseService.admin
-        .from('guest_verifications')
-        .select('id, status')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      .from('guest_verifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'verified')
+      .maybeSingle();
 
-    // If already verified — skip
-    if (existing?.status === 'verified') {
-      this.logger.log(`User ${userId} already verified`);
-      return { 
-        verified: true, 
-        status: 'verified' 
+    if (existing) {
+      this.logger.log(`User ${userId} already verified - returning existing`);
+      return {
+        success: true,
+        verified: true,
+        status: 'verified',
+        verificationId: existing.id,
+        verification: existing,
       };
     }
 
-    // Save verification request
-    const { data, error } = await this.supabaseService.admin
+    // Check if user has PENDING verification
+    const { data: pending } = await this.supabaseService.admin
+      .from('guest_verifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (pending) {
+      // UPDATE existing pending, don't create new
+      const { data: updated, error: updateError } = await this.supabaseService.admin
         .from('guest_verifications')
-        .insert({
-          user_id: userId,
+        .update({
           full_name: dto.fullName,
           email: dto.email,
           age: dto.age,
@@ -49,12 +58,41 @@ export class VerificationService {
           id_number: dto.idNumber,
           id_photo_url: dto.idPhotoUrl,
           selfie_url: dto.selfieUrl,
-          status: 'pending',
+          updated_at: new Date().toISOString(),
         })
+        .eq('id', pending.id)
         .select()
         .single();
 
-    if (error) {
+      if (!updateError && updated) {
+        await this.tryVerifyWithSurepass(dto, updated.id);
+        return {
+          success: true,
+          verificationId: updated.id,
+          status: updated.status ?? 'pending',
+          verification: updated,
+        };
+      }
+    }
+
+    // Create new verification
+    const { data, error } = await this.supabaseService.admin
+      .from('guest_verifications')
+      .insert({
+        user_id: userId,
+        full_name: dto.fullName,
+        email: dto.email,
+        age: dto.age,
+        id_type: dto.idType,
+        id_number: dto.idNumber,
+        id_photo_url: dto.idPhotoUrl,
+        selfie_url: dto.selfieUrl,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
       this.logger.error('Verification save failed', error);
       throw new Error('Failed to save verification');
     }
@@ -67,7 +105,8 @@ export class VerificationService {
     return { 
       success: true,
       verificationId: data.id,
-      status: 'pending'
+      status: 'pending',
+      verification: data,
     };
   }
 
@@ -139,14 +178,34 @@ export class VerificationService {
     }
   }
 
+  async getVerificationStatus(userId: string): Promise<{
+    isVerified: boolean;
+    status: string | null;
+    verification: any;
+  }> {
+    const { data } = await this.supabaseService.admin
+      .from('guest_verifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      isVerified: data?.status === 'verified',
+      status: data?.status ?? null,
+      verification: data ?? null,
+    };
+  }
+
   async getUserVerificationStatus(userId: string) {
     const { data } = await this.supabaseService.admin
-        .from('guest_verifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      .from('guest_verifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     return data;
   }
@@ -159,12 +218,12 @@ export class VerificationService {
     const fileName = `${userId}/${docType}_${Date.now()}.jpg`;
 
     const { data, error } = await this.supabaseService.admin
-        .storage
-        .from('verification-docs')
-        .upload(fileName, file.buffer, {
-          contentType: file.mimetype,
-          upsert: true,
-        });
+      .storage
+      .from('verification-docs')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
 
     if (error) {
       this.logger.error('Verification doc upload failed', error);
@@ -172,9 +231,9 @@ export class VerificationService {
     }
 
     const { data: urlData } = this.supabaseService.admin
-        .storage
-        .from('verification-docs')
-        .getPublicUrl(data.path);
+      .storage
+      .from('verification-docs')
+      .getPublicUrl(data.path);
 
     return { url: urlData.publicUrl };
   }

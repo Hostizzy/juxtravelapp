@@ -31,7 +31,8 @@ export class VerificationController {
   async getStatus(
     @CurrentUser() payload: JwtPayload,
   ) {
-    return this.verificationService.getUserVerificationStatus(payload.sub);
+    const status = await this.verificationService.getVerificationStatus(payload.sub);
+    return status;
   }
 
   @Post('upload-doc')

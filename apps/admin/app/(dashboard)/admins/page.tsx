@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface Admin {
   id: string;
@@ -14,12 +13,12 @@ interface Admin {
 }
 
 export default function AdminsPage() {
-  const router = useRouter();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentRole, setCurrentRole] = useState<string>('');
-
+  const [submitting, setSubmitting] = useState(false);
+  
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -35,18 +34,21 @@ export default function AdminsPage() {
   const fetchMe = async () => {
     try {
       const res = await fetch('/api/admins/me');
-      const data = await res.json();
-      setCurrentRole(data.role);
+      const raw = await res.json();
+      const data = raw.data ?? raw;
+      setCurrentRole(data.role ?? '');
     } catch (e) {
       console.error(e);
     }
   };
 
   const fetchAdmins = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/admins/list');
-      const data = await res.json();
-      setAdmins(data.admins ?? []);
+      const raw = await res.json();
+      const data = raw.data ?? raw;
+      setAdmins(data.admins ?? data ?? []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -56,13 +58,14 @@ export default function AdminsPage() {
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const res = await fetch('/api/admins/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-
+      
       if (res.ok) {
         alert('Admin created successfully!');
         setShowAddModal(false);
@@ -70,10 +73,12 @@ export default function AdminsPage() {
         fetchAdmins();
       } else {
         const err = await res.json();
-        alert(err.error || err.message || 'Failed to create admin');
+        alert(err.error || 'Failed to create admin');
       }
     } catch (e) {
       alert('Failed to create admin');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -90,18 +95,28 @@ export default function AdminsPage() {
     }
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
-
   const isSuperAdmin = currentRole === 'super_admin';
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admins</h1>
+    <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1A1F1E', marginBottom: '4px' }}>Admins</h1>
+          <p style={{ fontSize: '14px', color: '#6B7370' }}>Manage admin accounts and permissions</p>
+        </div>
         {isSuperAdmin && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-medium transition"
+            style={{
+              backgroundColor: '#1A6B5A',
+              color: '#FFFFFF',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             + Add Admin
           </button>
@@ -109,142 +124,198 @@ export default function AdminsPage() {
       </div>
 
       {!isSuperAdmin && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-yellow-800 text-sm">
+        <div style={{
+          backgroundColor: '#FFF9E6',
+          border: '1px solid #FFE58F',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: '#8B6F00',
+        }}>
           Only super admins can manage other admins.
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Login
-              </th>
-              {isSuperAdmin && <th className="px-6 py-3"></th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {admins.map((admin) => (
-              <tr key={admin.id}>
-                <td className="px-6 py-4 font-medium text-gray-900">{admin.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{admin.email}</td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      admin.role === 'super_admin'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}
-                  >
-                    {admin.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      admin.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}
-                  >
-                    {admin.is_active ? 'Active' : 'Disabled'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {admin.last_login_at
-                    ? new Date(admin.last_login_at).toLocaleDateString()
-                    : 'Never'}
-                </td>
-                {isSuperAdmin && admin.role !== 'super_admin' && (
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleToggle(admin.id, admin.is_active)}
-                      className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
-                    >
-                      {admin.is_active ? 'Disable' : 'Enable'}
-                    </button>
-                  </td>
-                )}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        overflow: 'hidden',
+        border: '1px solid #F0EDE8',
+      }}>
+        {loading ? (
+          <div style={{ padding: '48px', textAlign: 'center', color: '#6B7370' }}>Loading...</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#FAF8F4', borderBottom: '1px solid #F0EDE8' }}>
+              <tr>
+                <th style={thStyle}>Name</th>
+                <th style={thStyle}>Email</th>
+                <th style={thStyle}>Role</th>
+                <th style={thStyle}>Status</th>
+                <th style={thStyle}>Last Login</th>
+                {isSuperAdmin && <th style={thStyle}></th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {admins.map(admin => (
+                <tr key={admin.id} style={{ borderBottom: '1px solid #F0EDE8' }}>
+                  <td style={tdStyle}>{admin.name}</td>
+                  <td style={{ ...tdStyle, fontSize: '13px', color: '#6B7370' }}>{admin.email}</td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: admin.role === 'super_admin' ? '#F3E8FF' : '#DBEAFE',
+                      color: admin.role === 'super_admin' ? '#7E22CE' : '#1E40AF',
+                    }}>
+                      {admin.role}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: admin.is_active ? '#DCFCE7' : '#FEE2E2',
+                      color: admin.is_active ? '#16A34A' : '#DC2626',
+                    }}>
+                      {admin.is_active ? 'Active' : 'Disabled'}
+                    </span>
+                  </td>
+                  <td style={{ ...tdStyle, fontSize: '13px', color: '#6B7370' }}>
+                    {admin.last_login_at ? new Date(admin.last_login_at).toLocaleDateString() : 'Never'}
+                  </td>
+                  {isSuperAdmin && (
+                    <td style={tdStyle}>
+                      {admin.role !== 'super_admin' && (
+                        <button
+                          onClick={() => handleToggle(admin.id, admin.is_active)}
+                          style={{
+                            fontSize: '13px',
+                            color: admin.is_active ? '#DC2626' : '#16A34A',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                          }}
+                        >
+                          {admin.is_active ? 'Disable' : 'Enable'}
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Add New Admin</h2>
-            <form onSubmit={handleAddAdmin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '32px',
+            width: '100%',
+            maxWidth: '450px',
+            margin: '0 20px',
+          }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1A1F1E', marginBottom: '20px' }}>Add New Admin</h2>
+            <form onSubmit={handleAddAdmin}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Name</label>
                 <input
                   type="text"
                   required
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  style={inputStyle}
+                  placeholder="Full name"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   required
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  style={inputStyle}
+                  placeholder="admin@example.com"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Password</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Password</label>
                 <input
                   type="password"
                   required
                   minLength={8}
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  style={inputStyle}
                   placeholder="Min 8 characters"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={labelStyle}>Role</label>
                 <select
                   value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onChange={e => setForm({ ...form, role: e.target.value })}
+                  style={inputStyle}
                 >
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
               </div>
-              <div className="flex gap-3 pt-4">
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 border rounded px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: '1px solid #E8E2D9',
+                    backgroundColor: '#FFFFFF',
+                    color: '#1A1F1E',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-emerald-700"
+                  disabled={submitting}
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#1A6B5A',
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    opacity: submitting ? 0.7 : 1,
+                  }}
                 >
-                  Create
+                  {submitting ? 'Creating...' : 'Create Admin'}
                 </button>
               </div>
             </form>
@@ -254,3 +325,38 @@ export default function AdminsPage() {
     </div>
   );
 }
+
+const thStyle: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '12px 20px',
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#6B7370',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '16px 20px',
+  fontSize: '14px',
+  color: '#1A1F1E',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: '600',
+  color: '#1A1F1E',
+  marginBottom: '6px',
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  border: '1px solid #E8E2D9',
+  borderRadius: '8px',
+  fontSize: '14px',
+  color: '#1A1F1E',
+  backgroundColor: '#FFFFFF',
+  outline: 'none',
+};

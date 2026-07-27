@@ -97,6 +97,13 @@ export default async function VerificationPage({
         {verifications.map(v => {
           const userObj = Array.isArray(v.user) ? v.user[0] : v.user;
           const user = userObj as Record<string, string> | null;
+
+          console.log('Verification photos:', {
+            id: v.id,
+            id_photo_url: v.id_photo_url,
+            selfie_url: v.selfie_url,
+          });
+
           return (
             <div key={v.id} className={styles.card}>
               <div className={styles.cardHeaderRow}>
@@ -127,26 +134,52 @@ export default async function VerificationPage({
 
               {/* Photos Inline */}
               <div className={styles.photosRow}>
-                {v.id_photo_url && (
-                  <div className={styles.photoBlock}>
-                    <span className={styles.photoLabel}>ID Photo</span>
-                    <img 
-                      src={v.id_photo_url} 
-                      alt="ID Document" 
-                      className={styles.photoImg}
-                    />
-                  </div>
-                )}
-                {v.selfie_url && (
-                  <div className={styles.photoBlock}>
-                    <span className={styles.photoLabel}>Selfie</span>
-                    <img 
-                      src={v.selfie_url} 
-                      alt="Selfie" 
-                      className={styles.photoImg}
-                    />
-                  </div>
-                )}
+                <div className={styles.photoBlock}>
+                  <span className={styles.photoLabel}>ID Photo</span>
+                  {v.id_photo_url ? (
+                    <a href={v.id_photo_url} target="_blank" rel="noopener noreferrer">
+                      <img 
+                        src={v.id_photo_url} 
+                        alt="ID Document" 
+                        className={styles.photoImg}
+                      />
+                    </a>
+                  ) : (
+                    <div style={{
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#6B7370',
+                      backgroundColor: '#F5F5F5',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}>
+                      No ID photo uploaded
+                    </div>
+                  )}
+                </div>
+                <div className={styles.photoBlock}>
+                  <span className={styles.photoLabel}>Selfie</span>
+                  {v.selfie_url ? (
+                    <a href={v.selfie_url} target="_blank" rel="noopener noreferrer">
+                      <img 
+                        src={v.selfie_url} 
+                        alt="Selfie" 
+                        className={styles.photoImg}
+                      />
+                    </a>
+                  ) : (
+                    <div style={{
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#6B7370',
+                      backgroundColor: '#F5F5F5',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}>
+                      No selfie uploaded
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

@@ -1,50 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+  console.log('=== ADMIN LOGIN START ===');
+  
   try {
     const { email, password } = await req.json();
+    console.log('Email received:', email);
 
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const backendUrl =
-      process.env.BACKEND_URL ?? 'https://juxtravelapp.onrender.com/api/v1';
+    const backendUrl = process.env.BACKEND_URL ?? 'https://juxtravelapp.onrender.com/api/v1';
+    console.log('Backend URL:', backendUrl);
 
-    const response = await fetch(`${backendUrl}/admin/login`, {
+    const backendResponse = await fetch(`${backendUrl}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
-    if (!response.ok) {
+    console.log('Backend status:', backendResponse.status);
+
+    const rawResponse = await backendResponse.json();
+    console.log('Raw backend response:', JSON.stringify(rawResponse).substring(0, 200));
+
+    // Backend wraps response: { success, data: { token, admin }, message }
+    // Extract actual data
+    const data = rawResponse.data ?? rawResponse;
+
+    console.log('Extracted data keys:', Object.keys(data));
+    console.log('Has token:', !!data.token);
+
+    if (!backendResponse.ok || !data.token) {
+      console.log('Login failed - no token or bad response');
       return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 },
+        { error: rawResponse.message ?? 'Invalid credentials' },
+        { status: 401 }
       );
     }
 
-    const data = await response.json();
+    console.log('Login success - setting cookie');
 
-    // Set cookie with token
-    const res = NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
       admin: data.admin,
     });
 
-    res.cookies.set('admin_token', data.token, {
+    // Set cookie via response.cookies (Next.js standard way)
+    response.cookies.set({
+      name: 'admin_token',
+      value: data.token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
     });
 
-    return res;
+    console.log('=== ADMIN LOGIN END ===');
+    return response;
+
   } catch (error: any) {
-    console.error('Login error:', error);
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    console.error('=== LOGIN ERROR ===', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    return NextResponse.json(
+      { error: 'Server error', message: error.message },
+      { status: 500 }
+    );
   }
 }
+
