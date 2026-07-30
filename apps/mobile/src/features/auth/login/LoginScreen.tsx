@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ImageBackground,
+  Image,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -14,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { useAuth } from '../../../hooks/useAuth';
-import { Logo } from '../../../components/Logo';
 import { useI18n } from '../../../locales';
 
 const HERO_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
@@ -62,7 +62,7 @@ export const LoginScreen: React.FC<any> = ({ navigation }: any) => {
       backgroundColor: '#FFFFFF',
     },
     heroSection: {
-      height: 320,
+      height: 250,
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative',
@@ -72,6 +72,8 @@ export const LoginScreen: React.FC<any> = ({ navigation }: any) => {
     },
     heroImage: {
       ...StyleSheet.absoluteFillObject,
+      width: '100%',
+      height: '100%',
     },
     heroOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -81,14 +83,33 @@ export const LoginScreen: React.FC<any> = ({ navigation }: any) => {
       zIndex: 1,
       alignItems: 'center',
     },
+    heroLogoWrapper: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 5,
+      marginBottom: 16,
+    },
+    heroLogo: {
+      width: 60,
+      height: 60,
+    },
     heading: {
-      fontSize: 28,
-      fontWeight: '700',
+      fontSize: 26,
+      fontWeight: '800',
       color: '#FFFFFF',
       textAlign: 'center',
-      marginTop: 20,
-      lineHeight: 36,
       fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+      paddingHorizontal: 24,
+      letterSpacing: 0.3,
     },
     scrollView: {
       flexGrow: 1,
@@ -265,9 +286,15 @@ export const LoginScreen: React.FC<any> = ({ navigation }: any) => {
           <View style={styles.heroOverlay} />
         </ImageBackground>
         <View style={styles.logoContainer}>
-          <Logo size="large" color="white" />
+          <View style={styles.heroLogoWrapper}>
+            <Image
+              source={require('../../../../assets/icon.png')}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.heading}>
-            {t('auth.find_escape') || 'Plan your perfect trip'}
+            {t('auth.find_escape') || 'Find your perfect escape'}
           </Text>
         </View>
       </View>
