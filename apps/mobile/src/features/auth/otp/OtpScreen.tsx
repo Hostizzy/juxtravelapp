@@ -184,7 +184,7 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
             
             {/* Header Section with Background Image */}
             <ImageBackground
-              source={require('../../../../assets/login_background.png')}
+              source={require('../../../../assets/login_background.jpg')}
               style={styles.header}
               imageStyle={styles.headerImage}
               resizeMode="cover"
