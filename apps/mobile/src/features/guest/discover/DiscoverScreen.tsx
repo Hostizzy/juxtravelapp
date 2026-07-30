@@ -1,71 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   FlatList,
-  ScrollView,
   TouchableOpacity,
-  Alert,
-  ListRenderItem,
-  Dimensions,
-  Platform,
-  StyleSheet,
-  ActivityIndicator,
   Image,
+  ActivityIndicator,
+  Dimensions,
+  StyleSheet,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import { Video, ResizeMode } from 'expo-av';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import * as SecureStore from 'expo-secure-store';
 import { GuestTabParamList } from '../../../navigation/GuestNavigator';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { apiService } from '../../../services/api';
-import i18n from '../../../locales/i18n';
 import styles from './DiscoverScreen.styles';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type DiscoverScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<GuestTabParamList, 'Discover'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-type TabType = 'reels' | 'stories';
-type FilterType = 'all' | 'goa' | 'rajasthan' | 'kerala' | 'ladakh';
-
-interface ReelItem {
-  id: string;
-  iconName: string;
-  title: string;
-  location: string;
-  tags: string[];
-  price: string;
-  score: string;
-  saves: string;
-  shares: string;
-}
-
-interface FilterItem {
-  key: FilterType;
-  label: string;
-}
-
-interface StoryItem {
-  id: string;
-  iconName: string;
-  title: string;
-  body: string;
-}
-
-interface MomentItem {
-  id: string;
-  iconName: string;
-}
+type TabType = 'reels' | 'posts';
 
 export interface Property {
   id: string;
@@ -87,324 +53,270 @@ export interface Property {
   updated_at?: string;
 }
 
-export interface DiscoverReelItem {
+interface Post {
   id: string;
-  url: string;
-  property_id: string;
-  property_name: string;
-  location: {
-    city: string;
-    state: string;
-  };
-  price_per_night: number;
-  host_id: string;
+  propertyId: string;
+  propertyName: string;
+  hostId: string;
+  hostName: string;
+  photos: string[];
+  location: { city: string; state: string };
+  pricePerNight: number;
+  capacity: { maxGuests: number; rooms: number };
 }
+
+// Photo Carousel Component
+const PhotoCarousel: React.FC<{ photos: string[] }> = ({ photos }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+
+  const handleScroll = (event: any) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / SCREEN_WIDTH);
+    setCurrentIndex(index);
+  };
+
+  return (
+    <View style={styles.carouselContainer}>
+      <FlatList
+        ref={flatListRef}
+        data={photos}
+        keyExtractor={(_, idx) => `photo-${idx}`}
+        renderItem={({ item }) => (
+          <Image 
+            source={{ uri: item }} 
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        )}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      />
+      
+      {photos.length > 1 && (
+        <View style={styles.dotsContainer}>
+          {photos.map((_, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.dot,
+                currentIndex === idx && styles.dotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<DiscoverScreenNavigationProp>();
-  const [activeTab, setActiveTab] = useState<TabType>('reels');
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
-  const [reelProperties, setReelProperties] = useState<DiscoverReelItem[]>([]);
-  const [loadingReels, setLoadingReels] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('posts');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    const fetchRandomReels = async () => {
-      try {
-        setLoadingReels(true);
-        const response = await apiService.get<any>(
-          '/instagram/reels/randomized?limit=20&offset=0'
-        );
-        setReelProperties(response.reels || []);
-      } catch (error) {
-        console.error('Fetch randomized reels:', error);
-        setReelProperties([]);
-      } finally {
-        setLoadingReels(false);
-      }
-    };
-    fetchRandomReels();
-  }, []);
-
-  const handleLoadMore = async () => {
+  const fetchPosts = async () => {
     try {
-      const response = await apiService.get<any>(
-        `/instagram/reels/randomized?limit=20&offset=${reelProperties.length}`
-      );
-      if (response.reels && response.reels.length > 0) {
-        setReelProperties((prev) => [...prev, ...response.reels]);
-      }
+      setLoading(true);
+      const data = await apiService.get<Post[]>('/discover/posts?limit=20&offset=0');
+      setPosts(data ?? []);
     } catch (error) {
-      console.error('Load more reels failed:', error);
+      console.error('Fetch posts failed:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const reelsData: ReelItem[] = [
-    {
-      id: '1',
-      iconName: 'home',
-      title: i18n.t('discover.data.reels.reel1Title'),
-      location: i18n.t('discover.data.reels.reel1Loc'),
-      tags: [i18n.t('discover.data.reels.reel1Tag1'), i18n.t('discover.data.reels.reel1Tag2')],
-      price: '₹28,500',
-      score: '9.2',
-      saves: '124',
-      shares: '48',
-    },
-  ];
-
-  const filters: FilterItem[] = [
-    { key: 'all', label: i18n.t('discover.filters.all') },
-    { key: 'goa', label: i18n.t('discover.filters.goa') },
-    { key: 'rajasthan', label: i18n.t('discover.filters.rajasthan') },
-    { key: 'kerala', label: i18n.t('discover.filters.kerala') },
-    { key: 'ladakh', label: i18n.t('discover.filters.ladakh') },
-  ];
-
-  const storiesData: StoryItem[] = [
-    {
-      id: '1',
-      iconName: 'leaf',
-      title: i18n.t('discover.data.stories.story1Title'),
-      body: i18n.t('discover.data.stories.story1Body'),
-    },
-    {
-      id: '2',
-      iconName: 'weather-sunset',
-      title: i18n.t('discover.data.stories.story2Title'),
-      body: i18n.t('discover.data.stories.story2Body'),
-    },
-  ];
-
-  const momentsData: MomentItem[] = [
-    { id: '1', iconName: 'camera' },
-    { id: '2', iconName: 'campfire' },
-    { id: '3', iconName: 'rowing' },
-    { id: '4', iconName: 'coffee' },
-    { id: '5', iconName: 'image-outline' },
-  ];
-
-  const handleActionPress = (action: 'save' | 'share', propertyName: string) => {
-    if (action === 'save') {
-      Alert.alert(propertyName, i18n.t('discover.data.reels.reelSavedAlert'));
-    } else {
-      Alert.alert(propertyName, i18n.t('discover.data.reels.reelSharedAlert'));
+  const fetchSaved = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      const data = await apiService.get<any[]>('/users/saved-properties', token);
+      setSavedIds(data.map(p => p.id));
+    } catch (error) {
+      console.log('Fetch saved failed');
     }
   };
 
-  const handleViewProperty = (propertyName: string) => {
-    Alert.alert(i18n.t('discover.viewProperty'), `${propertyName} details page coming soon!`);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPosts();
+      fetchSaved();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
   };
 
-  const handleReadStory = (storyTitle: string) => {
-    Alert.alert(storyTitle, i18n.t('discover.data.stories.storyAlert'));
+  const handleSave = async (propertyId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      
+      await apiService.post('/users/save-property', { propertyId }, token);
+      
+      setSavedIds(prev => 
+        prev.includes(propertyId)
+          ? prev.filter(id => id !== propertyId)
+          : [...prev, propertyId]
+      );
+      
+      Alert.alert(
+        savedIds.includes(propertyId) ? 'Removed' : 'Saved!',
+        savedIds.includes(propertyId) 
+          ? 'Removed from your saved list' 
+          : 'Added to your saved properties'
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save');
+    }
   };
 
-  const handleSearch = () => {
-    Alert.alert('Search', 'Property search logic loading...');
+  const handleViewProperty = (propertyId: string) => {
+    navigation.navigate('HostPropertyDetail', { propertyId });
   };
 
-  const handleNotifications = () => {
-    Alert.alert('Notifications', 'No new notifications.');
-  };
-
-  const renderReelItem: ListRenderItem<DiscoverReelItem> = ({ item }) => {
-    const handleSaveReel = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('access_token');
-        if (!token) {
-          Alert.alert('Error', 'Please log in to save reels');
-          return;
-        }
-        await apiService.post('/instagram/save-reel', {
-          reelUrl: item.url,
-        }, token);
-        Alert.alert('Saved!', 'Reel added to your saved collection');
-      } catch (error) {
-        Alert.alert('Error', 'Failed to save reel');
-      }
-    };
-
-    return (
-      <View style={styles.reelCard}>
-        {/* Property Video Player */}
-        <View style={styles.propertyImageArea}>
-          {item.url ? (
-            <Video
-              source={{ uri: item.url }}
-              style={StyleSheet.absoluteFillObject}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={activeTab === 'reels'}
-              isLooping
-              useNativeControls={false}
-            />
-          ) : (
-            <MaterialCommunityIcons name="home" size={80} color="#84C9BA" />
-          )}
-        </View>
-
-        {/* Right Side Vertical Action Panel */}
-        <View style={styles.rightActionsContainer}>
-          {/* bookmark icon */}
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleSaveReel}
-            activeOpacity={0.7}
-          >
-            <Feather name="bookmark" size={24} color="#FFFFFF" style={styles.actionIcon} />
-            <Text style={styles.actionCount}>Save</Text>
-          </TouchableOpacity>
-
-          {/* share icon */}
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleActionPress('share', item.property_name)}
-            activeOpacity={0.7}
-          >
-            <Feather name="share-2" size={24} color="#FFFFFF" style={styles.actionIcon} />
-            <Text style={styles.actionCount}>Share</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom details section */}
-        <View style={styles.bottomOverlay}>
-          {/* ROW 1: Property name + Trust Score */}
-          <View style={styles.overlayHeaderRow}>
-            <Text style={[styles.propertyName, { flex: 1, marginRight: 12 }]} numberOfLines={1}>
-              {item.property_name}
+  const renderPost = ({ item }: { item: Post }) => (
+    <View style={styles.postCard}>
+      {/* Header */}
+      <View style={styles.postHeader}>
+        <View style={styles.postHeaderLeft}>
+          <View style={styles.hostAvatar}>
+            <Text style={styles.hostAvatarText}>
+              {item.hostName?.charAt(0).toUpperCase() ?? 'H'}
             </Text>
-            {/* Trust Score Badge */}
-            <View style={styles.trustBadge}>
-              <Text style={styles.trustScoreValue}>9.2</Text>
-              <Text style={styles.trustScoreLabel}>{i18n.t('discover.trustScore')}</Text>
-            </View>
           </View>
-
-          {/* ROW 2: Location */}
-          <Text style={styles.locationRow}>
-            <Feather name="map-pin" size={12} color="#84C9BA" /> {item.location?.city}, {item.location?.state}
-          </Text>
-
-          {/* ROW 3: Price */}
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>{i18n.t('discover.startingFrom')}</Text>
-            <Text style={styles.priceValue}>₹{item.price_per_night?.toLocaleString('en-IN')}/night</Text>
-          </View>
-
-          {/* ROW 4: View Property button */}
-          <TouchableOpacity
-            style={styles.viewPropertyButton}
-            onPress={() => navigation.navigate('HostPropertyDetail', { propertyId: item.property_id })}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewPropertyButtonText}>
-              View Property →
+          <View>
+            <Text style={styles.postPropertyName} numberOfLines={1}>
+              {item.propertyName}
             </Text>
-          </TouchableOpacity>
+            <Text style={styles.postHostName}>
+              by {item.hostName}
+            </Text>
+          </View>
         </View>
       </View>
-    );
-  };
+
+      {/* Photo Carousel */}
+      <PhotoCarousel photos={item.photos} />
+
+      {/* Actions */}
+      <View style={styles.postActions}>
+        <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={() => handleSave(item.propertyId)}
+          activeOpacity={0.7}
+        >
+          <Feather 
+            name="bookmark" 
+            size={22} 
+            color={savedIds.includes(item.propertyId) ? "#D4704A" : "#1A1F1E"} 
+          />
+          <Text style={[
+            styles.actionText,
+            savedIds.includes(item.propertyId) && { color: '#D4704A' }
+          ]}>
+            {savedIds.includes(item.propertyId) ? 'Saved' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.viewBtn}
+          onPress={() => handleViewProperty(item.propertyId)}
+          activeOpacity={0.7}
+        >
+          <Feather name="arrow-right" size={16} color="#FFFFFF" />
+          <Text style={styles.viewBtnText}>View Property</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
-      <View style={styles.container}>
-        {/* Top Hero Header */}
-        <View style={styles.headerWrapper}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }} 
-            style={styles.headerAbsoluteImage}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            locations={[0, 0.35, 0.7, 1]}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-          />
-
-          <View style={styles.headerTopRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-              <Feather name="chevron-left" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <Text style={styles.headerTitleText}>JuxTravel</Text>
-            
-            <View style={{ width: 40 }} />
-          </View>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'reels' && styles.activeTabButton]} 
-            onPress={() => setActiveTab('reels')} 
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'reels' && styles.activeTabButtonText]}>
-              {i18n.t('discover.reels')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'stories' && styles.activeTabButton]} 
-            onPress={() => setActiveTab('stories')} 
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'stories' && styles.activeTabButtonText]}>
-              {i18n.t('discover.stories')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Reel list or Stories Coming Soon */}
-        {activeTab === 'reels' ? (
-          loadingReels ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F1714' }}>
-              <ActivityIndicator size="large" color="#84C9BA" />
-            </View>
-          ) : reelProperties.length === 0 ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F1714', padding: 24 }}>
-              <Feather name="video" size={48} color="#6B7370" style={{ marginBottom: 16 }} />
-              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
-                No Reels Available
-              </Text>
-              <Text style={{ color: '#6B7370', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-                Properties with uploaded or connected Instagram reels will appear here.
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              style={styles.flatListFlex}
-              data={reelProperties}
-              renderItem={renderReelItem}
-              keyExtractor={(item) => item.id}
-              pagingEnabled
-              showsVerticalScrollIndicator={false}
-              decelerationRate="fast"
-              onEndReached={handleLoadMore}
-              onEndReachedThreshold={0.5}
-            />
-          )
-        ) : (
-          /* Main Discover Layout (Stories) - Coming Soon */
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, backgroundColor: '#0F1714' }}>
-            <Feather name="clock" size={48} color="#84C9BA" style={{ marginBottom: 16 }} />
-            <Text style={{ fontFamily: 'serif', fontWeight: 'bold', fontSize: 22, color: '#FFFFFF', textAlign: 'center', marginBottom: 8 }}>
-              Coming Soon
-            </Text>
-            <Text style={{ color: '#6B7370', fontSize: 14, textAlign: 'center' }}>
-              Stories feature launching shortly
-            </Text>
-          </View>
-        )}
+      
+      {/* Header */}
+      <View style={styles.headerWrapper}>
+        <Image 
+          source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }} 
+          style={styles.headerImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['#021412', 'rgba(2, 20, 18, 0.8)', 'rgba(2, 20, 18, 0.4)']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <SafeAreaView edges={['top']} style={styles.headerContent}>
+          <Text style={styles.headerTitle}>JuxTravel</Text>
+        </SafeAreaView>
       </View>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'reels' && styles.tabActive]}
+          onPress={() => setActiveTab('reels')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'reels' && styles.tabTextActive]}>
+            Reels
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'posts' && styles.tabActive]}
+          onPress={() => setActiveTab('posts')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'posts' && styles.tabTextActive]}>
+            Posts
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      {activeTab === 'reels' ? (
+        <View style={styles.comingSoonContainer}>
+          <Feather name="video" size={64} color="#84C9BA" />
+          <Text style={styles.comingSoonTitle}>Reels Coming Soon</Text>
+          <Text style={styles.comingSoonSubtext}>
+            Video reels feature launching shortly
+          </Text>
+        </View>
+      ) : loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1A6B5A" />
+        </View>
+      ) : posts.length === 0 ? (
+        <View style={styles.comingSoonContainer}>
+          <Feather name="image" size={64} color="#6B7370" />
+          <Text style={styles.comingSoonTitle}>No posts yet</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.feedContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#1A6B5A"
+            />
+          }
+        />
+      )}
     </View>
   );
 }

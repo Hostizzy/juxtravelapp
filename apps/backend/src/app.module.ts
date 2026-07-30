@@ -17,6 +17,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { AIModule } from './modules/ai/ai.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { DiscoverModule } from './modules/discover/discover.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -57,6 +58,7 @@ import configuration from './config/configuration';
     AIModule,
     LocationsModule,
     AdminModule,
+    DiscoverModule,
   ],
   providers: [
     {

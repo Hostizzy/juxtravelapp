@@ -1,446 +1,186 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F1714', // Default is dark for Reels
-  },
-  lightContainer: {
-    backgroundColor: '#FAF8F4', // Stories background
-  },
-  // Top Bar for Reels (Dark)
-  topBarDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 16,
-    paddingBottom: 12,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E2B25',
-  },
-  // Top Bar for Stories (Light)
-  topBarLight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 16,
-    paddingBottom: 12,
-    backgroundColor: '#FAF8F4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0EDE8',
-  },
-  topBarLeft: {
-    width: 40,
-    justifyContent: 'center',
-  },
-  topBarRightTextContainer: {
-    width: 90,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  topBarRightIconsContainer: {
-    width: 90,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  backArrowWhite: {
-    fontSize: 24,
-    color: '#FFFFFF',
-  },
-  backArrowDark: {
-    fontSize: 24,
-    color: '#1A1F1E',
-  },
-  topBarTitleWhite: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  topBarTitleDark: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    color: '#1A1F1E',
-    textAlign: 'center',
-  },
-  usernameText: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 10,
-    color: '#84C9BA',
-    fontWeight: '600',
-  },
-  topBarIcon: {
-    fontSize: 18,
-    color: '#1A1F1E',
-    marginLeft: 16,
-  },
-  // Tabs below top bar
-  tabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#0F1714',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E2B25',
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTabButton: {
-    borderBottomColor: '#1A6B5A',
-  },
-  tabButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6B7370',
-  },
-  activeTabButtonText: {
-    color: '#FFFFFF',
-  },
-  // TAB 1: REELS Styles
-  reelsContainer: {
-    flex: 1,
-    backgroundColor: '#0F1714',
-  },
-  reelCard: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT - 125,
-    flex: 1,
-    backgroundColor: '#0F1714',
-    flexDirection: 'column',
-  },
-  propertyImageArea: {
-    flex: 1,
-    backgroundColor: '#1A2B25',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  propertyEmoji: {
-    fontSize: 80,
-  },
-  // Actions on right (vertical)
-  rightActionsContainer: {
-    position: 'absolute',
-    right: 16,
-    top: '30%',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  actionButton: {
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  actionIcon: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  actionCount: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  // Bottom overlay info
-  bottomOverlay: {
-    backgroundColor: '#0F1714',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 120, // (above nav bar)
-  },
-  overlayHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  overlayTextDetails: {
-    flex: 1,
-    marginRight: 12,
-  },
-  propertyName: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    color: '#FFFFFF',
-  },
-  locationRow: {
-    fontSize: 12,
-    color: '#84C9BA',
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginVertical: 8,
-  },
-  amenityChip: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  amenityChipText: {
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 8,
-    fontWeight: '700',
-  },
-  priceRow: {
-    marginTop: 4,
-  },
-  priceLabel: {
-    fontSize: 8,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    color: '#84C9BA',
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  priceValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  // Trust score badge
-  trustBadge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#1A6B5A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 4,
-  },
-  trustScoreValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  trustScoreLabel: {
-    fontSize: 7,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    color: '#FFFFFF',
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  // Bottom buttons row
-  viewPropertyButton: {
-    height: 44,
-    backgroundColor: '#1A6B5A',
-    borderRadius: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 12,
-  },
-  viewPropertyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  // TAB 2: STORIES Styles
-  storiesContainer: {
-    flex: 1,
-    backgroundColor: '#FAF8F4',
-  },
-  storiesScroll: {
-    paddingBottom: 40,
-  },
-  // Filter Chips Scroll
-  filterScroll: {
-    paddingVertical: 16,
-    paddingLeft: 16,
-  },
-  filterChip: {
-    borderRadius: 100,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-  },
-  filterChipSelected: {
-    backgroundColor: '#1A6B5A',
-    borderColor: '#1A6B5A',
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1F1E',
-  },
-  filterChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  // Section Headers
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 9,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontWeight: '700',
-    color: '#6B7370',
-    letterSpacing: 1.5,
-  },
-  sectionLink: {
-    fontSize: 9,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontWeight: '700',
-    color: '#1A6B5A',
-    letterSpacing: 1.5,
-  },
-  // Story Card
-  storyCard: {
-    marginHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-    borderRadius: 16,
-    marginBottom: 20,
-    overflow: 'hidden',
-    shadowColor: '#1A1F1E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  storyImage: {
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  storyImageEmoji: {
-    fontSize: 50,
-  },
-  storyContent: {
-    padding: 16,
-  },
-  storyTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    color: '#1A1F1E',
-    marginBottom: 8,
-    lineHeight: 26,
-  },
-  storyBody: {
-    fontSize: 13,
-    color: '#6B7370',
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  readStoryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1A6B5A',
-  },
-  // Moments Section
-  momentsScrollContent: {
-    paddingLeft: 16,
-    paddingRight: 8,
-    paddingBottom: 24,
-  },
-  momentSquare: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E8E2D9',
-  },
-  momentEmoji: {
-    fontSize: 30,
-  },
-  momentBgEven: {
-    backgroundColor: '#E6F2EF',
-  },
-  momentBgOdd: {
-    backgroundColor: '#F5E6D0',
-  },
-  storyBgGreen: {
-    backgroundColor: '#1A6B5A',
-  },
-  storyBgOrange: {
-    backgroundColor: '#D4704A',
-  },
-  safeAreaReels: {
-    flex: 1,
-    backgroundColor: '#0F1714',
-  },
-  safeAreaStories: {
-    flex: 1,
-    backgroundColor: '#0F1714',
-  },
-  flatListFlex: {
-    flex: 1,
-  },
   root: {
     flex: 1,
     backgroundColor: '#FAF8F4',
   },
   headerWrapper: {
-    backgroundColor: '#021412',
     height: 100,
     position: 'relative',
     overflow: 'hidden',
   },
-  headerAbsoluteImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-    opacity: 0.35,
-
-    overflow: 'hidden',
+  headerImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.4,
   },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 52 : 36,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  headerContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: Platform.OS === 'ios' ? 20 : 30,
   },
-  headerTitleText: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     fontFamily: 'serif',
     letterSpacing: 0.5,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EDE8',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: '#1A6B5A',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7370',
+  },
+  tabTextActive: {
+    color: '#1A6B5A',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  comingSoonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1F1E',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: '#6B7370',
+    textAlign: 'center',
+  },
+  feedContainer: {
+    paddingBottom: 120,
+  },
+  postCard: {
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F0EDE8',
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+  },
+  postHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  hostAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1A6B5A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hostAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  postPropertyName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1F1E',
+    maxWidth: SCREEN_WIDTH - 100,
+  },
+  postHostName: {
+    fontSize: 11,
+    color: '#6B7370',
+    marginTop: 1,
+  },
+  carouselContainer: {
+    position: 'relative',
+  },
+  postImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
+    backgroundColor: '#F0EDE8',
+  },
+  dotsContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  dotActive: {
+    backgroundColor: '#FFFFFF',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  postActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 8,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1F1E',
+  },
+  viewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1A6B5A',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 100,
+  },
+  viewBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
 
