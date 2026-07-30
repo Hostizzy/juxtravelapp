@@ -245,20 +245,36 @@ export default function DiscoverScreen() {
     <View style={styles.root}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
       
-      {/* Header */}
+      {/* Top Hero Header */}
       <View style={styles.headerWrapper}>
         <Image 
           source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }} 
-          style={styles.headerImage}
+          style={styles.headerAbsoluteImage}
           resizeMode="cover"
         />
         <LinearGradient
-          colors={['#021412', 'rgba(2, 20, 18, 0.8)', 'rgba(2, 20, 18, 0.4)']}
+          colors={['#021412', 'rgba(2, 20, 18, 0.9)', 'rgba(2, 20, 18, 0.4)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          locations={[0, 0.35, 0.7, 1]}
           style={StyleSheet.absoluteFillObject}
         />
-        <SafeAreaView edges={['top']} style={styles.headerContent}>
-          <Text style={styles.headerTitle}>JuxTravel</Text>
-        </SafeAreaView>
+        <LinearGradient
+          colors={['transparent', 'rgba(2, 20, 18, 0.25)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Feather name="chevron-left" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitleText}>Discover</Text>
+          
+          <View style={{ width: 40 }} />
+        </View>
       </View>
 
       {/* Tabs */}

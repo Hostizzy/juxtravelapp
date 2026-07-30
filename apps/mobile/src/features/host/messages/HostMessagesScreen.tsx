@@ -27,15 +27,18 @@ export default function HostMessagesScreen() {
   const { data: conversations = [], isLoading: isInitialLoading, refetch } = useConversations('host');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refetch conversations when screen focuses (after coming back from chat)
   useFocusEffect(
     useCallback(() => {
+      console.log('[HOST MSG] Screen focused, refetching...');
       queryClient.invalidateQueries({ 
-        queryKey: ['conversations'],
+        queryKey: ['conversations', 'host'],
         refetchType: 'active',
       });
-    }, [queryClient])
+      refetch();
+    }, [queryClient, refetch])
   );
+
+  console.log('[HOST MSG] Conversations:', conversations.length);
 
   const onRefresh = async () => {
     setRefreshing(true);

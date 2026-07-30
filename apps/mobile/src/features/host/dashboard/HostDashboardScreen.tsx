@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { useAuthStore } from '../../../stores/authStore';
@@ -24,12 +25,24 @@ import styles from './HostDashboardScreen.styles';
 
 export default function HostDashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const userName = user?.name ?? 'Host';
 
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    }, [queryClient])
+  );
+
   const { data: properties = [], isLoading: propsLoading } = useMyProperties();
   const { data: statsData } = useHostStats();
-  const stats = statsData ?? { allTimeBookings: 0, checkInsThisMonth: 0, earningsThisMonth: 0 };
+  const stats = statsData ?? { 
+    allTimeBookings: 0, 
+    checkInsThisMonth: 0, 
+    earningsThisMonth: 0,
+    earningsAllTime: 0,
+  };
   const { data: allBookings = [] } = useHostBookings();
   const recentBookings = allBookings.slice(0, 3);
   const isInitialLoad = propsLoading;
@@ -58,7 +71,7 @@ export default function HostDashboardScreen() {
       .split(' ')
       .map((n) => n[0])
       .join('')
-      .substring(0, 2)
+      .slice(0, 2)
       .toUpperCase();
   };
 
@@ -118,7 +131,7 @@ export default function HostDashboardScreen() {
             </View>
 
             {/* Overlay Stat Cards on the header bottom */}
-            {isInitialLoad && stats.earningsThisMonth === 0 ? (
+            {isInitialLoad && stats.earningsAllTime === 0 ? (
               <ActivityIndicator color="#FFFFFF" size="small" style={{ marginVertical: 20 }} />
             ) : (
               <View style={styles.statsRow}>
@@ -161,12 +174,12 @@ export default function HostDashboardScreen() {
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.statValue}>
-                    {stats.earningsThisMonth >= 100000 
-                      ? `₹${(stats.earningsThisMonth / 100000).toFixed(1)}L` 
-                      : `₹${(stats.earningsThisMonth / 1000).toFixed(0)}k`}
+                    {(stats.earningsAllTime ?? 0) >= 100000 
+                      ? `₹${((stats.earningsAllTime ?? 0) / 100000).toFixed(1)}L` 
+                      : `₹${((stats.earningsAllTime ?? 0) / 1000).toFixed(0)}k`}
                   </Text>
                   <View style={{ alignSelf: 'stretch' }}>
-                    <Text style={styles.statLabel} numberOfLines={1}>Your earnings this month</Text>
+                    <Text style={styles.statLabel} numberOfLines={1}>Your total earnings</Text>
                     <Text style={{ fontSize: 8, color: '#84C9BA', marginTop: 1, fontFamily: 'monospace' }}>(after service fee)</Text>
                   </View>
                 </TouchableOpacity>

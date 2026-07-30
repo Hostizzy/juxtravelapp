@@ -53,6 +53,21 @@ export default function ChatDetailScreen() {
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
 
+  console.log('[CHAT] conversationId:', conversationId);
+  console.log('[CHAT] user role:', role);
+  console.log('[CHAT] messages count:', messages.length);
+  console.log('[CHAT] loading:', isInitialLoading);
+
+  useEffect(() => {
+    if (conversationId) {
+      console.log('[CHAT] Refetching for conversation:', conversationId);
+      queryClient.invalidateQueries({ 
+        queryKey: ['conversations', 'messages', conversationId],
+        refetchType: 'active',
+      });
+    }
+  }, [conversationId, queryClient]);
+
   // Mark messages as read when chat opens or new messages arrive
   useEffect(() => {
     if (!conversationId) return;
@@ -79,7 +94,7 @@ export default function ChatDetailScreen() {
     
     // Initial mark on chat open
     markAsRead();
-  }, [conversationId]);
+  }, [conversationId, queryClient]);
 
   // Also mark as read when new messages come while chat is open
   useEffect(() => {

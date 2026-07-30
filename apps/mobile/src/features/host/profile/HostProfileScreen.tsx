@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
@@ -23,7 +24,6 @@ import { useAuthStore } from '../../../stores/authStore';
 import { useMyProperties } from '../../../hooks/useProperties';
 import { useHostEarnings, useHostDetailedStats } from '../../../hooks/useBookings';
 import { useConversations } from '../../../hooks/useConversations';
-import { queryClient } from '../../../lib/queryClient';
 import i18n from '../../../locales/i18n';
 import styles from './HostProfileScreen.styles';
 
@@ -32,7 +32,14 @@ type TabType = 'PROFILE' | 'PROPERTIES' | 'REVIEWS' | 'STATS' | 'SETTINGS';
 export default function HostProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<HostTabParamList, 'HostProfile'>>();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    }, [queryClient])
+  );
   const userName = user?.name ?? 'Host';
   const isVerified = (user as any)?.host_profile?.verified ?? true;
 

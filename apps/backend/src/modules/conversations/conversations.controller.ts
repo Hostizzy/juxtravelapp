@@ -93,7 +93,7 @@ export class ConversationsController {
    * Returns conversation messages list (for admin details and chat threads).
    */
   @Get(':id/messages')
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getMessages(
     @Param('id') id: string,
     @Query('role') role?: string,

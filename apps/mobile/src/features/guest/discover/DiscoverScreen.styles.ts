@@ -8,21 +8,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF8F4',
   },
   headerWrapper: {
+    backgroundColor: '#021412',
     height: 100,
     position: 'relative',
     overflow: 'hidden',
   },
-  headerImage: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.4,
+  headerAbsoluteImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.35,
+    overflow: 'hidden',
   },
-  headerContent: {
-    flex: 1,
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: Platform.OS === 'ios' ? 20 : 30,
   },
-  headerTitle: {
+  headerTitleText: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',

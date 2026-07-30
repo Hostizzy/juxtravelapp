@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -36,8 +37,34 @@ export default function ListStep1Screen() {
   const [city, setCity] = useState<string>('');
   const [state, setState] = useState<string>('');
   const [pincode, setPincode] = useState<string>('');
+  const [fetchingPincode, setFetchingPincode] = useState<boolean>(false);
   const [stateModalVisible, setStateModalVisible] = useState<boolean>(false);
   const [cityModalVisible, setCityModalVisible] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (pincode.length !== 6) return;
+
+    const fetchPincode = async () => {
+      setFetchingPincode(true);
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+        const data = await response.json();
+        
+        if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const office = data[0].PostOffice[0];
+          setCity(office.District ?? office.Name ?? '');
+          setState(office.State ?? '');
+        }
+      } catch (error) {
+        console.log('Pincode fetch failed');
+      } finally {
+        setFetchingPincode(false);
+      }
+    };
+
+    const timer = setTimeout(fetchPincode, 500);
+    return () => clearTimeout(timer);
+  }, [pincode]);
 
   const propertyTypes: { type: string; icon: string; iconType: 'feather' | 'mci'; iconMci?: string }[] = [
     { type: 'Homestay', icon: 'home', iconType: 'feather' },
@@ -222,6 +249,27 @@ export default function ListStep1Screen() {
           })}
         </ScrollView>
 
+        {/* PINCODE */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={styles.sectionLabel}>PINCODE</Text>
+          {fetchingPincode && <ActivityIndicator size="small" color="#1A6B5A" style={{ marginBottom: 8 }} />}
+        </View>
+        <View style={styles.inputContainer}>
+          <Feather name="map-pin" size={20} color="#1A6B5A" style={styles.inputIcon} />
+          <TextInput
+            style={styles.inputField}
+            placeholder="Enter 6-digit pincode"
+            placeholderTextColor="#6B7370"
+            keyboardType="numeric"
+            maxLength={6}
+            value={pincode}
+            onChangeText={(text) => {
+              const clean = text.replace(/[^0-9]/g, '').slice(0, 6);
+              setPincode(clean);
+            }}
+          />
+        </View>
+
         {/* CITY & STATE */}
         <View style={styles.rowInputs}>
           <View style={styles.halfInputContainer}>
@@ -256,21 +304,6 @@ export default function ListStep1Screen() {
               <Feather name="chevron-down" size={16} color="#6B7370" />
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* PINCODE */}
-        <Text style={styles.sectionLabel}>PINCODE</Text>
-        <View style={styles.inputContainer}>
-          <Feather name="map-pin" size={20} color="#1A6B5A" style={styles.inputIcon} />
-          <TextInput
-            style={styles.inputField}
-            placeholder="e.g. 110001"
-            placeholderTextColor="#6B7370"
-            keyboardType="numeric"
-            maxLength={6}
-            value={pincode}
-            onChangeText={setPincode}
-          />
         </View>
 
         {/* CONTINUE BUTTON */}

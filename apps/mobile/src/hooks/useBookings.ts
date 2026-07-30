@@ -30,6 +30,7 @@ export interface HostStats {
   allTimeBookings: number;
   checkInsThisMonth: number;
   earningsThisMonth: number;
+  earningsAllTime: number;
 }
 
 export interface HostEarnings {
@@ -80,6 +81,10 @@ export function useHostBookings() {
   return useQuery({
     queryKey: BOOKING_KEYS.hostBookings,
     queryFn: () => apiGet<Booking[]>('/bookings/host-bookings'),
+    refetchInterval: 30000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -87,7 +92,10 @@ export function useHostStats() {
   return useQuery({
     queryKey: BOOKING_KEYS.hostStats,
     queryFn: () => apiGet<HostStats>('/bookings/host-stats'),
-    staleTime: 2 * 60 * 1000,
+    refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 0, // Always fresh
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -95,7 +103,10 @@ export function useHostEarnings() {
   return useQuery({
     queryKey: BOOKING_KEYS.hostEarnings,
     queryFn: () => apiGet<HostEarnings>('/bookings/earnings'),
-    staleTime: 2 * 60 * 1000,
+    refetchInterval: 30000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 

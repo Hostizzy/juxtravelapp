@@ -214,22 +214,29 @@ export class BookingsService {
 
   async getHostStats(hostId: string) {
     const { data: bookings } = await this.supabaseService.admin
-        .from('bookings')
-        .select('check_in, host_payout, status, created_at')
-        .eq('host_id', hostId);
+      .from('bookings')
+      .select('check_in, host_payout, status, created_at, total_amount')
+      .eq('host_id', hostId);
 
-    const allTimeBookings = (bookings ?? []).length;
+    const allBookings = bookings ?? [];
+    
+    const allTimeBookings = allBookings.length;
 
     const now = new Date();
-    const checkInsThisMonth = (bookings ?? [])
-      .filter((b) => {
-        const d = new Date(b.check_in);
-        return d.getMonth() === now.getMonth() && 
-          d.getFullYear() === now.getFullYear() &&
-          ['confirmed','completed'].includes(b.status);
-      }).length;
+    const checkInsThisMonth = allBookings.filter((b) => {
+      const d = new Date(b.check_in);
+      return d.getMonth() === now.getMonth() && 
+        d.getFullYear() === now.getFullYear() &&
+        ['confirmed','completed'].includes(b.status);
+    }).length;
 
-    const earningsThisMonth = (bookings ?? [])
+    // All time earnings (net after commission)
+    const earningsAllTime = allBookings
+      .filter(b => ['confirmed','completed'].includes(b.status))
+      .reduce((sum, b) => sum + (b.host_payout ?? 0), 0);
+
+    // This month earnings
+    const earningsThisMonth = allBookings
       .filter((b) => {
         const d = new Date(b.created_at);
         return d.getMonth() === now.getMonth() && 
@@ -241,7 +248,8 @@ export class BookingsService {
     return { 
       allTimeBookings, 
       checkInsThisMonth, 
-      earningsThisMonth 
+      earningsThisMonth,
+      earningsAllTime, // NEW - use this on home dashboard
     };
   }
 
