@@ -37,6 +37,8 @@ export default function PaymentScreen() {
 
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
+  const inFlightRef = React.useRef(false);
+  const existingBookingIdRef = React.useRef<string | null>(null);
 
   const serviceFee = Math.round(totalAmount * 0.1);
   const subtotal = totalAmount - serviceFee;
@@ -56,58 +58,42 @@ export default function PaymentScreen() {
   };
 
   const handlePayment = async () => {
-    console.log('═══════════════════════════════════════');
-    console.log('💳 [PAYMENT] Starting payment flow');
-    console.log('═══════════════════════════════════════');
-    
+    if (inFlightRef.current) return; // guard: block double-tap / duplicate retry
+    inFlightRef.current = true;
     setLoading(true);
-    
-    let bookingId: string | null = null;
-    
+
+    let bookingId: string | null = existingBookingIdRef.current;
+
     try {
-      // ═══ STEP 1: Validate User Data ═══
-      console.log('📋 [PAYMENT] Step 1: Validating user data');
-      console.log('   - propertyId:', propertyId);
-      console.log('   - propertyName:', propertyName);
-      console.log('   - checkIn:', checkIn);
-      console.log('   - checkOut:', checkOut);
-      console.log('   - guests:', guests);
-      console.log('   - totalAmount:', totalAmount);
-      console.log('   - user:', user?.name, user?.phone, user?.email);
-      
       if (!propertyId || !propertyName || !totalAmount) {
         throw new Error('Missing property details. Please try booking again.');
       }
-      
+
       if (totalAmount <= 0) {
         throw new Error('Invalid amount. Please contact support.');
       }
-      
+
       if (!user) {
         throw new Error('User not authenticated. Please login again.');
       }
-      
-      // ═══ STEP 2: Create Booking (PENDING) ═══
-      console.log('📝 [PAYMENT] Step 2: Creating pending booking');
-      
-      const booking = await apiPost<{ id: string }>(
-        '/bookings/create-direct',
-        {
-          propertyId,
-          checkIn,
-          checkOut,
-          guests,
-          totalAmount,
-          status: 'pending',
-        }
-      );
-      
-      bookingId = booking.id;
-      console.log('✅ [PAYMENT] Booking created:', bookingId);
-      
-      // ═══ STEP 3: Create Razorpay Order ═══
-      console.log('📦 [PAYMENT] Step 3: Creating Razorpay order');
-      
+
+      // Reuse existing pending booking on retry instead of creating a duplicate
+      if (!bookingId) {
+        const booking = await apiPost<{ id: string }>(
+          '/bookings/create-direct',
+          {
+            propertyId,
+            checkIn,
+            checkOut,
+            guests,
+            totalAmount,
+            status: 'pending',
+          }
+        );
+        bookingId = booking.id;
+        existingBookingIdRef.current = booking.id;
+      }
+
       const order = await apiPost<{
         orderId: string;
         amount: number;
@@ -117,24 +103,15 @@ export default function PaymentScreen() {
         '/payments/create-order',
         {
           amount: totalAmount,
-          bookingId: booking.id,
+          bookingId,
           propertyName: propertyName,
         }
       );
-      
-      console.log('✅ [PAYMENT] Razorpay order created:');
-      console.log('   - orderId:', order.orderId);
-      console.log('   - amount:', order.amount, '(paise)');
-      console.log('   - currency:', order.currency);
-      console.log('   - keyId exists:', !!order.keyId);
-      
+
       if (!order.orderId || !order.keyId) {
         throw new Error('Failed to create payment order. Please try again.');
       }
-      
-      // ═══ STEP 4: Prepare Razorpay Options ═══
-      console.log('⚙️ [PAYMENT] Step 4: Preparing Razorpay options');
-      
+
       const options = {
         description: `Booking for ${propertyName}`,
         image: 'https://juxtravel.com/logo.png',
@@ -152,60 +129,38 @@ export default function PaymentScreen() {
           color: '#1A6B5A' 
         },
         notes: {
-          bookingId: booking.id,
+          bookingId,
           propertyName: propertyName,
         },
       };
-      
-      console.log('📋 [PAYMENT] Razorpay options prepared');
-      
-      // ═══ STEP 5: Open Native Razorpay Modal ═══
-      console.log('🚀 [PAYMENT] Step 5: Opening native Razorpay checkout');
-      
+
       const paymentData = await RazorpayCheckout.open(options);
-      
-      console.log('═══════════════════════════════════════');
-      console.log('✅ [PAYMENT] PAYMENT SUCCESSFUL');
-      console.log('═══════════════════════════════════════');
-      console.log('   - razorpay_payment_id:', paymentData.razorpay_payment_id);
-      console.log('   - razorpay_order_id:', paymentData.razorpay_order_id);
-      console.log('   - razorpay_signature:', paymentData.razorpay_signature ? 'EXISTS' : 'MISSING');
-      
-      // ═══ STEP 6: Verify Payment Success ═══
+
       if (!paymentData.razorpay_payment_id) {
         throw new Error('Payment ID not received. Please contact support.');
       }
-      
-      // ═══ STEP 7: Invalidate Cache & Navigate ═══
-      console.log('🔄 [PAYMENT] Step 7: Invalidating cache and navigating');
-      
+
+      // Verify signature server-side before treating as confirmed
+      await apiPost('/payments/verify', {
+        bookingId,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_signature: paymentData.razorpay_signature,
+      });
+
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      
-      console.log('🎉 [PAYMENT] Navigating to BookingSuccess');
-      
+
       navigation.replace('BookingSuccess', {
-        bookingId: booking.id,
+        bookingId,
         propertyName: propertyName,
         checkIn: checkIn,
         checkOut: checkOut,
       });
-      
+
     } catch (error: any) {
-      console.log('═══════════════════════════════════════');
-      console.log('❌ [PAYMENT] ERROR OCCURRED');
-      console.log('═══════════════════════════════════════');
-      console.log('   - Error object:', JSON.stringify(error));
-      console.log('   - Error code:', error?.code);
-      console.log('   - Error message:', error?.message);
-      console.log('   - Error description:', error?.description);
-      console.log('   - Error reason:', error?.reason);
-      console.log('   - Error source:', error?.source);
-      console.log('   - Booking ID:', bookingId);
-      
       if (error?.code === 0) {
         // Network error
-        console.log('🌐 [PAYMENT] Network error detected');
         Alert.alert(
           'Network Error',
           'Please check your internet connection and try again.',
@@ -216,7 +171,6 @@ export default function PaymentScreen() {
         );
       } else if (error?.code === 2 || error?.description?.toLowerCase().includes('cancel')) {
         // User cancelled
-        console.log('🚫 [PAYMENT] Payment cancelled by user');
         Alert.alert(
           'Payment Cancelled',
           'You cancelled the payment. Your booking is not confirmed.',
@@ -227,7 +181,6 @@ export default function PaymentScreen() {
         );
       } else if (error?.code === 1) {
         // Server error
-        console.log('🔴 [PAYMENT] Server error');
         Alert.alert(
           'Payment Failed',
           error?.description || 'Payment server error. Please try again.',
@@ -238,11 +191,9 @@ export default function PaymentScreen() {
         );
       } else if (error?.message?.includes('Missing') || error?.message?.includes('Invalid')) {
         // Validation error
-        console.log('⚠️ [PAYMENT] Validation error');
         Alert.alert('Error', error.message, [{ text: 'OK' }]);
       } else {
         // Generic error
-        console.log('❓ [PAYMENT] Unknown error');
         Alert.alert(
           'Payment Failed',
           error?.description || error?.message || 'Something went wrong. Please try again.',
@@ -252,12 +203,10 @@ export default function PaymentScreen() {
           ]
         );
       }
-      
+
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
-      console.log('═══════════════════════════════════════');
-      console.log('🏁 [PAYMENT] Flow complete');
-      console.log('═══════════════════════════════════════');
     }
   };
 

@@ -6,11 +6,11 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  SafeAreaView,
   Linking,
   Alert,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import styles from './BookingDetailScreen.styles';
 
 type BookingDetailScreenRouteProp = RouteProp<

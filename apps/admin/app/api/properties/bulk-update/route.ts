@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAdminUser } from '@/lib/auth';
 import { logActivity } from '@/lib/activityLog';
+import { z } from 'zod';
+
+const bulkUpdateSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  status: z.enum(['active', 'under_review', 'paused', 'rejected']),
+});
 
 export async function POST(req: NextRequest) {
   const admin = await getAdminUser();
@@ -12,14 +18,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { ids, status } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const parseResult = bulkUpdateSchema.safeParse(body);
 
-  if (!Array.isArray(ids) || ids.length === 0) {
+  if (!parseResult.success) {
     return NextResponse.json(
-      { error: 'No property IDs provided' }, 
+      { error: 'Invalid input parameters', details: parseResult.error.flatten() },
       { status: 400 }
     );
   }
+
+  const { ids, status } = parseResult.data;
 
   const updateData: Record<string, unknown> = {
     status,

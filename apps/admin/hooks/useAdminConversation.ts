@@ -1,5 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminFetch } from '@/lib/adminFetch';
 
 export function useAdminMessages(
   conversationId: string
@@ -7,7 +8,7 @@ export function useAdminMessages(
   return useQuery({
     queryKey: ['admin', 'messages', conversationId],
     queryFn: async () => {
-      const res = await fetch(
+      const res = await adminFetch(
         `/api/conversations/${conversationId}/messages`
       );
       return res.json();
@@ -23,7 +24,7 @@ export function useAdminReply(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (message: string) => {
-      const res = await fetch(
+      const res = await adminFetch(
         `/api/conversations/${conversationId}/reply`,
         {
           method: 'POST',

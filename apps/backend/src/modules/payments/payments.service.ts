@@ -176,12 +176,32 @@ export class PaymentsService {
     }
   }
 
-  async verifyPaymentSignature(params: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
-    bookingId: string;
-  }): Promise<{ verified: boolean }> {
+  async verifyPaymentSignature(
+    params: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+      bookingId: string;
+    },
+    callerId: string,
+  ): Promise<{ verified: boolean }> {
+    // Ownership check: caller must be the guest who owns this booking
+    const { data: booking } = await this.supabaseService.admin
+      .from('bookings')
+      .select('guest_id, host_id, property_id, status')
+      .eq('id', params.bookingId)
+      .maybeSingle();
+
+    if (!booking || booking.guest_id !== callerId) {
+      this.logger.warn(`[RAZORPAY] Verify rejected: booking ${params.bookingId} not owned by ${callerId}`);
+      return { verified: false };
+    }
+
+    // Idempotency: already confirmed (e.g. webhook beat us to it) — nothing to do.
+    if (booking.status === 'confirmed') {
+      return { verified: true };
+    }
+
     const keySecret =
       this.configService.get<string>('RAZORPAY_KEY_SECRET') ??
       this.configService.get<string>('razorpay.keySecret') ??
@@ -201,17 +221,41 @@ export class PaymentsService {
     const verified = expectedSignature === params.razorpay_signature;
 
     if (verified) {
-      // Update booking to confirmed
-      await this.supabaseService.admin
+      // Update booking to confirmed — only from pending, so a concurrent webhook
+      // hit can't double-process (also guards against replaying this call).
+      const { data: updated } = await this.supabaseService.admin
         .from('bookings')
         .update({
           status: 'confirmed',
           payment_id: params.razorpay_payment_id,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', params.bookingId);
+        .eq('id', params.bookingId)
+        .eq('status', 'pending')
+        .select('id, property_id, host_id')
+        .maybeSingle();
 
       this.logger.log(`[RAZORPAY] ✅ Signature verified for booking ${params.bookingId}`);
+
+      if (updated) {
+        const { data: property } = await this.supabaseService.admin
+          .from('properties')
+          .select('name')
+          .eq('id', updated.property_id)
+          .single();
+
+        this.conversationsService
+          .createForBooking(
+            updated.id,
+            callerId,
+            updated.host_id,
+            updated.property_id,
+            property?.name ?? 'the property',
+          )
+          .catch((err: unknown) => {
+            this.logger.error('[RAZORPAY] Failed to auto-create conversation', err);
+          });
+      }
     }
 
     return { verified };
@@ -281,7 +325,8 @@ export class PaymentsService {
       return;
     }
 
-    // Update booking status to confirmed
+    // Update booking status to confirmed — only from pending, so a retried/duplicate
+    // webhook delivery (or a race with client-side verifyPaymentSignature) is a no-op.
     const { data: booking, error } = await this.supabaseService.admin
       .from('bookings')
       .update({
@@ -290,11 +335,17 @@ export class PaymentsService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', bookingId)
+      .eq('status', 'pending')
       .select('*, property:properties(name)')
-      .single();
+      .maybeSingle();
 
     if (error) {
       this.logger.error('[RAZORPAY_SERVICE] ❌ Failed to update booking status:', error.message);
+      return;
+    }
+
+    if (!booking) {
+      this.logger.log(`[RAZORPAY_SERVICE] Booking ${bookingId} already processed, skipping (idempotent)`);
       return;
     }
 
@@ -351,20 +402,56 @@ export class PaymentsService {
     const refund = payload.refund as Record<string, unknown> | undefined;
     const entity = refund?.entity as Record<string, unknown> | undefined;
     const paymentId = entity?.payment_id as string | undefined;
+    const refundAmountPaise = (entity?.amount as number | undefined) ?? 0;
+    const refundAmountRupees = refundAmountPaise / 100;
 
-    this.logger.log(`[RAZORPAY_SERVICE] handleRefundCreated - paymentId: ${paymentId}`);
+    this.logger.log(`[RAZORPAY_SERVICE] handleRefundCreated - paymentId: ${paymentId}, amount: ₹${refundAmountRupees}`);
 
     if (!paymentId) return;
 
-    await this.supabaseService.admin
+    const { data: booking } = await this.supabaseService.admin
       .from('bookings')
-      .update({
-        status: 'cancelled',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('payment_id', paymentId);
+      .select('id, total_amount, status')
+      .eq('payment_id', paymentId)
+      .maybeSingle();
 
-    this.logger.log(`[RAZORPAY_SERVICE] Refund created for payment: ${paymentId}`);
+    if (!booking) {
+      this.logger.warn(`[RAZORPAY_SERVICE] Refund event received for unknown paymentId: ${paymentId}`);
+      return;
+    }
+
+    // Record refund details
+    try {
+      await this.supabaseService.admin
+        .from('refunds')
+        .insert({
+          booking_id: booking.id,
+          payment_id: paymentId,
+          amount: refundAmountRupees,
+          created_at: new Date().toISOString(),
+        });
+    } catch (err: any) {
+      this.logger.warn(`[RAZORPAY_SERVICE] Notice: could not record into refunds table: ${err?.message}`);
+    }
+
+    // Only set status to cancelled if refund amount equals or exceeds full booking total amount
+    const isFullRefund = refundAmountRupees >= (booking.total_amount ?? 0);
+
+    if (isFullRefund) {
+      await this.supabaseService.admin
+        .from('bookings')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+
+      this.logger.log(`[RAZORPAY_SERVICE] Full refund of ₹${refundAmountRupees} processed. Booking ${booking.id} set to cancelled.`);
+    } else {
+      this.logger.log(
+        `[RAZORPAY_SERVICE] Partial refund of ₹${refundAmountRupees} (total: ₹${booking.total_amount}) recorded. Booking ${booking.id} status unchanged.`,
+      );
+    }
   }
 
   private async handlePaymentAuthorized(

@@ -9,6 +9,7 @@ import {
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
+import { CreateDirectBookingDto } from './dto/create-direct-booking.dto';
 
 @Controller('bookings')
 @UseGuards(JwtAuthGuard)
@@ -18,53 +19,33 @@ export class BookingsController {
   @Post('create-direct')
   async createDirect(
     @CurrentUser() payload: JwtPayload,
-    @Body() body: {
-      propertyId: string;
-      checkIn: string;
-      checkOut: string;
-      guests: number;
-      totalAmount: number;
-      status?: 'pending' | 'confirmed';
-      paymentId?: string;
-    },
+    @Body() dto: CreateDirectBookingDto,
   ) {
-    return this.bookingsService.createDirect(
-      payload.sub, body
-    );
+    return this.bookingsService.createDirect(payload.sub, dto);
   }
 
   @Get('my-bookings')
-  async getMyBookings(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getMyBookings(@CurrentUser() payload: JwtPayload) {
     return this.bookingsService.getMyBookings(payload.sub);
   }
 
   @Get('host-bookings')
-  async getHostBookings(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getHostBookings(@CurrentUser() payload: JwtPayload) {
     return this.bookingsService.getHostBookings(payload.sub);
   }
 
   @Get('earnings')
-  async getEarnings(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getEarnings(@CurrentUser() payload: JwtPayload) {
     return this.bookingsService.getHostEarnings(payload.sub);
   }
 
   @Get('host-stats')
-  async getHostStats(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getHostStats(@CurrentUser() payload: JwtPayload) {
     return this.bookingsService.getHostStats(payload.sub);
   }
 
   @Get('host-detailed-stats')
-  async getHostDetailedStats(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getHostDetailedStats(@CurrentUser() payload: JwtPayload) {
     return this.bookingsService.getHostDetailedStats(payload.sub);
   }
 
@@ -73,9 +54,6 @@ export class BookingsController {
     @CurrentUser() payload: JwtPayload,
     @Param('id') id: string,
   ) {
-    return this.bookingsService.getBookingById(
-      id, payload.sub
-    );
+    return this.bookingsService.getBookingById(id, payload.sub);
   }
 }
-

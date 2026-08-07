@@ -45,9 +45,8 @@ export class AdminService {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', admin.id);
 
-    const secret =
-      this.configService.get<string>('ADMIN_JWT_SECRET') ??
-      this.configService.get<string>('JWT_SECRET');
+    // No fallback to JWT_SECRET — must be set explicitly, see admin.module.ts.
+    const secret = this.configService.get<string>('ADMIN_JWT_SECRET');
 
     const token = await this.jwtService.signAsync(
       {
@@ -134,11 +133,16 @@ export class AdminService {
 
   async toggleAdmin(
     currentAdminRole: string,
+    currentAdminId: string,
     adminId: string,
     isActive: boolean,
   ) {
     if (currentAdminRole !== 'super_admin') {
       throw new ForbiddenException('Only super admin can toggle admins');
+    }
+
+    if (adminId === currentAdminId && !isActive) {
+      throw new BadRequestException('Cannot deactivate your own account');
     }
 
     const { error } = await this.supabaseService.admin

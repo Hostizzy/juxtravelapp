@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import { supabase } from '../../../services/supabase';
 import { useAuthStore, UserData } from '../../../stores/authStore';
 import { Session } from '@supabase/supabase-js';

@@ -20,7 +20,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { pickImage } from '../../../services/propertyService';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import i18n from '../../../locales/i18n';
 import styles from './ListStep3Screen.styles';
 

@@ -12,9 +12,6 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
   app.use(helmet());
 
   const allowedOrigins = [
@@ -23,7 +20,6 @@ async function bootstrap() {
     'https://juxtravelapp.onrender.com',
     'http://localhost:3000',
     'http://localhost:3001',
-    'exp://', // Expo dev
   ];
 
   app.enableCors({
@@ -32,14 +28,17 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       if (!origin) return callback(null, true); // Mobile apps / Postman
-      if (allowedOrigins.some((o) => origin.startsWith(o))) {
+      if (
+        allowedOrigins.includes(origin) ||
+        (process.env.NODE_ENV !== 'production' && origin.startsWith('exp://'))
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true,
+    credentials: false,
   });
 
   app.useGlobalPipes(

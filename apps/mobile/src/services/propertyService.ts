@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './supabase';
-import { apiService } from './api';
+import { apiService, BASE_URL } from '../lib/api';
 
 export interface PropertyFormData {
   // Step 1
@@ -61,8 +61,6 @@ export const uploadPhoto = async (
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) return null;
 
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://10.0.2.2:3000/api/v1';
-
       // Create form data
       const formData = new FormData();
       formData.append('photo', {
@@ -72,7 +70,7 @@ export const uploadPhoto = async (
       } as unknown as Blob);
 
       const response = await fetch(
-        `${backendUrl}/properties/upload-photo`,
+        `${BASE_URL}/properties/upload-photo`,
         {
           method: 'POST',
           headers: {
@@ -237,8 +235,6 @@ export const uploadVerificationDoc = async (
     const token = await SecureStore.getItemAsync('access_token');
     if (!token) return null;
 
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://10.0.2.2:3000/api/v1';
-
     const formData = new FormData();
     formData.append('doc', {
       uri,
@@ -248,7 +244,7 @@ export const uploadVerificationDoc = async (
     formData.append('docType', docType);
 
     const response = await fetch(
-      `${backendUrl}/verification/upload-doc`,
+      `${BASE_URL}/verification/upload-doc`,
       {
         method: 'POST',
         headers: {

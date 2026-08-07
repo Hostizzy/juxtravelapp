@@ -72,6 +72,20 @@ export class PropertiesService {
     hostId: string,
     dto: CreatePropertyDto
   ) {
+    // Gate 3: Host-verified gate before property listing
+    const { data: hostProfile } = await this.supabaseService.admin
+      .from('host_profiles')
+      .select('verified, verification_status')
+      .eq('user_id', hostId)
+      .maybeSingle();
+
+    const isHostVerified =
+      hostProfile?.verified === true || hostProfile?.verification_status === 'verified';
+
+    if (!isHostVerified) {
+      throw new BadRequestException('Host verification required before listing a property');
+    }
+
     const { data, error } = await this.supabaseService.admin
         .from('properties')
         .insert({
@@ -147,7 +161,7 @@ export class PropertiesService {
     return data;
   }
 
-  async findById(id: string) {
+  async findById(id: string, callerId?: string) {
     const { data: property, error } = await this.supabaseService.admin
         .from('properties')
         .select('*')
@@ -158,14 +172,39 @@ export class PropertiesService {
       throw new NotFoundException('Property not found');
     }
 
-    // Fetch host with all profile fields
+    // Fetch host with profile fields
     const { data: host } = await this.supabaseService.admin
         .from('users')
         .select('id, name, phone, bio, profile_pic, response_time_hours, created_at')
         .eq('id', property.host_id)
         .single();
 
-    // Count host's total bookings for this host (real data)
+    let canViewPhone = false;
+    if (callerId) {
+      if (callerId === property.host_id) {
+        canViewPhone = true;
+      } else {
+        const { data: confirmedBooking } = await this.supabaseService.admin
+          .from('bookings')
+          .select('id')
+          .eq('property_id', id)
+          .eq('guest_id', callerId)
+          .in('status', ['confirmed', 'completed'])
+          .limit(1)
+          .maybeSingle();
+
+        if (confirmedBooking) {
+          canViewPhone = true;
+        }
+      }
+    }
+
+    const hostResult = host ? { ...host } : null;
+    if (hostResult && !canViewPhone) {
+      delete (hostResult as any).phone;
+    }
+
+    // Count host's total bookings for this host
     const { count: hostBookings } = await this.supabaseService.admin
         .from('bookings')
         .select('id', { count: 'exact', head: true })
@@ -173,7 +212,7 @@ export class PropertiesService {
 
     return {
       ...property,
-      host: host ?? null,
+      host: hostResult,
       total_bookings: hostBookings ?? 0,
     };
   }

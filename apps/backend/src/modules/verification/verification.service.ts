@@ -191,10 +191,12 @@ export class VerificationService {
       .limit(1)
       .maybeSingle();
 
+    const verification = data ? await this.withSignedDocUrls(data) : null;
+
     return {
       isVerified: data?.status === 'verified',
       status: data?.status ?? null,
-      verification: data ?? null,
+      verification,
     };
   }
 
@@ -207,7 +209,19 @@ export class VerificationService {
       .limit(1)
       .maybeSingle();
 
-    return data;
+    return data ? await this.withSignedDocUrls(data) : null;
+  }
+
+  // Replaces stored KYC doc paths with fresh short-lived signed URLs before
+  // the record leaves the backend, for any caller (guest self-view, admin).
+  private async withSignedDocUrls<T extends { id_photo_url?: string | null; selfie_url?: string | null }>(
+    record: T,
+  ): Promise<T> {
+    const [id_photo_url, selfie_url] = await Promise.all([
+      this.getSignedDocUrl(record.id_photo_url ?? null),
+      this.getSignedDocUrl(record.selfie_url ?? null),
+    ]);
+    return { ...record, id_photo_url, selfie_url };
   }
 
   async uploadVerificationDoc(
@@ -230,11 +244,36 @@ export class VerificationService {
       throw new Error('Upload failed');
     }
 
-    const { data: urlData } = this.supabaseService.admin
+    // KYC docs (ID photo, selfie) are PII — never expose a permanent public URL.
+    // We persist the storage path (see below) and mint short-lived signed URLs
+    // on every read instead. The "url" field name is kept so the mobile client's
+    // upload -> POST /verification round trip doesn't need to change.
+    return { url: data.path };
+  }
+
+  // Mints a short-lived signed URL for a stored KYC doc path. Safe to call
+  // repeatedly; each call issues a fresh 1-hour link. Requires the
+  // 'verification-docs' bucket to be PRIVATE — a signed URL is meaningless
+  // if the bucket is also public (the plain getPublicUrl would still work).
+  async getSignedDocUrl(pathOrUrl: string | null): Promise<string | null> {
+    if (!pathOrUrl) return null;
+    // Back-compat: old rows hold a full public URL, e.g.
+    // https://<project>.supabase.co/storage/v1/object/public/verification-docs/<path>
+    // Once the bucket goes private that public URL 404s, so extract the path
+    // after the bucket name and sign it like any new row.
+    const marker = '/verification-docs/';
+    const path = pathOrUrl.includes(marker)
+      ? pathOrUrl.slice(pathOrUrl.indexOf(marker) + marker.length)
+      : pathOrUrl;
+
+    const { data, error } = await this.supabaseService.admin
       .storage
       .from('verification-docs')
-      .getPublicUrl(data.path);
-
-    return { url: urlData.publicUrl };
+      .createSignedUrl(path, 60 * 60);
+    if (error) {
+      this.logger.error(`Failed to sign KYC doc url for ${path}`, error);
+      return null;
+    }
+    return data.signedUrl;
   }
 }

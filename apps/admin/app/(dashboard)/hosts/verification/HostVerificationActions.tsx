@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './page.module.css';
 
 export default function HostVerificationActions({
@@ -15,7 +16,7 @@ export default function HostVerificationActions({
   const updateStatus = async (status: 'approved' | 'rejected') => {
     setLoading(true);
     try {
-      await fetch(`/api/hosts/${hostId}/verify`, {
+      await adminFetch(`/api/hosts/${hostId}/verify`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

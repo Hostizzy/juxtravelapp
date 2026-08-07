@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from './api';
+import { apiService } from '../lib/api';
 
 export interface MatchedProperty {
   id: string;

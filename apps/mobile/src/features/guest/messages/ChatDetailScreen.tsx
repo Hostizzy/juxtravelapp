@@ -53,82 +53,53 @@ export default function ChatDetailScreen() {
   const flatListRef = useRef<FlatList>(null);
   const queryClient = useQueryClient();
 
-  console.log('[CHAT] conversationId:', conversationId);
-  console.log('[CHAT] user role:', role);
-  console.log('[CHAT] messages count:', messages.length);
-  console.log('[CHAT] loading:', isInitialLoading);
+  // Mark-as-read: fires on chat open AND whenever new messages arrive.
+  // Both triggers share one in-flight guard so they can't fire concurrent
+  // duplicate POSTs (previously two independent effects each had their own
+  // fetch, causing overlapping mark-read calls + duplicate cache invalidations).
+  const markReadInFlightRef = React.useRef(false);
 
-  useEffect(() => {
-    if (conversationId) {
-      console.log('[CHAT] Refetching for conversation:', conversationId);
-      queryClient.invalidateQueries({ 
+  const markAsRead = React.useCallback(async () => {
+    if (!conversationId || markReadInFlightRef.current) return;
+    markReadInFlightRef.current = true;
+    try {
+      await apiPost(`/conversations/${conversationId}/mark-read`, {});
+      await queryClient.invalidateQueries({
+        queryKey: ['conversations'],
+        refetchType: 'active',
+      });
+      await queryClient.invalidateQueries({
         queryKey: ['conversations', 'messages', conversationId],
         refetchType: 'active',
       });
+    } catch {
+      // Silent — read receipts are best-effort, not worth surfacing to the user
+    } finally {
+      markReadInFlightRef.current = false;
     }
   }, [conversationId, queryClient]);
 
-  // Mark messages as read when chat opens or new messages arrive
+  // Initial mark on chat open
   useEffect(() => {
-    if (!conversationId) return;
-    
-    const markAsRead = async () => {
-      try {
-        await apiPost(`/conversations/${conversationId}/mark-read`, {});
-        
-        // Invalidate ALL conversation queries (guest + host variants)
-        await queryClient.invalidateQueries({ 
-          queryKey: ['conversations'],
-          refetchType: 'active', // Force immediate refetch of active queries
-        });
-        
-        // Also refetch current messages to update read_by_guest/host flags
-        await queryClient.invalidateQueries({
-          queryKey: ['conversations', 'messages', conversationId],
-          refetchType: 'active',
-        });
-      } catch (error) {
-        console.log('[CHAT] Mark as read failed:', error);
-      }
-    };
-    
-    // Initial mark on chat open
     markAsRead();
-  }, [conversationId, queryClient]);
+  }, [markAsRead]);
 
-  // Also mark as read when new messages come while chat is open
+  // Mark as read when new messages arrive while chat is open
   useEffect(() => {
     if (!conversationId || messages.length === 0) return;
-    
-    // Check if any unread messages from other party
+
     const hasUnread = messages.some(m => {
       const isFromMe = m.sender_id === user?.id;
       if (isFromMe) return false;
-      // Check if not yet read
       const readField = role === 'guest' ? m.read_by_guest : m.read_by_host;
       return !readField;
     });
-    
+
     if (!hasUnread) return;
-    
-    const timer = setTimeout(async () => {
-      try {
-        await apiPost(`/conversations/${conversationId}/mark-read`, {});
-        queryClient.invalidateQueries({ 
-          queryKey: ['conversations'],
-          refetchType: 'active',
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['conversations', 'messages', conversationId],
-          refetchType: 'active',
-        });
-      } catch (error) {
-        // Silent
-      }
-    }, 500);
-    
+
+    const timer = setTimeout(markAsRead, 500);
     return () => clearTimeout(timer);
-  }, [messages.length, conversationId, role, user?.id]);
+  }, [messages.length, conversationId, role, user?.id, markAsRead]);
 
   const scrollToBottom = () => {
     if (flatListRef.current && messages.length > 0) {

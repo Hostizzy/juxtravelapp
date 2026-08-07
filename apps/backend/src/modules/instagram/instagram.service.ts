@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { firstValueFrom } from 'rxjs';
+import * as crypto from 'crypto';
 
 export interface InstagramReel {
   id: string;
@@ -14,9 +15,47 @@ export interface InstagramReel {
   permalink: string;
 }
 
+const ALGORITHM = 'aes-256-gcm';
+
+function getEncryptionKey(configService: ConfigService): Buffer {
+  // No fallback: a fallback here would silently defeat the point of encrypting
+  // Instagram tokens at rest. Must be set explicitly in production env vars.
+  const secret = configService.get<string>('INSTAGRAM_TOKEN_ENCRYPTION_KEY');
+  if (!secret) {
+    throw new Error(
+      'INSTAGRAM_TOKEN_ENCRYPTION_KEY is not set. Required to encrypt/decrypt stored Instagram tokens.',
+    );
+  }
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
+function encryptToken(text: string, key: Buffer): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+}
+
+function decryptToken(encryptedText: string, key: Buffer): string {
+  if (!encryptedText || !encryptedText.includes(':')) {
+    return encryptedText; // Legacy unencrypted token fallback
+  }
+  const [ivHex, authTagHex, encryptedData] = encryptedText.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+  let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
 @Injectable()
 export class InstagramService {
   private readonly logger = new Logger(InstagramService.name);
+  private oauthStatesCache = new Map<string, { hostId: string; propertyId?: string; expiresAt: number }>();
 
   constructor(
     private configService: ConfigService,
@@ -24,51 +63,107 @@ export class InstagramService {
     private supabaseService: SupabaseService,
   ) {}
 
-  // Step 1: Get OAuth URL for Instagram
-  getOAuthUrl(hostId: string, propertyId?: string): string {
-    const appId = this.configService.get<string>('INSTAGRAM_APP_ID') 
-                  ?? this.configService.get<string>('instagram.appId');
-    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI') 
-                       ?? this.configService.get<string>('instagram.redirectUri');
+  // Step 1: Get OAuth URL for Instagram with CSRF state nonce
+  async getOAuthUrl(hostId: string, propertyId?: string): Promise<string> {
+    const appId =
+      this.configService.get<string>('INSTAGRAM_APP_ID') ??
+      this.configService.get<string>('instagram.appId');
+    const redirectUri =
+      this.configService.get<string>('INSTAGRAM_REDIRECT_URI') ??
+      this.configService.get<string>('instagram.redirectUri');
 
-    console.log('[INSTAGRAM_OAUTH_URL] Generating OAuth URL');
-    console.log(`[INSTAGRAM_OAUTH_URL] - appId: ${appId ? '✅ EXISTS' : '❌ MISSING'}`);
-    console.log(`[INSTAGRAM_OAUTH_URL] - redirectUri: ${redirectUri}`);
-    console.log(`[INSTAGRAM_OAUTH_URL] - hostId: ${hostId}`);
-    console.log(`[INSTAGRAM_OAUTH_URL] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
+    const nonce = crypto.randomUUID();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
+
+    // Attempt to persist state in Supabase instagram_oauth_states table
+    const { error } = await this.supabaseService.admin
+      .from('instagram_oauth_states')
+      .insert({
+        nonce,
+        host_id: hostId,
+        property_id: propertyId || null,
+        expires_at: new Date(expiresAt).toISOString(),
+      });
+
+    if (error) {
+      this.logger.warn(`Could not save OAuth state to instagram_oauth_states table: ${error.message}. Using in-memory state fallback.`);
+    }
+
+    // Always mirror state to in-memory fallback
+    this.oauthStatesCache.set(nonce, { hostId, propertyId, expiresAt });
 
     const scope = ['instagram_business_basic'].join(',');
-    const state = Buffer.from(JSON.stringify({ hostId, propertyId })).toString('base64');
+    const url = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(
+      redirectUri ?? '',
+    )}&scope=${scope}&response_type=code&state=${nonce}`;
 
-    const url = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
-    
-    console.log(`[INSTAGRAM_OAUTH_URL] Generated URL (first 100 chars): ${url.substring(0, 100)}...`);
-    
+    this.logger.log(`[INSTAGRAM_OAUTH_URL] Generated state nonce: ${nonce} for hostId: ${hostId}`);
+
     return url;
+  }
+
+  // Verify CSRF state nonce and extract metadata
+  async verifyAndConsumeOAuthState(stateNonce: string): Promise<{ hostId: string; propertyId?: string }> {
+    const now = Date.now();
+
+    // Check Supabase table
+    const { data, error } = await this.supabaseService.admin
+      .from('instagram_oauth_states')
+      .select('host_id, property_id, expires_at')
+      .eq('nonce', stateNonce)
+      .single();
+
+    let hostId: string | undefined;
+    let propertyId: string | undefined;
+
+    if (data && !error) {
+      if (new Date(data.expires_at).getTime() < now) {
+        await this.supabaseService.admin.from('instagram_oauth_states').delete().eq('nonce', stateNonce);
+        throw new Error('OAuth state expired. Please restart authorization.');
+      }
+      hostId = data.host_id;
+      propertyId = data.property_id ?? undefined;
+
+      // Delete state to prevent replay attack
+      await this.supabaseService.admin.from('instagram_oauth_states').delete().eq('nonce', stateNonce);
+    } else {
+      // In-memory fallback check
+      const cached = this.oauthStatesCache.get(stateNonce);
+      this.oauthStatesCache.delete(stateNonce);
+
+      if (!cached || cached.expiresAt < now) {
+        throw new Error('Invalid or expired OAuth state nonce.');
+      }
+      hostId = cached.hostId;
+      propertyId = cached.propertyId;
+    }
+
+    if (!hostId) {
+      throw new Error('Invalid OAuth state.');
+    }
+
+    return { hostId, propertyId };
   }
 
   async exchangeCodeForToken(
     code: string,
     hostId: string,
-    propertyId?: string
+    propertyId?: string,
   ): Promise<{ success: boolean }> {
-    const appId = this.configService.get<string>('INSTAGRAM_APP_ID')
-                  ?? this.configService.get<string>('instagram.appId');
-    const appSecret = this.configService.get<string>('INSTAGRAM_APP_SECRET')
-                      ?? this.configService.get<string>('instagram.appSecret');
-    const redirectUri = this.configService.get<string>('INSTAGRAM_REDIRECT_URI')
-                        ?? this.configService.get<string>('instagram.redirectUri');
+    const appId =
+      this.configService.get<string>('INSTAGRAM_APP_ID') ??
+      this.configService.get<string>('instagram.appId');
+    const appSecret =
+      this.configService.get<string>('INSTAGRAM_APP_SECRET') ??
+      this.configService.get<string>('instagram.appSecret');
+    const redirectUri =
+      this.configService.get<string>('INSTAGRAM_REDIRECT_URI') ??
+      this.configService.get<string>('instagram.redirectUri');
 
     try {
-      console.log('[INSTAGRAM] 1️⃣ START OAuth exchange');
-      console.log(`[INSTAGRAM] - hostId: ${hostId}`);
-      console.log(`[INSTAGRAM] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
-      console.log(`[INSTAGRAM] - appId: ${appId ? '✅ EXISTS' : '❌ MISSING'}`);
-      console.log(`[INSTAGRAM] - appSecret: ${appSecret ? '✅ EXISTS' : '❌ MISSING'}`);
-      console.log(`[INSTAGRAM] - redirectUri: ${redirectUri}`);
+      this.logger.log(`[INSTAGRAM] 1️⃣ START OAuth exchange for hostId: ${hostId}`);
 
       // Exchange for short-lived token
-      console.log('[INSTAGRAM] 2️⃣ Requesting short-lived token from Instagram API');
       const tokenResponse = await firstValueFrom(
         this.httpService.post(
           'https://api.instagram.com/oauth/access_token',
@@ -82,38 +177,32 @@ export class InstagramService {
           {
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
-            }
-          }
-        )
+            },
+          },
+        ),
       );
 
       const shortToken = tokenResponse.data.access_token;
       const igUserId = tokenResponse.data.user_id;
-      
-      console.log(`[INSTAGRAM] 3️⃣ Short-lived token received`);
-      console.log(`[INSTAGRAM] - igUserId: ${igUserId}`);
-      console.log(`[INSTAGRAM] - shortToken: ${shortToken ? '✅ VALID' : '❌ INVALID'}`);
 
       // Exchange for long-lived token (60 days)
-      console.log('[INSTAGRAM] 4️⃣ Exchanging for long-lived token');
       const longTokenResponse = await firstValueFrom(
         this.httpService.get(
-          `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`
-        )
+          `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`,
+        ),
       );
 
       const longToken = longTokenResponse.data.access_token;
       const expiresIn = longTokenResponse.data.expires_in;
-      
-      console.log(`[INSTAGRAM] 5️⃣ Long-lived token received`);
-      console.log(`[INSTAGRAM] - expiresIn: ${expiresIn} seconds (~${Math.round(expiresIn / 86400)} days)`);
 
-      // Save token to host_profiles
-      console.log('[INSTAGRAM] 6️⃣ Saving token to database');
+      // Encrypt token before saving to database (AES-256-GCM)
+      const encryptionKey = getEncryptionKey(this.configService);
+      const encryptedLongToken = encryptToken(longToken, encryptionKey);
+
       const { error: updateError } = await this.supabaseService.admin
         .from('host_profiles')
         .update({
-          instagram_access_token: longToken,
+          instagram_access_token: encryptedLongToken,
           instagram_user_id: igUserId.toString(),
           instagram_token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
           instagram_connected: true,
@@ -121,116 +210,73 @@ export class InstagramService {
         .eq('user_id', hostId);
 
       if (updateError) {
-        console.log(`[INSTAGRAM] ❌ Database update failed: ${updateError.message}`);
+        this.logger.error(`[INSTAGRAM] Database update failed: ${updateError.message}`);
         throw updateError;
       }
 
-      console.log(`[INSTAGRAM] 7️⃣ Token saved successfully`);
+      this.logger.log(`[INSTAGRAM] Token encrypted and saved successfully for hostId: ${hostId}`);
 
-      // AUTO-FETCH: Get 15 reels immediately
-      console.log(`[INSTAGRAM] 8️⃣ Auto-fetching reels from Instagram`);
+      // AUTO-FETCH: Get reels immediately
       const reels = await this.fetchHostReels(hostId);
-      console.log(`[INSTAGRAM] - Found ${reels.length} reels`);
-
       const reelUrls = reels.slice(0, 15).map((r) => r.media_url || r.permalink);
-      console.log(`[INSTAGRAM] - Extracted ${reelUrls.length} reel URLs`);
-      if (reelUrls.length > 0) {
-        console.log(`[INSTAGRAM] - Sample URL: ${reelUrls[0]}`);
-      }
 
-      // If propertyId provided, save to that property
       if (propertyId && reelUrls.length > 0) {
-        console.log(`[INSTAGRAM] 9️⃣ Saving reels to property: ${propertyId}`);
         await this.saveReelsToProperty(propertyId, hostId, reelUrls);
-        console.log(`[INSTAGRAM] ✅ Auto-saved ${reelUrls.length} reels to property`);
-      } else if (!propertyId) {
-        console.log(`[INSTAGRAM] ⚠️ No propertyId provided - skipping auto-save`);
-      } else {
-        console.log(`[INSTAGRAM] ⚠️ No reels found - nothing to save`);
       }
 
-      console.log(`[INSTAGRAM] ✅ COMPLETE - All steps successful`);
       return { success: true };
-
     } catch (error) {
-      console.log(`[INSTAGRAM] ❌ ERROR at step - Details:`, error);
       this.logger.error('Instagram token exchange failed', error);
       throw new Error('Failed to connect Instagram');
     }
   }
 
   async fetchHostReels(hostId: string): Promise<InstagramReel[]> {
-    console.log(`[INSTAGRAM] fetchHostReels - hostId: ${hostId}`);
-    
-    // Get host instagram token
     const { data: hostProfile, error: selectError } = await this.supabaseService.admin
       .from('host_profiles')
       .select('instagram_access_token, instagram_user_id, instagram_connected')
       .eq('user_id', hostId)
       .single();
 
-    if (selectError) {
-      console.log(`[INSTAGRAM] ❌ Failed to get host profile: ${selectError.message}`);
-      return [];
-    }
-
-    console.log(`[INSTAGRAM] - instagram_connected: ${hostProfile?.instagram_connected}`);
-    console.log(`[INSTAGRAM] - instagram_user_id: ${hostProfile?.instagram_user_id}`);
-    console.log(`[INSTAGRAM] - instagram_access_token: ${hostProfile?.instagram_access_token ? '✅ EXISTS' : '❌ MISSING'}`);
-
-    if (!hostProfile?.instagram_connected || !hostProfile?.instagram_access_token) {
-      console.log(`[INSTAGRAM] ❌ Instagram not connected or no token`);
+    if (selectError || !hostProfile?.instagram_connected || !hostProfile?.instagram_access_token) {
       return [];
     }
 
     try {
-      const token = hostProfile.instagram_access_token;
+      const encryptionKey = getEncryptionKey(this.configService);
+      const token = decryptToken(hostProfile.instagram_access_token, encryptionKey);
       const userId = hostProfile.instagram_user_id;
 
-      console.log(`[INSTAGRAM] Fetching media from Graph API - userId: ${userId}`);
-      
-      // Fetch media from Instagram
       const response = await firstValueFrom(
         this.httpService.get(
-          `https://graph.instagram.com/${userId}/media?fields=id,media_type,media_url,thumbnail_url,caption,timestamp,permalink&access_token=${token}`
-        )
+          `https://graph.instagram.com/${userId}/media?fields=id,media_type,media_url,thumbnail_url,caption,timestamp,permalink&access_token=${token}`,
+        ),
       );
 
-      console.log(`[INSTAGRAM] - Total media from API: ${response.data.data?.length || 0}`);
-
-      // Filter only videos/reels
-      const reels = response.data.data.filter(
-        (item: InstagramReel) => 
-          item.media_type === 'VIDEO' || 
-          item.media_type === 'REEL'
+      const reels = (response.data.data || []).filter(
+        (item: InstagramReel) => item.media_type === 'VIDEO' || item.media_type === 'REEL',
       );
 
-      console.log(`[INSTAGRAM] - Filtered reels (VIDEO/REEL): ${reels.length}`);
-      console.log(`[INSTAGRAM] - Returning first ${Math.min(20, reels.length)} reels`);
-
-      return reels.slice(0, 20); // Max 20 reels
-
+      return reels.slice(0, 20);
     } catch (error) {
-      console.log(`[INSTAGRAM] ❌ Failed to fetch reels:`, error);
       this.logger.error('Failed to fetch Instagram reels', error);
       return [];
     }
   }
 
-  // Step 4: Save selected reels to property
   async saveReelsToProperty(
     propertyId: string,
     hostId: string,
-    reelUrls: string[]
+    reelUrls: string[],
   ): Promise<{ success: boolean }> {
     const { error } = await this.supabaseService.admin
-        .from('properties')
-        .update({
-          reel_urls: reelUrls,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', propertyId)
-        .eq('host_id', hostId);
+      .from('properties')
+      .update({
+        reel_urls: reelUrls,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', propertyId)
+      .eq('host_id', hostId);
 
     if (error) {
       throw new Error('Failed to save reels');
@@ -239,9 +285,8 @@ export class InstagramService {
     return { success: true };
   }
 
-  // Get instagram connection status
   async getConnectionStatus(
-    hostId: string
+    hostId: string,
   ): Promise<{
     connected: boolean;
     username?: string;
@@ -258,7 +303,6 @@ export class InstagramService {
     };
   }
 
-  // Disconnect Instagram
   async disconnectInstagram(hostId: string): Promise<{ success: boolean }> {
     await this.supabaseService.admin
       .from('host_profiles')
@@ -273,8 +317,10 @@ export class InstagramService {
     return { success: true };
   }
 
-  // Get all reels from all properties, randomized with diversity
-  async getRandomizedReels(limit: number = 20, offset: number = 0): Promise<{
+  async getRandomizedReels(
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{
     reels: Array<{
       id: string;
       url: string;
@@ -288,7 +334,6 @@ export class InstagramService {
     hasMore: boolean;
   }> {
     try {
-      // Fetch all properties with status = active
       const { data: properties, error } = await this.supabaseService.admin
         .from('properties')
         .select('id, name, host_id, reel_urls, location, price_per_night')
@@ -299,12 +344,10 @@ export class InstagramService {
         return { reels: [], total: 0, hasMore: false };
       }
 
-      // Filter properties with reels
       const propertiesWithReels = properties.filter(
-        (prop: any) => prop.reel_urls && Array.isArray(prop.reel_urls) && prop.reel_urls.length > 0
+        (prop: any) => prop.reel_urls && Array.isArray(prop.reel_urls) && prop.reel_urls.length > 0,
       );
 
-      // Flatten all reels with property metadata
       const allReels: Array<{
         id: string;
         url: string;
@@ -331,27 +374,24 @@ export class InstagramService {
         }
       });
 
-      // Shuffle array (Fisher-Yates)
       const shuffled = [...allReels];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
 
-      // Diversity filter: no 2 consecutive reels from same property
       const diverse: typeof shuffled = [];
       const used = new Set<string>();
 
       for (const reel of shuffled) {
         if (used.has(reel.property_id)) {
-          continue; // Skip if same property as last reel
+          continue;
         }
         diverse.push(reel);
-        used.clear(); // Reset after adding to allow repeats further down
+        used.clear();
         used.add(reel.property_id);
       }
 
-      // If diversity filter removed too many, add back some
       if (diverse.length < shuffled.length / 2) {
         for (const reel of shuffled) {
           if (!diverse.includes(reel) && diverse.length < shuffled.length) {
@@ -360,7 +400,6 @@ export class InstagramService {
         }
       }
 
-      // Paginate
       const paginated = diverse.slice(offset, offset + limit);
       const total = diverse.length;
       const hasMore = offset + limit < total;
@@ -376,10 +415,8 @@ export class InstagramService {
     }
   }
 
-  // Save reel to guest's saved_reels
   async saveReelToGuest(guestId: string, reelUrl: string): Promise<{ success: boolean }> {
     try {
-      // Get current saved reels
       const { data: guest } = await this.supabaseService.admin
         .from('guest_profiles')
         .select('saved_reels')
@@ -388,12 +425,10 @@ export class InstagramService {
 
       const currentReels = guest?.saved_reels || [];
 
-      // Add if not already saved
       if (!currentReels.includes(reelUrl)) {
         currentReels.push(reelUrl);
       }
 
-      // Update
       const { error } = await this.supabaseService.admin
         .from('guest_profiles')
         .update({ saved_reels: currentReels })

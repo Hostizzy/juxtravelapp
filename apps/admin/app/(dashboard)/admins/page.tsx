@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/adminFetch';
 
 interface Admin {
   id: string;
@@ -33,7 +34,7 @@ export default function AdminsPage() {
 
   const fetchMe = async () => {
     try {
-      const res = await fetch('/api/admins/me');
+      const res = await adminFetch('/api/admins/me');
       const raw = await res.json();
       const data = raw.data ?? raw;
       setCurrentRole(data.role ?? '');
@@ -45,7 +46,7 @@ export default function AdminsPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admins/list');
+      const res = await adminFetch('/api/admins/list');
       const raw = await res.json();
       const data = raw.data ?? raw;
       setAdmins(data.admins ?? data ?? []);
@@ -60,7 +61,7 @@ export default function AdminsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/admins/create', {
+      const res = await adminFetch('/api/admins/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -84,7 +85,7 @@ export default function AdminsPage() {
 
   const handleToggle = async (id: string, isActive: boolean) => {
     try {
-      await fetch(`/api/admins/${id}/toggle`, {
+      await adminFetch(`/api/admins/${id}/toggle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !isActive }),

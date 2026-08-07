@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './page.module.css';
 
 export default function VerificationActions({
@@ -15,7 +16,7 @@ export default function VerificationActions({
   const updateStatus = async (status: string) => {
     setLoading(true);
     try {
-      await fetch(`/api/verification/${verificationId}`, {
+      await adminFetch(`/api/verification/${verificationId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useIsFocused } from '@react-navigation/native';
 import { apiGet, apiPost } from '../lib/api';
 
 export interface Booking {
@@ -78,43 +79,46 @@ export function useMyBookings() {
 }
 
 export function useHostBookings() {
+  const isFocused = useIsFocused();
   return useQuery({
     queryKey: BOOKING_KEYS.hostBookings,
     queryFn: () => apiGet<Booking[]>('/bookings/host-bookings'),
     refetchInterval: 30000,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    staleTime: 5000,
+    enabled: isFocused,
   });
 }
 
 export function useHostStats() {
+  const isFocused = useIsFocused();
   return useQuery({
     queryKey: BOOKING_KEYS.hostStats,
     queryFn: () => apiGet<HostStats>('/bookings/host-stats'),
-    refetchInterval: 30000, // Poll every 30 seconds
-    staleTime: 0, // Always fresh
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+    staleTime: 5000,
+    enabled: isFocused,
   });
 }
 
 export function useHostEarnings() {
+  const isFocused = useIsFocused();
   return useQuery({
     queryKey: BOOKING_KEYS.hostEarnings,
     queryFn: () => apiGet<HostEarnings>('/bookings/earnings'),
     refetchInterval: 30000,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    staleTime: 5000,
+    enabled: isFocused,
   });
 }
 
 export function useHostDetailedStats() {
+  const isFocused = useIsFocused();
   return useQuery({
     queryKey: BOOKING_KEYS.hostDetailedStats,
     queryFn: () => apiGet<HostDetailedStats>('/bookings/host-detailed-stats'),
     refetchInterval: 30000,
+    staleTime: 5000,
+    enabled: isFocused,
   });
 }
 
@@ -137,11 +141,9 @@ export function useCreateBooking() {
       totalAmount: number;
     }) => apiPost<Booking>('/bookings/create-direct', body),
     onSuccess: () => {
-      // Invalidate ALL booking-related queries so everything updates instantly
       queryClient.invalidateQueries({
         queryKey: ['bookings'],
       });
-      // Also invalidate host stats since a new booking affects earnings/count
       queryClient.invalidateQueries({
         queryKey: BOOKING_KEYS.hostStats,
       });

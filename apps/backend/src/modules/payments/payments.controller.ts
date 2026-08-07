@@ -17,6 +17,9 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 
+import { CreateOrderDto } from './dto/create-order.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
+
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
@@ -30,37 +33,22 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async createOrder(
     @CurrentUser() payload: JwtPayload,
-    @Body() body: {
-      amount: number;
-      bookingId: string;
-      propertyName: string;
-    },
+    @Body() dto: CreateOrderDto,
   ) {
     try {
       this.logger.log('💳 [RAZORPAY] 1️⃣ CREATE-ORDER received');
       this.logger.log(`[RAZORPAY] - userId: ${payload.sub}`);
-      this.logger.log(`[RAZORPAY] - bookingId: ${body.bookingId}`);
-      this.logger.log(`[RAZORPAY] - amount: ${body.amount} (rupees)`);
-      this.logger.log(`[RAZORPAY] - propertyName: ${body.propertyName}`);
-
-      // Validate inputs
-      if (!body.amount || body.amount <= 0) {
-        this.logger.error('[RAZORPAY] ❌ Invalid amount:', body.amount);
-        throw new BadRequestException('Amount must be greater than 0');
-      }
-
-      if (!body.bookingId) {
-        this.logger.error('[RAZORPAY] ❌ Missing bookingId');
-        throw new BadRequestException('bookingId is required');
-      }
+      this.logger.log(`[RAZORPAY] - bookingId: ${dto.bookingId}`);
+      this.logger.log(`[RAZORPAY] - amount: ${dto.amount} (rupees)`);
+      this.logger.log(`[RAZORPAY] - propertyName: ${dto.propertyName}`);
 
       this.logger.log('[RAZORPAY] 2️⃣ Calling paymentsService.createOrder()');
       
       const order = await this.paymentsService.createOrder({
-        amount: body.amount,
-        bookingId: body.bookingId,
+        amount: dto.amount,
+        bookingId: dto.bookingId,
         guestId: payload.sub,
-        propertyName: body.propertyName,
+        propertyName: dto.propertyName,
       });
 
       this.logger.log('[RAZORPAY] 3️⃣ Order created successfully');
@@ -81,15 +69,9 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async verifyPayment(
     @CurrentUser() payload: JwtPayload,
-    @Body()
-    body: {
-      razorpay_order_id: string;
-      razorpay_payment_id: string;
-      razorpay_signature: string;
-      bookingId: string;
-    },
+    @Body() dto: VerifyPaymentDto,
   ) {
-    return this.paymentsService.verifyPaymentSignature(body);
+    return this.paymentsService.verifyPaymentSignature(dto, payload.sub);
   }
 
   // Web Checkout (Opens Razorpay Checkout.js in WebBrowser / WebView)
@@ -281,6 +263,10 @@ export class PaymentsController {
 
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; img-src 'self' data: https://*.razorpay.com; style-src 'self' 'unsafe-inline';"
+    );
     res.send(html);
   }
 
@@ -303,7 +289,11 @@ export class PaymentsController {
 
       // Verify signature first
       this.logger.log('[RAZORPAY_WEBHOOK] 2️⃣ Verifying signature');
-      const rawBody = req.rawBody?.toString() ?? JSON.stringify(body);
+      if (!req.rawBody) {
+        this.logger.error('[RAZORPAY_WEBHOOK] ❌ Raw body missing from request');
+        throw new BadRequestException('Raw body is missing');
+      }
+      const rawBody = req.rawBody.toString();
       const isValid = this.paymentsService.verifyWebhookSignature(rawBody, signature);
       this.logger.log(`[RAZORPAY_WEBHOOK] - Signature valid: ${isValid ? '✅ YES' : '❌ NO'}`);
 

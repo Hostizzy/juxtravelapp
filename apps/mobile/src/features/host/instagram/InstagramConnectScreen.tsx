@@ -19,7 +19,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import { uploadPhoto } from '../../../services/propertyService';
 import i18n from '../../../locales/i18n';
 import styles from './InstagramConnectScreen.styles';

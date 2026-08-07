@@ -4,6 +4,26 @@ import Link from 'next/link';
 import VerificationActions from '../../verification/VerificationActions';
 import styles from './page.module.css';
 
+// KYC doc columns hold storage paths, not public URLs (bucket is private).
+// Sign each one on every read so admin never sees/stores a permanent link.
+async function signDocUrl(pathOrUrl: string | null): Promise<string | null> {
+  if (!pathOrUrl) return null;
+  // Back-compat: old rows hold a full public URL — extract the path after
+  // the bucket name so it can still be signed once the bucket goes private.
+  const marker = '/verification-docs/';
+  const path = pathOrUrl.includes(marker)
+    ? pathOrUrl.slice(pathOrUrl.indexOf(marker) + marker.length)
+    : pathOrUrl;
+  const { data, error } = await supabase.storage
+    .from('verification-docs')
+    .createSignedUrl(path, 60 * 60);
+  if (error) {
+    console.error('Failed to sign KYC doc url:', error);
+    return null;
+  }
+  return data.signedUrl;
+}
+
 async function getGuestDetail(id: string) {
   const [
     { data: guest, error: guestError },
@@ -34,9 +54,17 @@ async function getGuestDetail(id: string) {
     return null;
   }
 
+  const signedVerification = verification
+    ? {
+        ...verification,
+        id_photo_url: await signDocUrl(verification.id_photo_url),
+        selfie_url: await signDocUrl(verification.selfie_url),
+      }
+    : null;
+
   return {
     guest,
-    verification: verification ?? null,
+    verification: signedVerification,
     bookings: (bookings ?? []).map((b: any) => {
       const propertyObj = Array.isArray(b.property) ? b.property[0] : b.property;
       return {

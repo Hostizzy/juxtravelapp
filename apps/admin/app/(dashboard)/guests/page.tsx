@@ -16,9 +16,6 @@ async function getGuests(q?: string) {
 
   const { data: users, error } = await query;
 
-  console.log('Guests user query result:', JSON.stringify(users));
-  console.log('Guests user query error:', JSON.stringify(error));
-
   if (error || !users || users.length === 0) {
     return [];
   }
@@ -26,22 +23,16 @@ async function getGuests(q?: string) {
   const userIds = users.map(u => u.id);
 
   // Fetch verification status separately
-  const { data: verifications, error: verError } = await supabase
+  const { data: verifications } = await supabase
     .from('guest_verifications')
     .select('user_id, status')
     .in('user_id', userIds);
 
-  console.log('Guests verifications query result:', JSON.stringify(verifications));
-  console.log('Guests verifications query error:', JSON.stringify(verError));
-
   // Fetch booking counts separately
-  const { data: bookings, error: bookingsError } = await supabase
+  const { data: bookings } = await supabase
     .from('bookings')
     .select('id, guest_id')
     .in('guest_id', userIds);
-
-  console.log('Guests bookings query result:', JSON.stringify(bookings));
-  console.log('Guests bookings query error:', JSON.stringify(bookingsError));
 
   return users.map(u => ({
     ...u,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './detail.module.css';
 
 interface Props {
@@ -21,7 +22,7 @@ export default function AdminReplyBox({ conversationId }: Props) {
     setSent(false);
 
     try {
-      const res = await fetch(`/api/conversations/${conversationId}/reply`, {
+      const res = await adminFetch(`/api/conversations/${conversationId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),

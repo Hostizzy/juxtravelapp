@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './page.module.css';
 
 interface Property {
@@ -50,7 +51,7 @@ export default function PropertiesGrid({
     if (selectedIds.size === 0) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/properties/bulk-update', {
+      const res = await adminFetch('/api/properties/bulk-update', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json' 

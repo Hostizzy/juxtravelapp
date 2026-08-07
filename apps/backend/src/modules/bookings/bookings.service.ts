@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { ConversationsService } from '../conversations/conversations.service';
 
@@ -23,9 +23,20 @@ export class BookingsService {
       paymentId?: string;
     }
   ) {
+    // Gate 1: Guest KYC gate on booking creation
+    const { data: verification } = await this.supabaseService.admin
+      .from('guest_verifications')
+      .select('status')
+      .eq('user_id', guestId)
+      .maybeSingle();
+
+    if (!verification || verification.status !== 'verified') {
+      throw new BadRequestException('Identity verification required before booking');
+    }
+
     const { data: property, error: propError } = await this.supabaseService.admin
         .from('properties')
-        .select('host_id, name')
+        .select('host_id, name, price_per_night, weekend_price')
         .eq('id', body.propertyId)
         .single();
 
@@ -34,9 +45,57 @@ export class BookingsService {
       throw new Error('Property not found');
     }
 
-    const serviceFee = Math.round(body.totalAmount * 0.1);
-    const status = body.status ?? 'confirmed';
-    const paymentId = status === 'pending' ? null : (body.paymentId ?? 'TEST_DIRECT_' + Date.now());
+    // Gate 2: Host self-booking prevention
+    if (property.host_id === guestId) {
+      throw new BadRequestException('You cannot book your own property');
+    }
+
+    // Server-side price recompute — never trust client totalAmount.
+    // Mirrors payments.service.ts createOrder() calculation.
+    const checkIn = new Date(body.checkIn);
+    const checkOut = new Date(body.checkOut);
+    const nights = Math.max(
+      1,
+      Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)),
+    );
+    const pricePerNight = property.price_per_night ?? 0;
+    const weekendPrice = property.weekend_price ?? pricePerNight;
+    let subtotal = 0;
+    for (let i = 0; i < nights; i++) {
+      const d = new Date(checkIn);
+      d.setDate(d.getDate() + i);
+      const day = d.getDay();
+      subtotal += day === 5 || day === 6 ? weekendPrice : pricePerNight;
+    }
+    const serviceFee = Math.round(subtotal * 0.1);
+    const serverTotal = subtotal + serviceFee;
+
+    if (Math.abs(body.totalAmount - serverTotal) > 10) {
+      this.logger.error(
+        `[BOOKING] Price mismatch! Client: ${body.totalAmount}, Server: ${serverTotal}`,
+      );
+      throw new BadRequestException(
+        `Invalid amount. Expected ₹${serverTotal}, received ₹${body.totalAmount}`,
+      );
+    }
+
+    // Reject overlapping dates against any pending/confirmed booking for this property.
+    const { data: overlapping } = await this.supabaseService.admin
+      .from('bookings')
+      .select('id')
+      .eq('property_id', body.propertyId)
+      .in('status', ['pending', 'confirmed'])
+      .lt('check_in', body.checkOut)
+      .gt('check_out', body.checkIn)
+      .limit(1);
+
+    if (overlapping && overlapping.length > 0) {
+      throw new BadRequestException('These dates are no longer available for this property');
+    }
+
+    // Booking always starts pending — only payment verification (verifyPaymentSignature)
+    // or the Razorpay webhook may promote it to confirmed. Client cannot set status directly.
+    const status = 'pending';
 
     const { data, error } = await this.supabaseService.admin
         .from('bookings')
@@ -47,11 +106,11 @@ export class BookingsService {
           check_in: body.checkIn,
           check_out: body.checkOut,
           guests: body.guests,
-          total_amount: body.totalAmount,
+          total_amount: serverTotal,
           service_fee: serviceFee,
-          host_payout: body.totalAmount - serviceFee,
+          host_payout: serverTotal - serviceFee,
           status,
-          payment_id: paymentId,
+          payment_id: null,
         })
         .select()
         .single();
@@ -59,21 +118,6 @@ export class BookingsService {
     if (error) {
       this.logger.error('Failed to create booking row', error);
       throw new Error('Failed to create booking');
-    }
-
-    // Auto-create a conversation thread between guest and host only if confirmed
-    if (status === 'confirmed') {
-      this.conversationsService
-        .createForBooking(
-          data.id,
-          guestId,
-          property.host_id,
-          body.propertyId,
-          property.name ?? 'your property',
-        )
-        .catch((err: unknown) => {
-          this.logger.error('Failed to auto-create conversation', err);
-        });
     }
 
     // FUTURE: persist points to a loyalty_points table

@@ -54,6 +54,6 @@ export class AdminController {
     @Body() body: { isActive: boolean },
   ) {
     const admin = (req as any).admin;
-    return this.adminService.toggleAdmin(admin.role, id, body.isActive);
+    return this.adminService.toggleAdmin(admin.role, admin.sub, id, body.isActive);
   }
 }

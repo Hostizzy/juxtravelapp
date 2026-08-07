@@ -84,9 +84,10 @@ export class PropertiesController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getProperty(
+    @CurrentUser() payload: JwtPayload,
     @Param('id') id: string,
   ) {
-    return this.propertiesService.findById(id);
+    return this.propertiesService.findById(id, payload?.sub);
   }
 
   @Patch(':id')

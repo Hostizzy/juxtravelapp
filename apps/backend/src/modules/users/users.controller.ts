@@ -11,18 +11,15 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { BecomeHostDto } from './dto/become-host.dto';
+import { SavePropertyDto } from './dto/save-property.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(
-    private usersService: UsersService
-  ) { }
+  constructor(private usersService: UsersService) {}
 
   @Get('me')
-  async getMe(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getMe(@CurrentUser() payload: JwtPayload) {
     return this.usersService.findById(payload.sub);
   }
 
@@ -31,9 +28,7 @@ export class UsersController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.updateUser(
-      payload.sub, dto
-    );
+    return this.usersService.updateUser(payload.sub, dto);
   }
 
   @Post('become-host')
@@ -41,33 +36,24 @@ export class UsersController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: BecomeHostDto,
   ) {
-    return this.usersService.becomeHost(
-      payload.sub, dto
-    );
+    return this.usersService.becomeHost(payload.sub, dto);
   }
 
   @Post('save-property')
   async saveProperty(
     @CurrentUser() payload: JwtPayload,
-    @Body() body: { propertyId: string },
+    @Body() dto: SavePropertyDto,
   ) {
-    return this.usersService
-      .saveProperty(payload.sub, body.propertyId);
+    return this.usersService.saveProperty(payload.sub, dto.propertyId);
   }
 
   @Get('saved-properties')
-  async getSavedProperties(
-    @CurrentUser() payload: JwtPayload,
-  ) {
-    return this.usersService
-      .getSavedProperties(payload.sub);
+  async getSavedProperties(@CurrentUser() payload: JwtPayload) {
+    return this.usersService.getSavedProperties(payload.sub);
   }
 
   @Get('my-trips')
-  async getMyTrips(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getMyTrips(@CurrentUser() payload: JwtPayload) {
     return this.usersService.getMyTrips(payload.sub);
   }
 }
-

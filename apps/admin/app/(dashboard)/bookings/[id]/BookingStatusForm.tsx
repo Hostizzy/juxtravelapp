@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './page.module.css';
 
 export default function BookingStatusForm({
@@ -22,7 +23,7 @@ export default function BookingStatusForm({
     setSuccess(false);
 
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
+      const res = await adminFetch(`/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

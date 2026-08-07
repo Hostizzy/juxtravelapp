@@ -18,6 +18,7 @@ import { AIModule } from './modules/ai/ai.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DiscoverModule } from './modules/discover/discover.module';
+import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import configuration from './config/configuration';
 
 @Module({
@@ -31,7 +32,7 @@ import configuration from './config/configuration';
       {
         name: 'default',
         ttl: 60000, // 1 minute
-        limit: 1000, // 1000 requests per minute
+        limit: 100, // 100 requests per minute
       },
       {
         name: 'auth',
@@ -63,7 +64,7 @@ import configuration from './config/configuration';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
   ],
 })

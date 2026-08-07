@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { ConversationRow, MessageRow } from './conversations.types';
@@ -305,8 +306,12 @@ export class ConversationsService {
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    if (error || !messages) {
+    if (error) {
       this.logger.error('Failed to fetch messages', error);
+      throw new BadRequestException('Failed to fetch messages: ' + error.message);
+    }
+
+    if (!messages) {
       return [];
     }
 

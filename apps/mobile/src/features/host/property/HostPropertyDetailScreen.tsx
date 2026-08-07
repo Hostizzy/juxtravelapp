@@ -18,7 +18,7 @@ import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import { updateProperty } from '../../../services/propertyService';
 import { useAuthStore } from '../../../stores/authStore';
 import i18n from '../../../locales/i18n';

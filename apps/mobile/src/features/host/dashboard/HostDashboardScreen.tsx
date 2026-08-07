@@ -54,7 +54,7 @@ export default function HostDashboardScreen() {
   );
 
   const getStatusColor = (status: string) => {
-    const s = status.toLowerCase();
+    const s = (status ?? '').toLowerCase();
     switch (s) {
       case 'confirmed':
       case 'completed':

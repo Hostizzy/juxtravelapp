@@ -1,23 +1,5 @@
-const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:3000/api/v1';
-
-export async function fetchFromBackend(
-  endpoint: string,
-  options: RequestInit = {}
-) {
-  const res = await fetch(
-    `${BACKEND}${endpoint}`,
-    {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    }
-  );
-  
-  if (!res.ok) {
-    throw new Error(`Backend error: ${res.status}`);
-  }
-  
-  return res.json();
-}
+// fetchFromBackend removed — it sent zero auth headers (no JWT/cookie) and was unused.
+// Keeping it around was a landmine: next dev would grab it and reintroduce 401-prone,
+// unauthenticated backend calls. Use the authenticated fetch helper actually wired
+// into the app instead (check how other admin API calls attach the session token).
+export {};

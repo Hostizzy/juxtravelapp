@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import styles from './HostBookingDetailScreen.styles';
 
 type HostBookingDetailRouteProp = RouteProp<RootStackParamList, 'HostBookingDetail'>;

@@ -21,7 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import { GuestTabParamList } from '../../../navigation/GuestNavigator';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import styles from './DiscoverScreen.styles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -63,6 +63,19 @@ interface Post {
   location: { city: string; state: string };
   pricePerNight: number;
   capacity: { maxGuests: number; rooms: number };
+}
+
+interface ReelItem {
+  id: string;
+  url: string;
+  thumbnail_url?: string;
+  media_url?: string;
+  caption?: string;
+  property_id: string;
+  property_name: string;
+  location?: { city?: string; state?: string };
+  price_per_night?: number;
+  host_id?: string;
 }
 
 // Photo Carousel Component
@@ -115,11 +128,16 @@ const PhotoCarousel: React.FC<{ photos: string[] }> = ({ photos }) => {
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<DiscoverScreenNavigationProp>();
-  const [activeTab, setActiveTab] = useState<TabType>('posts');
+  const [activeTab, setActiveTab] = useState<TabType>('reels');
   const [posts, setPosts] = useState<Post[]>([]);
+  const [reels, setReels] = useState<ReelItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingReels, setLoadingReels] = useState(true);
+  const [reelsError, setReelsError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingReels, setRefreshingReels] = useState(false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
+
 
   const fetchPosts = async () => {
     try {
@@ -130,6 +148,21 @@ export default function DiscoverScreen() {
       console.error('Fetch posts failed:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReels = async () => {
+    try {
+      setLoadingReels(true);
+      setReelsError(null);
+      const data = await apiService.get<any>('/instagram/reels/randomized?limit=20&offset=0');
+      const reelList = Array.isArray(data) ? data : (data?.reels ?? []);
+      setReels(reelList);
+    } catch (error: any) {
+      console.error('Fetch reels failed:', error);
+      setReelsError(error?.message ?? 'Failed to load reels');
+    } finally {
+      setLoadingReels(false);
     }
   };
 
@@ -147,6 +180,7 @@ export default function DiscoverScreen() {
   useFocusEffect(
     React.useCallback(() => {
       fetchPosts();
+      fetchReels();
       fetchSaved();
     }, [])
   );
@@ -156,6 +190,13 @@ export default function DiscoverScreen() {
     await fetchPosts();
     setRefreshing(false);
   };
+
+  const onRefreshReels = async () => {
+    setRefreshingReels(true);
+    await fetchReels();
+    setRefreshingReels(false);
+  };
+
 
   const handleSave = async (propertyId: string) => {
     try {
@@ -241,6 +282,96 @@ export default function DiscoverScreen() {
     </View>
   );
 
+  const renderReel = ({ item }: { item: ReelItem }) => {
+    const imageUri = item.thumbnail_url || item.media_url || item.url;
+    const isSaved = savedIds.includes(item.property_id);
+    const locationText = [item.location?.city, item.location?.state].filter(Boolean).join(', ');
+
+    return (
+      <View style={styles.postCard}>
+        {/* Header */}
+        <View style={styles.postHeader}>
+          <View style={styles.postHeaderLeft}>
+            <View style={styles.hostAvatar}>
+              <Feather name="video" size={18} color="#FFFFFF" />
+            </View>
+            <View>
+              <Text style={styles.postPropertyName} numberOfLines={1}>
+                {item.property_name}
+              </Text>
+              {locationText ? (
+                <Text style={styles.postHostName}>
+                  {locationText}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+          {item.price_per_night ? (
+            <Text style={styles.reelPriceText}>
+              ${item.price_per_night} / night
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Reel Thumbnail Container */}
+        <TouchableOpacity
+          style={styles.reelMediaContainer}
+          onPress={() => handleViewProperty(item.property_id)}
+          activeOpacity={0.9}
+        >
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+          <View style={styles.playBadge}>
+            <Feather name="play" size={24} color="#FFFFFF" />
+          </View>
+          {item.caption ? (
+            <LinearGradient
+              colors={['transparent', 'rgba(0, 0, 0, 0.7)']}
+              style={styles.reelGradientOverlay}
+            >
+              <Text style={styles.reelCaptionText} numberOfLines={2}>
+                {item.caption}
+              </Text>
+            </LinearGradient>
+          ) : null}
+        </TouchableOpacity>
+
+        {/* Actions */}
+        <View style={styles.postActions}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleSave(item.property_id)}
+            activeOpacity={0.7}
+          >
+            <Feather
+              name="bookmark"
+              size={22}
+              color={isSaved ? "#D4704A" : "#1A1F1E"}
+            />
+            <Text style={[
+              styles.actionText,
+              isSaved && { color: '#D4704A' }
+            ]}>
+              {isSaved ? 'Saved' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.viewBtn}
+            onPress={() => handleViewProperty(item.property_id)}
+            activeOpacity={0.7}
+          >
+            <Feather name="arrow-right" size={16} color="#FFFFFF" />
+            <Text style={styles.viewBtnText}>View Property</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -301,14 +432,44 @@ export default function DiscoverScreen() {
 
       {/* Content */}
       {activeTab === 'reels' ? (
-        <View style={styles.comingSoonContainer}>
-          <Feather name="video" size={64} color="#84C9BA" />
-          <Text style={styles.comingSoonTitle}>Reels Coming Soon</Text>
-          <Text style={styles.comingSoonSubtext}>
-            Video reels feature launching shortly
-          </Text>
-        </View>
+        loadingReels ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#1A6B5A" />
+          </View>
+        ) : reelsError ? (
+          <View style={styles.comingSoonContainer}>
+            <Feather name="alert-circle" size={64} color="#D4704A" />
+            <Text style={styles.comingSoonTitle}>Failed to load reels</Text>
+            <Text style={styles.comingSoonSubtext}>{reelsError}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchReels} activeOpacity={0.7}>
+              <Feather name="refresh-cw" size={16} color="#FFFFFF" />
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : reels.length === 0 ? (
+          <View style={styles.comingSoonContainer}>
+            <Feather name="video-off" size={64} color="#6B7370" />
+            <Text style={styles.comingSoonTitle}>No reels yet</Text>
+            <Text style={styles.comingSoonSubtext}>Check back later for video reels</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={reels}
+            renderItem={renderReel}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.feedContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshingReels}
+                onRefresh={onRefreshReels}
+                tintColor="#1A6B5A"
+              />
+            }
+          />
+        )
       ) : loading ? (
+
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1A6B5A" />
         </View>

@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '../lib/api';
-import { apiService } from '../services/api';
+import { apiGet, apiService } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 import { queryClient } from '../lib/queryClient';
 import * as SecureStore from 'expo-secure-store';

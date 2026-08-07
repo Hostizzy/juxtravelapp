@@ -13,9 +13,9 @@ import { AdminService } from './admin.service';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret:
-          config.get<string>('ADMIN_JWT_SECRET') ??
-          config.get<string>('JWT_SECRET'),
+        // No fallback to JWT_SECRET — admin tokens must not share a secret
+        // with guest/host tokens. Set ADMIN_JWT_SECRET in the environment.
+        secret: config.get<string>('ADMIN_JWT_SECRET'),
         signOptions: { expiresIn: '7d' },
       }),
     }),

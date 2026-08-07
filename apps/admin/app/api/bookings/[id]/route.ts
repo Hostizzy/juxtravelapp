@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAdminUser } from '@/lib/auth';
 import { logActivity } from '@/lib/activityLog';
+import { z } from 'zod';
+
+const updateBookingSchema = z.object({
+  status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -16,7 +21,17 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { status } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const parseResult = updateBookingSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { error: 'Invalid input parameters', details: parseResult.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { status } = parseResult.data;
 
   // Fetch details for logging
   const { data: bookingDetails } = await supabase

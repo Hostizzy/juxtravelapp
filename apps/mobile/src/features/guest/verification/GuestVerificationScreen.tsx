@@ -18,7 +18,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { useAuthStore } from '../../../stores/authStore';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import { pickImage, uploadVerificationDoc } from '../../../services/propertyService';
 import styles from './GuestVerificationScreen.styles';
 

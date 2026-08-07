@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminFetch } from '@/lib/adminFetch';
 import styles from './page.module.css';
 
 export default function PropertyActions({
@@ -21,7 +22,7 @@ export default function PropertyActions({
   const updateStatus = async (status: string, rejectionReason?: string, verified?: boolean) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/properties/${propertyId}`, {
+      const res = await adminFetch(`/api/properties/${propertyId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json' 

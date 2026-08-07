@@ -16,9 +16,6 @@ async function getHosts(q?: string) {
 
   const { data: users, error } = await query;
 
-  console.log('Hosts user query result:', JSON.stringify(users));
-  console.log('Hosts user query error:', JSON.stringify(error));
-
   if (error || !users || users.length === 0) {
     return [];
   }
@@ -31,26 +28,17 @@ async function getHosts(q?: string) {
     .select('*')
     .in('user_id', userIds);
 
-  console.log('Hosts profiles query result:', JSON.stringify(hostProfiles));
-  console.log('Hosts profiles query error:', JSON.stringify(profileError));
-
   // Fetch properties count separately
   const { data: properties, error: propertiesError } = await supabase
     .from('properties')
     .select('id, host_id')
     .in('host_id', userIds);
 
-  console.log('Hosts properties query result:', JSON.stringify(properties));
-  console.log('Hosts properties query error:', JSON.stringify(propertiesError));
-
   // Fetch bookings separately
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
     .select('id, host_id, status, host_payout')
     .in('host_id', userIds);
-
-  console.log('Hosts bookings query result:', JSON.stringify(bookings));
-  console.log('Hosts bookings query error:', JSON.stringify(bookingsError));
 
   return users.map(u => ({
     ...u,

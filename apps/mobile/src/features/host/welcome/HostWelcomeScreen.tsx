@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { useAuthStore, UserData } from '../../../stores/authStore';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import i18n from '../../../locales/i18n';
 import styles from './HostWelcomeScreen.styles';
 

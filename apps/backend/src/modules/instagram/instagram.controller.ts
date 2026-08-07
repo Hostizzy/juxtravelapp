@@ -1,18 +1,23 @@
 import {
-  Controller, Get, Post,
-  Query, Body, UseGuards,
-  Param, Res,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  UseGuards,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
+import { SaveReelDto } from './dto/save-reel.dto';
+import { SaveReelsDto } from './dto/save-reels.dto';
 
 @Controller('instagram')
 export class InstagramController {
-  constructor(
-    private instagramService: InstagramService
-  ) {}
+  constructor(private instagramService: InstagramService) {}
 
   // Get OAuth URL (protected)
   @Get('auth-url')
@@ -21,7 +26,7 @@ export class InstagramController {
     @CurrentUser() payload: JwtPayload,
     @Query('propertyId') propertyId?: string,
   ) {
-    const url = this.instagramService.getOAuthUrl(payload.sub, propertyId);
+    const url = await this.instagramService.getOAuthUrl(payload.sub, propertyId);
     return { url };
   }
 
@@ -33,46 +38,42 @@ export class InstagramController {
     @Res() res: Response,
   ) {
     console.log('[INSTAGRAM_CALLBACK] 1️⃣ Callback received');
-    console.log(`[INSTAGRAM_CALLBACK] - code: ${code ? '✅ EXISTS' : '❌ MISSING'}`);
-    console.log(`[INSTAGRAM_CALLBACK] - state: ${state ? '✅ EXISTS' : '❌ MISSING'}`);
 
     try {
-      // Parse state
-      const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
-      const { hostId, propertyId } = decoded;
-      
-      console.log(`[INSTAGRAM_CALLBACK] 2️⃣ State parsed`);
-      console.log(`[INSTAGRAM_CALLBACK] - hostId: ${hostId}`);
-      console.log(`[INSTAGRAM_CALLBACK] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
+      if (!state) {
+        throw new BadRequestException('State nonce missing');
+      }
+
+      // Verify state nonce and get hostId & propertyId securely
+      const { hostId, propertyId } =
+        await this.instagramService.verifyAndConsumeOAuthState(state);
+
+      console.log(`[INSTAGRAM_CALLBACK] 2️⃣ State verified nonce successfully`);
 
       // Exchange code for token
-      console.log(`[INSTAGRAM_CALLBACK] 3️⃣ Exchanging code for token`);
       await this.instagramService.exchangeCodeForToken(code, hostId, propertyId);
-      
-      console.log(`[INSTAGRAM_CALLBACK] ✅ SUCCESS - Redirecting to app`);
-      
-      // Redirect back to mobile app with success
-      return res.redirect(
-        `juxtravel://instagram-callback?status=success&propertyId=${propertyId || ''}`
-      );
 
+      return res.redirect(
+        `juxtravel://instagram-callback?status=success&propertyId=${propertyId || ''}`,
+      );
     } catch (error: any) {
       console.log(`[INSTAGRAM_CALLBACK] ❌ ERROR:`, error?.message);
-      
-      // Redirect back to app with error
+
       return res.redirect(
-        `juxtravel://instagram-callback?status=error&message=${encodeURIComponent(error?.message ?? 'Unknown error')}`
+        `juxtravel://instagram-callback?status=error&message=${encodeURIComponent(
+          error?.message ?? 'Unknown error',
+        )}`,
       );
     }
   }
 
-  // Get randomized reels for Discover (no auth needed for public discovery)
+  // Get randomized reels for Discover
   @Get('reels/randomized')
   async getRandomizedReels(
     @Query('limit') limit: string = '20',
     @Query('offset') offset: string = '0',
   ) {
-    const limitNum = Math.min(parseInt(limit) || 20, 100); // Max 100 per request
+    const limitNum = Math.min(parseInt(limit) || 20, 100);
     const offsetNum = parseInt(offset) || 0;
     return this.instagramService.getRandomizedReels(limitNum, offsetNum);
   }
@@ -82,26 +83,22 @@ export class InstagramController {
   @UseGuards(JwtAuthGuard)
   async saveReel(
     @CurrentUser() payload: JwtPayload,
-    @Body() body: { reelUrl: string },
+    @Body() dto: SaveReelDto,
   ) {
-    return this.instagramService.saveReelToGuest(payload.sub, body.reelUrl);
+    return this.instagramService.saveReelToGuest(payload.sub, dto.reelUrl);
   }
 
   // Get host reels
   @Get('reels')
   @UseGuards(JwtAuthGuard)
-  async getReels(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getReels(@CurrentUser() payload: JwtPayload) {
     return this.instagramService.fetchHostReels(payload.sub);
   }
 
   // Get connection status
   @Get('status')
   @UseGuards(JwtAuthGuard)
-  async getStatus(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async getStatus(@CurrentUser() payload: JwtPayload) {
     return this.instagramService.getConnectionStatus(payload.sub);
   }
 
@@ -110,24 +107,19 @@ export class InstagramController {
   @UseGuards(JwtAuthGuard)
   async saveReels(
     @CurrentUser() payload: JwtPayload,
-    @Body() body: { 
-      propertyId: string; 
-      reelUrls: string[] 
-    },
+    @Body() dto: SaveReelsDto,
   ) {
     return this.instagramService.saveReelsToProperty(
-      body.propertyId,
+      dto.propertyId,
       payload.sub,
-      body.reelUrls
+      dto.reelUrls,
     );
   }
 
   // Disconnect Instagram
   @Post('disconnect')
   @UseGuards(JwtAuthGuard)
-  async disconnect(
-    @CurrentUser() payload: JwtPayload,
-  ) {
+  async disconnect(@CurrentUser() payload: JwtPayload) {
     return this.instagramService.disconnectInstagram(payload.sub);
   }
 }

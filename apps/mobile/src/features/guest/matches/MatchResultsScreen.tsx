@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { MatchResult } from '../../../services/matchService';
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 import i18n from '../../../locales/i18n';
 import styles from './MatchResultsScreen.styles';
 

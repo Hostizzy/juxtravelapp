@@ -56,19 +56,20 @@ export default function HostBookingsScreen() {
 
   const filteredBookings = bookings.filter((b) => {
     if (activeTab === 'all') return true;
+    const s = (b.status ?? '').toLowerCase();
     if (activeTab === 'upcoming') {
       return (
-        ['pending', 'confirmed'].includes(b.status.toLowerCase()) &&
+        ['pending', 'confirmed'].includes(s) &&
         new Date(b.check_in) >= new Date(new Date().setHours(0, 0, 0, 0))
       );
     }
-    if (activeTab === 'completed') return b.status.toLowerCase() === 'completed';
-    if (activeTab === 'cancelled') return b.status.toLowerCase() === 'cancelled';
+    if (activeTab === 'completed') return s === 'completed';
+    if (activeTab === 'cancelled') return s === 'cancelled';
     return true;
   });
 
   const getStatusStyle = (status: string) => {
-    const s = status.toLowerCase();
+    const s = (status ?? '').toLowerCase();
     switch (s) {
       case 'confirmed':
       case 'completed':
@@ -229,14 +230,15 @@ export default function HostBookingsScreen() {
           {tabs.map((tab) => {
             const tabBookings = bookings.filter((b) => {
               if (tab.key === 'all') return true;
+              const s = (b.status ?? '').toLowerCase();
               if (tab.key === 'upcoming') {
                 return (
-                  ['pending', 'confirmed'].includes(b.status.toLowerCase()) &&
+                  ['pending', 'confirmed'].includes(s) &&
                   new Date(b.check_in) >= new Date(new Date().setHours(0, 0, 0, 0))
                 );
               }
-              if (tab.key === 'completed') return b.status.toLowerCase() === 'completed';
-              if (tab.key === 'cancelled') return b.status.toLowerCase() === 'cancelled';
+              if (tab.key === 'completed') return s === 'completed';
+              if (tab.key === 'cancelled') return s === 'cancelled';
               return true;
             });
 

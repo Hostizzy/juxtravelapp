@@ -20,7 +20,7 @@ import { RootStackParamList } from '../../../navigation/RootNavigator';
 import styles from './PlanProcessingScreen.styles';
 import { getMatches } from '../../../services/matchService';
 import * as SecureStore from 'expo-secure-store';
-import { apiService } from '../../../services/api';
+import { apiService } from '../../../lib/api';
 
 type PlanProcessingProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PlanProcessing'>;

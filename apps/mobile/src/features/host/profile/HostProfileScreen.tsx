@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -92,8 +91,8 @@ export default function HostProfileScreen() {
       await supabase.auth.signOut();
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_id');
-      await AsyncStorage.removeItem('user_full_name');
-      await AsyncStorage.removeItem('user_phone_number');
+      await SecureStore.deleteItemAsync('user_full_name');
+      await SecureStore.deleteItemAsync('user_phone_number');
       useAuthStore.getState().clearAuth();
       navigation.replace('Auth');
     } catch (e) {
