@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { Reflector } from '@nestjs/core';
+import {
+  ThrottlerGuard,
+  ThrottlerModuleOptions,
+  ThrottlerStorage,
+  InjectThrottlerOptions,
+  InjectThrottlerStorage,
+} from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   constructor(
-    options: any,
-    storageService: any,
-    reflector: any,
+    @InjectThrottlerOptions() options: ThrottlerModuleOptions,
+    @InjectThrottlerStorage() storageService: ThrottlerStorage,
+    reflector: Reflector,
     private readonly jwtService: JwtService,
   ) {
     super(options, storageService, reflector);
