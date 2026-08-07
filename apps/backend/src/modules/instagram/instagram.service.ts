@@ -37,10 +37,10 @@ export class InstagramService {
     console.log(`[INSTAGRAM_OAUTH_URL] - hostId: ${hostId}`);
     console.log(`[INSTAGRAM_OAUTH_URL] - propertyId: ${propertyId || 'NOT PROVIDED'}`);
 
-    const scope = ['user_profile', 'user_media'].join(',');
+    const scope = ['instagram_business_basic'].join(',');
     const state = Buffer.from(JSON.stringify({ hostId, propertyId })).toString('base64');
 
-    const url = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
+    const url = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}&scope=${scope}&response_type=code&state=${state}`;
     
     console.log(`[INSTAGRAM_OAUTH_URL] Generated URL (first 100 chars): ${url.substring(0, 100)}...`);
     
