@@ -54,17 +54,29 @@ export class BookingsService {
     // Mirrors payments.service.ts createOrder() calculation.
     const checkIn = new Date(body.checkIn);
     const checkOut = new Date(body.checkOut);
+
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    if (checkOut.getTime() <= checkIn.getTime()) {
+      throw new BadRequestException('Check-out date must be after check-in date');
+    }
+    if (checkIn.getTime() < todayMidnight.getTime()) {
+      throw new BadRequestException('Check-in date cannot be in the past');
+    }
+
     const nights = Math.max(
       1,
       Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)),
     );
     const pricePerNight = property.price_per_night ?? 0;
     const weekendPrice = property.weekend_price ?? pricePerNight;
+    // UTC getters/setters (see payments.service.ts createOrder for why) — keeps
+    // weekend-day detection consistent regardless of server timezone.
     let subtotal = 0;
     for (let i = 0; i < nights; i++) {
       const d = new Date(checkIn);
-      d.setDate(d.getDate() + i);
-      const day = d.getDay();
+      d.setUTCDate(d.getUTCDate() + i);
+      const day = d.getUTCDay();
       subtotal += day === 5 || day === 6 ? weekendPrice : pricePerNight;
     }
     const serviceFee = Math.round(subtotal * 0.1);

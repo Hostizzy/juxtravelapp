@@ -10,9 +10,13 @@ export interface AdminPayload {
   role: string;
 }
 
+// Not currently called — /api/auth/login gets its token straight from the backend
+// (apps/backend admin.service.ts, 7d expiry) and mirrors it into the admin_token
+// cookie (7d maxAge). Kept for parity in case this route is used directly; expiry
+// aligned to 7d so it doesn't mislead if it's ever wired up.
 export function signAdminToken(payload: AdminPayload): string {
   return jwt.sign(payload, SECRET, {
-    expiresIn: '24h'
+    expiresIn: '7d'
   });
 }
 

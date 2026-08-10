@@ -105,7 +105,6 @@ export class CreatePropertyDto {
   @IsOptional()
   cancellationPolicy?: string;
 
-  @IsString()
-  @IsOptional()
-  status?: string;
+  // status is intentionally NOT settable by hosts — service always creates as
+  // 'under_review'; only admin endpoints may move a property to 'active'.
 }

@@ -52,8 +52,14 @@ export class AdminAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid admin token payload');
       }
 
-      // Check in-memory cache first to avoid hammering DB on every request
+      // Check in-memory cache first to avoid hammering DB on every request.
+      // Opportunistic eviction here (not a timer) — cheap since it only runs on
+      // requests, and bounds memory growth for a process handling many distinct
+      // admin IDs over time instead of the same few repeatedly.
       const now = Date.now();
+      for (const [key, entry] of this.cache) {
+        if (entry.expiresAt < now) this.cache.delete(key);
+      }
       let cached = this.cache.get(adminId);
 
       if (!cached || cached.expiresAt < now) {

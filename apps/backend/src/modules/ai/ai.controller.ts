@@ -2,6 +2,7 @@ import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { InsightsService } from './insights.service';
 import { EmbeddingsService } from './embeddings.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
 
@@ -31,9 +32,10 @@ export class AIController {
     return this.insightsService.generateInsight(body);
   }
 
-  // Batch embed (existing)
+  // Batch embed — admin-only. Was JwtAuthGuard (any logged-in guest/host could
+  // trigger a full re-embed of every property, an expensive AI-cost operation).
   @Post('embed-all')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminAuthGuard)
   async embedAll() {
     return this.embeddingsService.embedAllPending();
   }

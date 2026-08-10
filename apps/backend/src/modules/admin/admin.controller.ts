@@ -11,6 +11,8 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
+import { AdminLoginDto } from './dto/admin-login.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { Request } from 'express';
 
 @Controller('admin')
@@ -19,7 +21,7 @@ export class AdminController {
 
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async login(@Body() body: { email: string; password: string }) {
+  async login(@Body() body: AdminLoginDto) {
     return this.adminService.login(body.email, body.password);
   }
 
@@ -39,8 +41,7 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   async createAdmin(
     @Req() req: Request,
-    @Body()
-    body: { email: string; password: string; name: string; role?: string },
+    @Body() body: CreateAdminDto,
   ) {
     const admin = (req as any).admin;
     return this.adminService.createAdmin(admin.role, body, admin.sub);

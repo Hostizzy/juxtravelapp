@@ -299,7 +299,24 @@ export class ConversationsService {
   /**
    * Get messages of a conversation and merge sender details in JS.
    */
-  async getConversationMessages(conversationId: string): Promise<MessageRow[]> {
+  async getConversationMessages(conversationId: string, requesterId?: string): Promise<MessageRow[]> {
+    // Security: only participants may read messages. requesterId is optional only
+    // for the internal call from getConversation(), which already checked ownership.
+    if (requesterId) {
+      const { data: convCheck } = await this.supabaseService.admin
+        .from('conversations')
+        .select('guest_id, host_id')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!convCheck) {
+        throw new NotFoundException('Conversation not found');
+      }
+      if (convCheck.guest_id !== requesterId && convCheck.host_id !== requesterId) {
+        throw new ForbiddenException('Not a participant in this conversation');
+      }
+    }
+
     const { data: messages, error } = await this.supabaseService.admin
       .from('messages')
       .select('*')

@@ -41,12 +41,15 @@ export class DiscoverService {
       const latest = withPhotos.slice(0, 10);
       const rest = withPhotos.slice(10);
 
-      // Fisher-Yates shuffle for random rest
-      const shuffled = [...rest];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
+      // Stable pseudo-random order (hash of id, not Math.random) — Math.random
+      // reshuffled "rest" on every call, so paging with offset/limit skipped or
+      // duplicated items across pages since the order changed between requests.
+      const hash = (s: string) => {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+        return h;
+      };
+      const shuffled = [...rest].sort((a, b) => hash(a.id) - hash(b.id));
 
       const combined = [...latest, ...shuffled];
 

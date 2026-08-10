@@ -8,13 +8,17 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../../common/decorators/current-user.decorator';
+
+const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
 @Controller('properties')
 export class PropertiesController {
@@ -24,10 +28,18 @@ export class PropertiesController {
 
   @Post('upload-photo')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('photo'))
+  @UseInterceptors(FileInterceptor('photo', {
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  }))
   async uploadPhoto(
     @UploadedFile() file: Express.Multer.File,
   ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    if (!ALLOWED_IMAGE_MIME.includes(file.mimetype)) {
+      throw new BadRequestException(`File type must be one of: ${ALLOWED_IMAGE_MIME.join(', ')}`);
+    }
     return this.propertiesService.uploadPhoto(file);
   }
 
@@ -74,7 +86,12 @@ export class PropertiesController {
     );
   }
 
+  // Stays unauthenticated on purpose — anonymous guests browse properties
+  // without logging in and views should still count. Requiring auth here would
+  // break that; a Throttle limit is the appropriate control against trivial
+  // inflation instead (doesn't fully stop it, but bounds the abuse rate).
   @Post(':id/view')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async trackView(
     @Param('id') id: string,
   ) {

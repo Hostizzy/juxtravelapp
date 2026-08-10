@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAdminUser } from '@/lib/auth';
 import { logActivity } from '@/lib/activityLog';
+import { z } from 'zod';
+
+const updatePropertySchema = z.object({
+  status: z.enum(['under_review', 'active', 'rejected', 'inactive']).optional(),
+  rejection_reason: z.string().max(2000).optional(),
+  verified: z.boolean().optional(),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -16,7 +23,17 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { status, rejection_reason, verified } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const parseResult = updatePropertySchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return NextResponse.json(
+      { error: 'Invalid input parameters', details: parseResult.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { status, rejection_reason, verified } = parseResult.data;
 
   // Fetch existing property name before update for auditing
   const { data: existingProperty } = await supabase

@@ -22,5 +22,8 @@ export async function PATCH(
   });
   const rawResponse = await res.json();
   const data = rawResponse.data ?? rawResponse;
-  return NextResponse.json(data);
+  // Preserve the backend's status code (e.g. 403 when a non-super_admin tries this)
+  // instead of always returning 200 — without this, adminFetch's 401/error handling
+  // never fires on a failed toggle since the response always "succeeded".
+  return NextResponse.json(data, { status: res.status });
 }

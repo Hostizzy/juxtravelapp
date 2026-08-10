@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -134,8 +135,11 @@ export default function InstagramConnectScreen() {
       if (!token) return;
       const url = `/instagram/auth-url${propertyId ? `?propertyId=${propertyId}` : ''}`;
       const data = await apiService.get<{ url: string }>(url, token);
-      // Open in browser
-      await Linking.openURL(data.url);
+      // openAuthSessionAsync (not Linking.openURL) — dedicated OAuth browser session
+      // that closes itself and hands control back to the app once the redirect URI
+      // fires, instead of leaving the user stranded in a regular external browser tab.
+      // The existing 'url' event listener above still catches the resulting deep link.
+      await WebBrowser.openAuthSessionAsync(data.url, 'juxtravel://instagram-callback');
     } catch (error) {
       Alert.alert('Error', 'Failed to get auth URL');
     }

@@ -5,6 +5,15 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+// ponytail: Surepass's exact field name for the registered holder name isn't
+// documented consistently across their API versions — this reads response.data.data.full_name.
+// If Surepass changes/renames it, namesMatch silently becomes false (falls back to manual
+// review, fails safe). Confirm the real field name against a live Surepass response before relying
+// on this in production.
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 @Injectable()
 export class VerificationService {
   private readonly logger = new Logger(VerificationService.name);
@@ -140,7 +149,7 @@ export class VerificationService {
           )
         );
 
-        this.logger.log('Surepass Aadhaar response:', response.data);
+        this.logger.log(`Surepass Aadhaar OTP generated for verification ${verificationId}`);
       }
 
       // PAN verification endpoint
@@ -158,17 +167,28 @@ export class VerificationService {
           )
         );
 
-        // Auto verify if PAN valid
-        if (response.data?.success) {
+        // Auto verify only if PAN exists AND the registered holder name matches
+        // what the user submitted — otherwise anyone who knows a stranger's PAN
+        // (leaked lists, etc.) could clear KYC under someone else's identity.
+        const registeredName: string | undefined = response.data?.data?.full_name;
+        const namesMatch = registeredName
+          ? normalizeName(registeredName) === normalizeName(dto.fullName)
+          : false;
+
+        if (response.data?.success && namesMatch) {
           await this.supabaseService.admin
             .from('guest_verifications')
-            .update({ 
+            .update({
               status: 'verified',
               verified_at: new Date().toISOString()
             })
             .eq('id', verificationId);
 
-          this.logger.log(`Auto-verified via Surepass PAN`);
+          this.logger.log(`Auto-verified via Surepass PAN for verification ${verificationId}`);
+        } else if (response.data?.success && !namesMatch) {
+          this.logger.warn(
+            `Surepass PAN valid but name mismatch for verification ${verificationId} — leaving for manual review`,
+          );
         }
       }
 

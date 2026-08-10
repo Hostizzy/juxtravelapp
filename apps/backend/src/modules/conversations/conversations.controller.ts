@@ -96,9 +96,9 @@ export class ConversationsController {
   @UseGuards(JwtAuthGuard)
   async getMessages(
     @Param('id') id: string,
-    @Query('role') role?: string,
+    @CurrentUser() payload: JwtPayload,
   ) {
-    return this.conversationsService.getConversationMessages(id);
+    return this.conversationsService.getConversationMessages(id, payload.sub);
   }
 
   /**

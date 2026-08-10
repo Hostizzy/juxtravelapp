@@ -27,8 +27,11 @@ export class PropertiesService {
       throw new BadRequestException('No file uploaded');
     }
 
+    // extension matches the validated mimetype (see properties.controller.ts allowlist),
+    // not a hardcoded .jpg regardless of actual content.
+    const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
     const fileName = `${Date.now()}_${Math.random()
-      .toString(36).substring(7)}.jpg`;
+      .toString(36).substring(7)}.${ext}`;
 
     const { data, error } = await this.supabaseService.admin
         .storage
@@ -64,8 +67,10 @@ export class PropertiesService {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
-    const shortId = id.substring(0, 6);
-    return `${base}-${shortId}`;
+    // Full UUID suffix, not a truncated 6-char prefix — id is already unique
+    // (it's the row's own primary key), so appending it whole makes collisions
+    // structurally impossible instead of just unlikely.
+    return `${base}-${id}`;
   }
 
   async create(
@@ -93,8 +98,8 @@ export class PropertiesService {
           name: dto.name,
           tagline: dto.tagline,
           type: dto.type.toLowerCase()
-            .replace(' ', '_')
-            .replace('-', '_'),
+            .replace(/ /g, '_')
+            .replace(/-/g, '_'),
           location: dto.location,
           capacity: dto.capacity,
           price_per_night: dto.pricePerNight,
@@ -104,7 +109,7 @@ export class PropertiesService {
           honest_notes: dto.honestNotes,
           host_story: dto.hostStory,
           photos: dto.photos ?? [],
-          status: dto.status ?? 'under_review',
+          status: 'under_review',
           minimum_stay: dto.minimumStay ?? 1,
           cancellation_policy: dto.cancellationPolicy ?? 'flexible',
         })
@@ -237,7 +242,7 @@ export class PropertiesService {
     if (dto.name !== undefined) updatePayload.name = dto.name;
     if (dto.tagline !== undefined) updatePayload.tagline = dto.tagline;
     if (dto.type !== undefined) {
-      updatePayload.type = dto.type.toLowerCase().replace(' ', '_').replace('-', '_');
+      updatePayload.type = dto.type.toLowerCase().replace(/ /g, '_').replace(/-/g, '_');
     }
     if (dto.location !== undefined) updatePayload.location = dto.location;
     if (dto.capacity !== undefined) updatePayload.capacity = dto.capacity;
@@ -250,7 +255,8 @@ export class PropertiesService {
     if (dto.photos !== undefined) updatePayload.photos = dto.photos;
     if (dto.minimumStay !== undefined) updatePayload.minimum_stay = dto.minimumStay;
     if (dto.cancellationPolicy !== undefined) updatePayload.cancellation_policy = dto.cancellationPolicy;
-    if (dto.status !== undefined) updatePayload.status = dto.status;
+    // status is intentionally not host-settable (see create-property.dto.ts) — only
+    // the admin panel (apps/admin/app/api/properties) may change listing status.
 
     const { data, error } = await this.supabaseService.admin
         .from('properties')

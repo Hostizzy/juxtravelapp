@@ -89,6 +89,13 @@ export class InstagramService {
       this.logger.warn(`Could not save OAuth state to instagram_oauth_states table: ${error.message}. Using in-memory state fallback.`);
     }
 
+    // Opportunistic eviction of expired entries (only grows when the Supabase
+    // insert above fails) so this Map can't grow unbounded across many failed
+    // attempts.
+    const now = Date.now();
+    for (const [key, entry] of this.oauthStatesCache) {
+      if (entry.expiresAt < now) this.oauthStatesCache.delete(key);
+    }
     // Always mirror state to in-memory fallback
     this.oauthStatesCache.set(nonce, { hostId, propertyId, expiresAt });
 
@@ -199,7 +206,11 @@ export class InstagramService {
       const encryptionKey = getEncryptionKey(this.configService);
       const encryptedLongToken = encryptToken(longToken, encryptionKey);
 
-      const { error: updateError } = await this.supabaseService.admin
+      // .select().maybeSingle() so a zero-row match (no host_profiles row for this
+      // hostId) is detectable — Supabase's update() doesn't error on affecting zero
+      // rows, so without this the token exchange silently "succeeds" while nothing
+      // is actually saved.
+      const { data: updated, error: updateError } = await this.supabaseService.admin
         .from('host_profiles')
         .update({
           instagram_access_token: encryptedLongToken,
@@ -207,27 +218,69 @@ export class InstagramService {
           instagram_token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
           instagram_connected: true,
         })
-        .eq('user_id', hostId);
+        .eq('user_id', hostId)
+        .select('user_id')
+        .maybeSingle();
 
       if (updateError) {
         this.logger.error(`[INSTAGRAM] Database update failed: ${updateError.message}`);
         throw updateError;
       }
+      if (!updated) {
+        this.logger.error(`[INSTAGRAM] No host_profiles row for hostId: ${hostId} — token not saved`);
+        throw new Error('Host profile not found');
+      }
 
       this.logger.log(`[INSTAGRAM] Token encrypted and saved successfully for hostId: ${hostId}`);
 
+      // Fetch the real @handle for display (getConnectionStatus was showing the
+      // numeric instagram_user_id as "username" — not human-readable). Best-effort:
+      // if instagram_username column doesn't exist yet (needs migration) or the
+      // fetch fails, connection still succeeds without a display name.
+      try {
+        const meResponse = await firstValueFrom(
+          this.httpService.get(
+            `https://graph.instagram.com/me?fields=username&access_token=${longToken}`,
+          ),
+        );
+        const username = meResponse.data?.username;
+        if (username) {
+          await this.supabaseService.admin
+            .from('host_profiles')
+            .update({ instagram_username: username })
+            .eq('user_id', hostId);
+        }
+      } catch (err: any) {
+        this.logger.warn(`[INSTAGRAM] Could not fetch/store username for hostId ${hostId}: ${err?.message}`);
+      }
+
       // AUTO-FETCH: Get reels immediately
       const reels = await this.fetchHostReels(hostId);
-      const reelUrls = reels.slice(0, 15).map((r) => r.media_url || r.permalink);
+      // Store {url, thumbnailUrl} objects, not bare strings — Discover's Image
+      // component needs a real thumbnail to render (video mp4 URLs don't work in
+      // <Image>), and getRandomizedReels was only ever given the video url.
+      const reelUrls = reels.slice(0, 15).map((r) => ({
+        url: r.media_url || r.permalink,
+        thumbnailUrl: r.thumbnail_url || r.media_url || r.permalink,
+      }));
 
       if (propertyId && reelUrls.length > 0) {
         await this.saveReelsToProperty(propertyId, hostId, reelUrls);
       }
 
       return { success: true };
-    } catch (error) {
-      this.logger.error('Instagram token exchange failed', error);
-      throw new Error('Failed to connect Instagram');
+    } catch (error: any) {
+      // Surface the real cause (bad code/redirect_uri, missing app secret, Supabase
+      // write failure, etc.) instead of one generic message for every failure mode —
+      // the controller's callback redirect passes error.message straight to the
+      // mobile app's error screen, so a real reason here is directly user-visible.
+      const detail =
+        error?.response?.data?.error_message ||
+        error?.response?.data?.error?.message ||
+        error?.message ||
+        'Unknown error';
+      this.logger.error(`Instagram token exchange failed: ${detail}`, error?.stack);
+      throw new Error(`Failed to connect Instagram: ${detail}`);
     }
   }
 
@@ -258,8 +311,13 @@ export class InstagramService {
       );
 
       return reels.slice(0, 20);
-    } catch (error) {
-      this.logger.error('Failed to fetch Instagram reels', error);
+    } catch (error: any) {
+      // Swallowing every failure (expired token, rate limit, network error, bad
+      // decrypt) as an empty list makes them all look like "host has no reels" to
+      // the caller — log the real cause so it's diagnosable, still return [] since
+      // callers here (Discover feed) shouldn't hard-fail on one host's error.
+      const detail = error?.response?.data?.error?.message || error?.message || 'Unknown error';
+      this.logger.error(`Failed to fetch Instagram reels for hostId ${hostId}: ${detail}`);
       return [];
     }
   }
@@ -267,12 +325,19 @@ export class InstagramService {
   async saveReelsToProperty(
     propertyId: string,
     hostId: string,
-    reelUrls: string[],
+    // Accepts either the manual-selection flow's plain string[] (SaveReelsDto,
+    // from the host UI) or the auto-fetch flow's {url, thumbnailUrl}[] — normalized
+    // to objects so Discover always has a thumbnail to render, regardless of source.
+    reelUrls: Array<string | { url: string; thumbnailUrl?: string }>,
   ): Promise<{ success: boolean }> {
+    const normalized = reelUrls.map((r) =>
+      typeof r === 'string' ? { url: r, thumbnailUrl: r } : r,
+    );
+
     const { error } = await this.supabaseService.admin
       .from('properties')
       .update({
-        reel_urls: reelUrls,
+        reel_urls: normalized,
         updated_at: new Date().toISOString(),
       })
       .eq('id', propertyId)
@@ -293,13 +358,15 @@ export class InstagramService {
   }> {
     const { data } = await this.supabaseService.admin
       .from('host_profiles')
-      .select('instagram_connected, instagram_user_id')
+      .select('instagram_connected, instagram_user_id, instagram_username')
       .eq('user_id', hostId)
       .single();
 
     return {
       connected: data?.instagram_connected ?? false,
-      username: data?.instagram_user_id,
+      // Prefer the real @handle; fall back to the numeric ID only if the
+      // instagram_username column/value isn't populated yet.
+      username: data?.instagram_username ?? data?.instagram_user_id,
     };
   }
 
@@ -324,6 +391,7 @@ export class InstagramService {
     reels: Array<{
       id: string;
       url: string;
+      thumbnail_url: string;
       property_id: string;
       property_name: string;
       location: { city: string; state: string };
@@ -351,6 +419,7 @@ export class InstagramService {
       const allReels: Array<{
         id: string;
         url: string;
+        thumbnail_url: string;
         property_id: string;
         property_name: string;
         location: { city: string; state: string };
@@ -360,10 +429,17 @@ export class InstagramService {
 
       propertiesWithReels.forEach((prop: any) => {
         if (prop.reel_urls && Array.isArray(prop.reel_urls)) {
-          prop.reel_urls.forEach((url: string) => {
+          // reel_urls entries are {url, thumbnailUrl} objects (post-fix) but older
+          // rows may still hold bare strings — support both so existing data doesn't
+          // just vanish from Discover.
+          prop.reel_urls.forEach((entry: string | { url: string; thumbnailUrl?: string }) => {
+            const url = typeof entry === 'string' ? entry : entry.url;
+            const thumbnailUrl = typeof entry === 'string' ? entry : (entry.thumbnailUrl || entry.url);
+            if (!url) return;
             allReels.push({
               id: `${prop.id}-${url}`.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36),
               url,
+              thumbnail_url: thumbnailUrl,
               property_id: prop.id,
               property_name: prop.name,
               location: prop.location || { city: '', state: '' },
@@ -374,12 +450,21 @@ export class InstagramService {
         }
       });
 
-      const shuffled = [...allReels];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
+      // Stable pseudo-random order (hash of reel id, not Math.random) so repeated
+      // calls with different offsets paginate over the same sequence instead of
+      // re-shuffling every request — the old per-call Math.random shuffle caused
+      // duplicates/skips across pages.
+      const hash = (s: string) => {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+        return h;
+      };
+      const shuffled = [...allReels].sort((a, b) => hash(a.id) - hash(b.id));
 
+      // Diversity filter: skip a reel if we've already included ANY reel from the
+      // same property. used.clear() here used to wipe the set every iteration,
+      // so it only ever compared against the single most-recently-added property —
+      // dropped so it tracks every property_id seen so far.
       const diverse: typeof shuffled = [];
       const used = new Set<string>();
 
@@ -388,7 +473,6 @@ export class InstagramService {
           continue;
         }
         diverse.push(reel);
-        used.clear();
         used.add(reel.property_id);
       }
 

@@ -5,6 +5,18 @@ import { ConversationsService } from '../conversations/conversations.service';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
 
+// Plain === on HMAC digests leaks timing info an attacker could use to guess
+// the correct signature byte-by-byte. Both inputs are hex digests of the same
+// expected length in normal operation; timingSafeEqual requires equal-length
+// buffers, so length-check first (a length mismatch is safe to short-circuit —
+// it doesn't leak content, only "wrong shape").
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -45,7 +57,7 @@ export class PaymentsService {
       // Fetch booking from DB to get REAL price
       const { data: booking, error: bookingErr } = await this.supabaseService.admin
         .from('bookings')
-        .select('id, property_id, check_in, check_out, total_amount, guest_id')
+        .select('id, property_id, check_in, check_out, total_amount, guest_id, status')
         .eq('id', params.bookingId)
         .single();
 
@@ -58,6 +70,13 @@ export class PaymentsService {
       if (booking.guest_id !== params.guestId) {
         this.logger.error(`[RAZORPAY] Guest ID mismatch`);
         throw new BadRequestException('Unauthorized booking access');
+      }
+
+      // Block re-ordering a booking that's already confirmed/completed — the update
+      // below would otherwise demote it back to 'pending' and overwrite payment_id,
+      // severing the link to the real payment.
+      if (booking.status === 'confirmed' || booking.status === 'completed') {
+        throw new BadRequestException('This booking is already paid');
       }
 
       // Fetch property to recompute price
@@ -82,11 +101,15 @@ export class PaymentsService {
       const pricePerNight = property.price_per_night ?? 0;
       const weekendPrice = property.weekend_price ?? pricePerNight;
 
+      // 'YYYY-MM-DD' strings parse as UTC midnight (new Date(...)) — use the UTC
+      // getters/setters throughout, not local ones, so a server not running in
+      // UTC (or negative-UTC-offset users) can't shift which calendar day (and
+      // therefore weekend/weekday) this lands on.
       let subtotal = 0;
       for (let i = 0; i < nights; i++) {
         const d = new Date(checkIn);
-        d.setDate(d.getDate() + i);
-        const day = d.getDay();
+        d.setUTCDate(d.getUTCDate() + i);
+        const day = d.getUTCDay();
         subtotal += day === 5 || day === 6 ? weekendPrice : pricePerNight;
       }
 
@@ -218,7 +241,7 @@ export class PaymentsService {
       .update(body)
       .digest('hex');
 
-    const verified = expectedSignature === params.razorpay_signature;
+    const verified = safeCompare(expectedSignature, params.razorpay_signature);
 
     if (verified) {
       // Update booking to confirmed — only from pending, so a concurrent webhook
@@ -282,7 +305,7 @@ export class PaymentsService {
       .update(body)
       .digest('hex');
 
-    return expectedSignature === signature;
+    return safeCompare(expectedSignature, signature);
   }
 
   // Handle webhook events
@@ -385,15 +408,26 @@ export class PaymentsService {
 
     if (!bookingId) return;
 
-    await this.supabaseService.admin
+    // Guard on status='pending' like handlePaymentCaptured does — Razorpay can
+    // deliver payment.failed (from a retried card) after payment.captured already
+    // confirmed the booking on a later attempt; without this an already-paid
+    // booking could be cancelled by a stale failure event.
+    const { data: updated } = await this.supabaseService.admin
       .from('bookings')
       .update({
         status: 'cancelled',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
 
-    this.logger.log(`[RAZORPAY_SERVICE] Payment failed, booking cancelled: ${bookingId}`);
+    if (updated) {
+      this.logger.log(`[RAZORPAY_SERVICE] Payment failed, booking cancelled: ${bookingId}`);
+    } else {
+      this.logger.log(`[RAZORPAY_SERVICE] Payment failed event for ${bookingId} ignored — not in pending state`);
+    }
   }
 
   private async handleRefundCreated(

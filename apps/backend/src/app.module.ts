@@ -28,16 +28,16 @@ import configuration from './config/configuration';
       load: [configuration],
       envFilePath: '.env',
     }),
+    // Single 'default' bucket. A second 'auth' bucket used to sit here at 5 req/min —
+    // in @nestjs/throttler v6, every named entry applies to every route unless a
+    // route explicitly overrides it, and nothing ever overrode 'auth'. That capped
+    // the WHOLE API (including chat polling) at 5 req/min. Auth-specific limits are
+    // applied per-route via @Throttle({ default: {...} }) on auth/admin/ai controllers.
     ThrottlerModule.forRoot([
       {
         name: 'default',
         ttl: 60000, // 1 minute
         limit: 100, // 100 requests per minute
-      },
-      {
-        name: 'auth',
-        ttl: 60000,
-        limit: 5, // Strict for auth
       },
     ]),
     JwtModule.register({

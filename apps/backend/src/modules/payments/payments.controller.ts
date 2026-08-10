@@ -88,6 +88,25 @@ export class PaymentsController {
     @Query('propertyName') propertyName: string,
     @Res() res: Response,
   ) {
+    // orderId/bookingId flow into a juxtravel:// deep link — restrict to safe id chars.
+    const idPattern = /^[a-zA-Z0-9_-]+$/;
+    if (!orderId || !idPattern.test(orderId) || !bookingId || !idPattern.test(bookingId)) {
+      throw new BadRequestException('Invalid orderId or bookingId');
+    }
+
+    // Every other value is untrusted user input rendered inside an inline <script>.
+    // JSON.stringify produces a safe JS literal (escapes quotes, backslashes, </script>).
+    const j = (v: unknown) => JSON.stringify(String(v ?? '')).replace(/</g, '\\u003c');
+    const safeKeyId = j(keyId);
+    const safeAmount = j(amount);
+    const safeCurrency = j(currency);
+    const safeOrderId = j(orderId);
+    const safeBookingId = j(bookingId);
+    const safeName = j(name);
+    const safeEmail = j(email);
+    const safeContact = j(contact);
+    const safePropertyName = j(propertyName);
+
     const html = `
 <!DOCTYPE html>
 <html>
@@ -196,23 +215,23 @@ export class PaymentsController {
         log('Building options...');
         
         var options = {
-          key: '${keyId}',
-          amount: parseInt('${amount}', 10),
-          currency: '${currency}',
-          order_id: '${orderId}',
+          key: ${safeKeyId},
+          amount: parseInt(${safeAmount}, 10),
+          currency: ${safeCurrency},
+          order_id: ${safeOrderId},
           name: 'JuxTravel',
-          description: 'Booking for ${propertyName}',
+          description: 'Booking for ' + ${safePropertyName},
           prefill: {
-            name: '${name}',
-            email: '${email}',
-            contact: '${contact}'
+            name: ${safeName},
+            email: ${safeEmail},
+            contact: ${safeContact}
           },
           theme: { color: '#1A6B5A' },
           handler: function(response) {
             log('✅ Payment Success: ' + response.razorpay_payment_id);
             showStatus('✓ Payment Successful!', 'Redirecting to app...', false);
             setTimeout(function() {
-              window.location.href = 'juxtravel://payment-success?bookingId=${bookingId}&paymentId=' + response.razorpay_payment_id;
+              window.location.href = 'juxtravel://payment-success?bookingId=' + encodeURIComponent(${safeBookingId}) + '&paymentId=' + encodeURIComponent(response.razorpay_payment_id);
             }, 2000);
           },
           modal: {
@@ -220,22 +239,22 @@ export class PaymentsController {
               log('Modal dismissed by user');
               showStatus('Payment Cancelled', 'Returning to app...', true);
               setTimeout(function() {
-                window.location.href = 'juxtravel://payment-cancelled?bookingId=${bookingId}';
+                window.location.href = 'juxtravel://payment-cancelled?bookingId=' + encodeURIComponent(${safeBookingId});
               }, 1000);
             }
           }
         };
-        
-        log('Options ready: key=${keyId}, amount=${amount}, orderId=${orderId}');
+
+        log('Options ready');
         log('Creating Razorpay instance...');
-        
+
         var rzp = new Razorpay(options);
-        
+
         rzp.on('payment.failed', function(response) {
           log('❌ Payment failed: ' + response.error.description);
           showStatus('✗ Payment Failed', response.error.description, true);
           setTimeout(function() {
-            window.location.href = 'juxtravel://payment-failed?bookingId=${bookingId}&error=' + encodeURIComponent(response.error.description);
+            window.location.href = 'juxtravel://payment-failed?bookingId=' + encodeURIComponent(${safeBookingId}) + '&error=' + encodeURIComponent(response.error.description);
           }, 3000);
         });
 
@@ -261,6 +280,9 @@ export class PaymentsController {
 </html>
 `;
 
+    // ponytail: script-src stays 'unsafe-inline' because the checkout logic is one inline
+    // <script> block; values are now JSON-encoded so injection isn't possible. Upgrade path:
+    // move to a nonce-based CSP if this page grows external script includes.
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader(

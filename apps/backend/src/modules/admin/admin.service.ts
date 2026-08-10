@@ -45,8 +45,16 @@ export class AdminService {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', admin.id);
 
-    // No fallback to JWT_SECRET — must be set explicitly, see admin.module.ts.
+    // Must be set explicitly. The comment here used to claim "no fallback to
+    // JWT_SECRET" but signAsync(payload, { secret: undefined }) actually falls
+    // through to the globally-registered JwtModule secret (JWT_SECRET) — so a
+    // missing ADMIN_JWT_SECRET silently minted tokens under the guest secret,
+    // which AdminAuthGuard then correctly rejects. Hard-fail instead.
     const secret = this.configService.get<string>('ADMIN_JWT_SECRET');
+    if (!secret) {
+      this.logger.error('[ADMIN] ADMIN_JWT_SECRET is not set — cannot issue admin tokens');
+      throw new UnauthorizedException('Server misconfiguration');
+    }
 
     const token = await this.jwtService.signAsync(
       {
@@ -55,7 +63,7 @@ export class AdminService {
         name: admin.name,
         role: admin.role,
       },
-      { secret },
+      { secret, expiresIn: '7d' },
     );
 
     this.logger.log(`[ADMIN] ✅ Login: ${email}`);

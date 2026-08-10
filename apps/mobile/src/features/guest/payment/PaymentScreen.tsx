@@ -40,8 +40,11 @@ export default function PaymentScreen() {
   const inFlightRef = React.useRef(false);
   const existingBookingIdRef = React.useRef<string | null>(null);
 
-  const serviceFee = Math.round(totalAmount * 0.1);
-  const subtotal = totalAmount - serviceFee;
+  // Mirror backend: subtotal is the base, serviceFee = round(subtotal * 0.1),
+  // total = subtotal + serviceFee. Deriving fee as totalAmount*0.1 (old code)
+  // doesn't invert that and shows a slightly wrong split for the same total.
+  const subtotal = Math.round(totalAmount / 1.1);
+  const serviceFee = totalAmount - subtotal;
 
   const formatDate = (dateStr: string): string => {
     try {

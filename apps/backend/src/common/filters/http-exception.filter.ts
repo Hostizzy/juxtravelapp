@@ -27,10 +27,16 @@ export class HttpExceptionFilter
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message = exception instanceof 
-      HttpException
-        ? exception.message
-        : 'Internal server error';
+    // exception.message on a ValidationPipe failure is just "Bad Request Exception" —
+    // the actual field errors live in getResponse().message (string | string[]).
+    let message: string | string[] = 'Internal server error';
+    if (exception instanceof HttpException) {
+      const body = exception.getResponse();
+      message =
+        typeof body === 'object' && body !== null && 'message' in body
+          ? (body as { message: string | string[] }).message
+          : exception.message;
+    }
 
     this.logger.error(
       `HTTP ${status}: ${message}`
